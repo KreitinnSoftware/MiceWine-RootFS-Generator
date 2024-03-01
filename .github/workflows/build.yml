@@ -1,0 +1,54 @@
+name: Build and Release MiceWine RootFS
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: "Environment Preparation"
+      run: |
+        sudo apt update
+        sudo apt install -y python3 python3-pip cmake meson wget git p7zip build-essential pkg-config xmlto fop xsltproc llvm
+        pip3 install mako
+        wget https://dl.google.com/android/repository/android-ndk-r26b-linux.zip
+        wget https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
+        mkdir -p $HOME/.android/sdk/ndk
+        unzip android-ndk-r26b-linux.zip
+        unzip android-ndk-r25b-linux.zip
+        mv android-ndk-r26b $HOME/.android/sdk/ndk/26.1.10909125
+        mv android-ndk-r25b $HOME/.android/sdk/ndk/25.2.9519653
+        echo "PREFIX=/data/data/com.micewine.emu/files/usr" >> $GITHUB_ENV
+        echo "PKG_CONFIG_PATH=/data/data/com.micewine.emu/files/usr/share/pkgconfig:/data/data/com.micewine.emu/files/usr/lib/pkgconfig" >> $GITHUB_ENV
+        echo "NDK_ROOT=$HOME/.android/sdk/ndk" >> $GITHUB_ENV
+        
+    - name: "Start Building"
+      run: |
+        ./build-all.sh
+
+    - name: "Create Zip File"
+      run: |
+        ./create-rootfs.sh
+    
+    - name: "Create Zip File Stripped"
+      run: |
+        ./create-rootfs.sh --clean-all --strip-all
+
+    - name: "Upload Artifact"
+      uses: actions/upload-artifact@v3
+      with:
+          name: MiceWine-RootFS.zip
+          path: /home/runner/MiceWine-RootFS.zip
+
+    - name: "Upload Stripped Artifact"
+      uses: actions/upload-artifact@v3
+      with:
+          name: MiceWine-RootFS-Stripped.zip
+          path: /home/runner/MiceWine-RootFS-Stripped.zip
