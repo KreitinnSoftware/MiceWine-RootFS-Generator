@@ -78,6 +78,7 @@ downloadPackages()
 			for patch in $(ls ../../packages/$package | sed "s/build.sh//g"); do
 				echo "Applying '$patch' for '$package'..."
 				git apply -v ../../packages/$package/$patch
+				echo
 			done
 		esac
 
@@ -135,6 +136,8 @@ export PACKAGES=$(ls packages)
 
 mkdir -p workdir
 cd workdir
+
+setupBuildEnv 26b 32 aarch64
 
 downloadPackages
 compileAll
