@@ -83,6 +83,9 @@ downloadPackages()
 		if [ -e "configure" ]; then
 			echo "../configure --prefix=$PREFIX $CONFIGURE_ARGS" > build.sh
 			echo "make -j $(nproc) install" >> build.sh
+		elif [ -e "autogen.sh" ]; then
+			echo "../autogen.sh --prefix=$PREFIX $CONFIGURE_ARGS" > build.sh
+			echo "make -j $(nproc) install" >> build.sh
 		elif [ -e "CMakeLists.txt" ]; then
 			echo "cmake -DCMAKE_INSTALL_PREFIX=$PREFIX -DCMAKE_INSTALL_LIBDIR=$PREFIX/lib $CMAKE_ARGS .." > build.sh
 			echo "make -j $(nproc) install" >> build.sh

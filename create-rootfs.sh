@@ -1,11 +1,25 @@
 #!/bin/bash
 
+symlink2hardlink() {
+  for i in *; do
+    link=$(readlink $i)
+    if [ "$link" != "" ]; then
+      echo rm $i
+      ln -f $link $i
+    fi 
+  done
+}
+
 export PREFIX=/data/data/com.micewine.emu/files/usr
 
 if [ ! -e "$PREFIX" ]; then
   echo "$PREFIX: Don't Exist. Run 'build-all.sh' for generate the needed libs for creating a rootfs for MiceWine."
   exit
 fi
+
+cd $PREFIX/lib
+
+symlink2hardlink
 
 cd $PREFIX/..
 
