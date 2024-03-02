@@ -1,0 +1,1 @@
+SRC_URL=https://xorg.freedesktop.org/archive/individual/proto/xorgproto-2023.2.tar.xz

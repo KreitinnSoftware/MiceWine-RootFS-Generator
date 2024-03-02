@@ -1,0 +1,31 @@
+--- a/Xtranslcl.c
++++ b/Xtranslcl.c
+@@ -213,23 +213,23 @@
+ #ifndef X11_t
+ #define X_STREAMS_DIR	"/dev/X"
+ #else
+-#define X_STREAMS_DIR	"/tmp/.X11-pipe"
++#define X_STREAMS_DIR	"/data/data/com.micewine.emu/files/usr/tmp/.X11-pipe"
+ #endif
+ 
+ #define DEV_PTMX	"/dev/ptmx"
+ 
+ #if defined(X11_t)
+ 
+-#define NAMEDNODENAME "/tmp/.X11-pipe/X"
++#define NAMEDNODENAME "/data/data/com.micewine.emu/files/usr/tmp/.X11-pipe/X"
+ #endif
+ #if defined(XIM_t)
+-#define NAMEDNODENAME "/tmp/.XIM-pipe/XIM"
++#define NAMEDNODENAME "/data/data/com.micewine.emu/files/usr/tmp/.XIM-pipe/XIM"
+ #endif
+ #if defined(FS_t) || defined (FONT_t)
+-#define NAMEDNODENAME	"/tmp/.font-pipe/fs"
++#define NAMEDNODENAME	"/data/data/com.micewine.emu/files/usr/tmp/.font-pipe/fs"
+ #endif
+ #if defined(ICE_t)
+-#define NAMEDNODENAME	"/tmp/.ICE-pipe/"
++#define NAMEDNODENAME	"/data/data/com.micewine.emu/files/usr/tmp/.ICE-pipe/"
+ #endif
+ 
+ 

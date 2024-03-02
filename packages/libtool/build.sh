@@ -1,0 +1,1 @@
+SRC_URL=https://mirrors.kernel.org/gnu/libtool/libtool-2.4.7.tar.gz

@@ -51,6 +51,69 @@ setupBuildEnv()
 	echo -e "Selected Android NDK: $NDK_VERSION\nSelected Android SDK: $ANDROID_SDK\nSelected Arch: $ARCH"
 }
 
+downloadPackages()
+{
+	for package in $PACKAGES; do
+		unset SRC_URL
+
+		. ../packages/$package/build.sh
+
+		echo "Downloading '$package'..."
+
+		curl -# -L -O $SRC_URL
+
+		case "$(basename $SRC_URL)" in *".tar"*)
+			tar -xf "$(basename $SRC_URL)"
+		esac
+
+		cd $(tar -tf "$(basename $SRC_URL)" | cut -d"/" -f 1 | head -n 1)
+
+		rm "../$(basename $SRC_URL)"
+
+		echo
+
+		case $(ls ../../packages/$package | sed "s/build.sh//g") in "")
+			;;
+			*)
+			for patch in $(ls ../../packages/$package | sed "s/build.sh//g"); do
+				echo "Applying '$patch' for '$package'..."
+				git apply -v ../../packages/$package/$patch
+			done
+		esac
+
+		if [ -e "configure" ]; then
+			echo "../configure --prefix=$PREFIX $CONFIGURE_ARGS" > build.sh
+			echo "make -j $(nproc) install" >> build.sh
+		elif [ -e "CMakeLists.txt" ]; then
+			echo "cmake -DCMAKE_INSTALL_PREFIX=$PREFIX -DCMAKE_INSTALL_LIBDIR=$PREFIX/lib $CMAKE_ARGS .." > build.sh
+			echo "make -j $(nproc) install" >> build.sh
+		elif [ -e "meson.build" ]; then
+			echo "meson setup -Dprefix=$PREFIX $MESON_ARGS .." > build.sh
+			echo "ninja -j $(nproc) install" >> build.sh
+		else
+			echo "Unsupported build system. Stopping..."
+			exit 1
+		fi
+
+		chmod +x build.sh
+
+		cd ..
+	done
+}
+
+compileAll()
+{
+	for i in $(ls); do
+		mkdir -p "$i/build_dir"
+
+		cd "$i/build_dir"
+
+		../build.sh
+
+		cd ../..
+	done
+}
+
 export PREFIX=/data/data/com.micewine.emu/files/usr
 
 if [ "$NDK_ROOT" == "" ]; then
@@ -67,3 +130,11 @@ else
 
 	rm -rf $PREFIX/*
 fi
+
+export PACKAGES=$(ls packages)
+
+mkdir -p workdir
+cd workdir
+
+downloadPackages
+compileAll
