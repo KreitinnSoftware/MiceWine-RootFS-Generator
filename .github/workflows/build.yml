@@ -52,3 +52,9 @@ jobs:
       with:
           name: MiceWine-RootFS-Stripped.zip
           path: /home/runner/MiceWine-RootFS-Stripped.zip
+
+    - name: "Upload Logs"
+      uses: actions/upload-artifact@v3
+      with:
+          name: MiceWine-Logs
+          path: /home/runner/MiceWine-RootFS-Generator/logs
