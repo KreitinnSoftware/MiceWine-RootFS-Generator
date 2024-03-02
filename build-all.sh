@@ -99,6 +99,8 @@ downloadPackages()
 		chmod +x build.sh
 
 		cd ..
+
+		mv $(tar -tf "$(basename $SRC_URL)" | cut -d"/" -f 1 | head -n 1) $package
 	done
 }
 
