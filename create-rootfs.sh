@@ -17,6 +17,7 @@ case $* in *"--clean-all"*)
   echo "Removing Generated Folders..."
   rm -rf $PREFIX/lib/{python*,cmake,pkgconfig}
   rm -rf $PREFIX/share/{cmake,aclocal,bash-completion,doc,info,man,util-macros,zsh}
+  rm -rf $PREFIX/local
 esac
 
 case $* in *"--strip-all"*)
