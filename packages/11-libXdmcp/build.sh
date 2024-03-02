@@ -1,0 +1,1 @@
+SRC_URL=https://xorg.freedesktop.org/archive/individual/lib/libXdmcp-1.1.4.tar.xz
