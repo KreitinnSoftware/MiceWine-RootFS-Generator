@@ -68,8 +68,6 @@ downloadPackages()
 
 		cd $(tar -tf "$(basename $SRC_URL)" | cut -d"/" -f 1 | head -n 1)
 
-		rm "../$(basename $SRC_URL)"
-
 		echo
 
 		case $(ls ../../packages/$package | sed "s/build.sh//g") in "")
@@ -101,6 +99,8 @@ downloadPackages()
 		cd ..
 
 		mv $(tar -tf "$(basename $SRC_URL)" | cut -d"/" -f 1 | head -n 1) $package
+
+		rm "$(basename $SRC_URL)"
 	done
 }
 
