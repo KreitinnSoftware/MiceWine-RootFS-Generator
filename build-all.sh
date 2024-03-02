@@ -53,8 +53,8 @@ setupBuildEnv()
 
 downloadPackages()
 {
-	for package in $PACKAGES; do
-		unset SRC_URL
+	for package in $PACKAGES; do 
+		unset SRC_URL CONFIGURE_ARGS MESON_ARGS CMAKE_ARGS
 
 		. ../packages/$package/build.sh
 
