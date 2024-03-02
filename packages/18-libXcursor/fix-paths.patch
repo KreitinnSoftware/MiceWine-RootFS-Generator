@@ -1,6 +1,5 @@
-diff -uNr libXcursor-1.2.0/src/library.c libXcursor-1.2.0.mod/src/library.c
---- libXcursor-1.2.0/src/library.c	2019-03-11 02:37:56.000000000 +0200
-+++ libXcursor-1.2.0.mod/src/library.c	2019-05-19 00:58:12.270343791 +0300
+--- 18-libXcursor/src/library.c	2022-04-03 14:00:22.000000000 -0300
++++ 18-libXcursor.mod/src/library.c	2024-03-02 18:30:38.118742000 -0300
 @@ -25,11 +25,11 @@
  #include <string.h>
  
@@ -14,4 +13,4 @@ diff -uNr libXcursor-1.2.0/src/library.c libXcursor-1.2.0.mod/src/library.c
 +#define XCURSORPATH "~/.local/share/icons:~/.icons:/data/data/com.micewine.emu/files/usr/share/icons:/data/data/com.micewine.emu/files/usr/share/pixmaps:"ICONDIR
  #endif
  
- const char *
+ typedef struct XcursorInherit {

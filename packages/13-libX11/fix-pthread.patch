@@ -1,0 +1,11 @@
+--- 13-libX11/configure	2024-03-02 19:00:43.598785000 -0300
++++ 13-libX11.mod/configure	2024-03-02 19:01:08.520521000 -0300
+@@ -22175,7 +22175,7 @@
+ if test x$xthreads = xyes ; then
+     case $host_os in
+     linux*|gnu*|k*bsd*-gnu)
+-        XTHREADLIB=-lpthread ;;
++        XTHREADLIB=-pthread ;;
+     netbsd*)
+ 	XTHREAD_CFLAGS="-D_POSIX_THREAD_SAFE_FUNCTIONS"
+ 	XTHREADLIB="-lpthread" ;;

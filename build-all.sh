@@ -111,7 +111,9 @@ compileAll()
 
 		cd "$i/build_dir"
 
-		../build.sh
+		echo "Compiling Package '$i'..."
+
+		../build.sh 1> "$INIT_DIR/logs/$i-log.txt" 2> "$INIT_DIR/logs/$i-error_log.txt"
 
 		cd ../..
 	done
@@ -135,6 +137,10 @@ else
 fi
 
 export PACKAGES=$(ls packages)
+
+export INIT_DIR=$PWD
+
+mkdir -p logs
 
 mkdir -p workdir
 cd workdir
