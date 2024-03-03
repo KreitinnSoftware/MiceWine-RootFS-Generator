@@ -56,7 +56,7 @@ setupBuildEnv()
 downloadPackages()
 {
 	for package in $PACKAGES; do 
-		unset SRC_URL CONFIGURE_ARGS MESON_ARGS CMAKE_ARGS USE_NDK_VERSION
+		unset SRC_URL CONFIGURE_ARGS MESON_ARGS CMAKE_ARGS USE_NDK_VERSION RUN_POST_APPLY_PATCH CFLAGS LDFLAGS LIBS
 
 		. ../packages/$package/build.sh
 
@@ -85,21 +85,24 @@ downloadPackages()
 			for patch in $(ls ../../packages/$package | sed "s/build.sh//g"); do
 				echo "Applying '$patch' for '$package'..."
 				git apply -v ../../packages/$package/$patch
+				$RUN_POST_APPLY_PATCH
 				echo
 			done
 		esac
 
+		echo "export CFLAGS=$CFLAGS LIBS=$LIBS LDFLAGS=$LDFLAGS" > build.sh
+
 		if [ -e "configure" ]; then
-			echo "../configure --prefix=$PREFIX $CONFIGURE_ARGS" > build.sh
+			echo "../configure --prefix=$PREFIX $CONFIGURE_ARGS" >> build.sh
 			echo "make -j $(nproc) install" >> build.sh
 		elif [ -e "autogen.sh" ]; then
-			echo "../autogen.sh --prefix=$PREFIX $CONFIGURE_ARGS" > build.sh
+			echo "../autogen.sh --prefix=$PREFIX $CONFIGURE_ARGS" >> build.sh
 			echo "make -j $(nproc) install" >> build.sh
 		elif [ -e "CMakeLists.txt" ]; then
-			echo "cmake -DCMAKE_INSTALL_PREFIX=$PREFIX -DCMAKE_INSTALL_LIBDIR=$PREFIX/lib $CMAKE_ARGS .." > build.sh
+			echo "cmake -DCMAKE_INSTALL_PREFIX=$PREFIX -DCMAKE_INSTALL_LIBDIR=$PREFIX/lib $CMAKE_ARGS .." >> build.sh
 			echo "make -j $(nproc) install" >> build.sh
 		elif [ -e "meson.build" ]; then
-			echo "meson setup -Dprefix=$PREFIX $MESON_ARGS .." > build.sh
+			echo "meson setup -Dprefix=$PREFIX $MESON_ARGS .." >> build.sh
 			echo "ninja -j $(nproc) install" >> build.sh
 		else
 			echo "Unsupported build system. Stopping..."
@@ -157,6 +160,11 @@ fi
 if [ -e "workdir" ]; then
 	echo "Cleaning Workdir..."
 	rm -rf workdir
+fi
+
+if [ -e "logs" ]; then
+	echo "Cleaning logs..."
+	rm -rf logs
 fi
 
 setupBuildEnv 26b 32 aarch64 --silent
