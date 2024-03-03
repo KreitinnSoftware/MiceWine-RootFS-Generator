@@ -48,13 +48,15 @@ setupBuildEnv()
 
 	export PKG_CONFIG_PATH=/data/data/com.micewine.emu/files/usr/share/pkgconfig:/data/data/com.micewine.emu/files/usr/lib/pkgconfig
 
-	echo -e "Selected Android NDK: $NDK_VERSION\nSelected Android SDK: $ANDROID_SDK\nSelected Arch: $ARCH"
+	if [ "$4" != "--silent" ]; then
+		echo -e "NDK Version: $NDK_VERSION\nAndroid API: $ANDROID_SDK\nArchitecture: $ARCH"
+	fi
 }
 
 downloadPackages()
 {
 	for package in $PACKAGES; do 
-		unset SRC_URL CONFIGURE_ARGS MESON_ARGS CMAKE_ARGS
+		unset SRC_URL CONFIGURE_ARGS MESON_ARGS CMAKE_ARGS USE_NDK_VERSION
 
 		. ../packages/$package/build.sh
 
@@ -64,9 +66,16 @@ downloadPackages()
 
 		case "$(basename $SRC_URL)" in *".tar"*)
 			tar -xf "$(basename $SRC_URL)"
+
+			ARCHIVE_CONTENT=$(tar -tf "$(basename $SRC_URL)")
+			;;
+			*".zip"*)
+			unzip -o "$(basename $SRC_URL)" 1> /dev/null
+
+			ARCHIVE_CONTENT=$(unzip -Z1 "$(basename $SRC_URL)")
 		esac
 
-		cd $(tar -tf "$(basename $SRC_URL)" | cut -d"/" -f 1 | head -n 1)
+		cd $(echo $ARCHIVE_CONTENT | cut -d"/" -f 1 | head -n 1)
 
 		echo
 
@@ -97,11 +106,13 @@ downloadPackages()
 			exit 1
 		fi
 
+		echo "setupBuildEnv $USE_NDK_VERSION 32 $ARCHITECTURE --silent" > setup-ndk.sh
+
 		chmod +x build.sh
 
 		cd ..
 
-		mv $(tar -tf "$(basename $SRC_URL)" | cut -d"/" -f 1 | head -n 1) $package
+		mv $(echo $ARCHIVE_CONTENT | cut -d"/" -f 1 | head -n 1) $package
 
 		rm "$(basename $SRC_URL)"
 	done
@@ -116,6 +127,8 @@ compileAll()
 
 		echo "Compiling Package '$i'..."
 
+		. ../setup-ndk.sh
+
 		../build.sh 1> "$INIT_DIR/logs/$i-log.txt" 2> "$INIT_DIR/logs/$i-error_log.txt"
 
 		cd ../..
@@ -123,6 +136,8 @@ compileAll()
 }
 
 export PREFIX=/data/data/com.micewine.emu/files/usr
+
+export ARCHITECTURE=aarch64
 
 if [ "$NDK_ROOT" == "" ]; then
 	echo "Please Provide a Valid Folder with NDK 25b and 26b on 'NDK_ROOT' environment variable."
@@ -139,6 +154,13 @@ else
 	rm -rf $PREFIX/*
 fi
 
+if [ -e "workdir" ]; then
+	echo "Cleaning Workdir..."
+	rm -rf workdir
+fi
+
+setupBuildEnv 26b 32 aarch64 --silent
+
 export PACKAGES=$(ls packages)
 
 export INIT_DIR=$PWD
@@ -147,8 +169,6 @@ mkdir -p logs
 
 mkdir -p workdir
 cd workdir
-
-setupBuildEnv 26b 32 aarch64
 
 downloadPackages
 compileAll

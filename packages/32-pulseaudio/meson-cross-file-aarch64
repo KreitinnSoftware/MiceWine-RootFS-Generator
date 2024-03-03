@@ -1,0 +1,9 @@
+[binaries]
+pkgconfig = '/usr/bin/pkg-config'
+cmake = '/usr/bin/cmake'
+
+[host_machine]
+system = 'linux'
+cpu_family = 'arm'
+cpu = 'armv8'
+endian = 'little'

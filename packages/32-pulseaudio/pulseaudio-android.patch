@@ -1,0 +1,2467 @@
+diff -uNr 32-pulseaudio/.gitignore 32-pulseaudio.mod/.gitignore
+--- 32-pulseaudio/.gitignore	2024-01-12 14:22:09.000000000 -0300
++++ 32-pulseaudio.mod/.gitignore	1969-12-31 21:00:00.000000000 -0300
+@@ -1,40 +0,0 @@
+-.tarball-version
+-.version
+-.*.swp
+-ABOUT-NLS
+-build*
+-*~
+-*.tar.gz
+-*.pc
+-PulseAudioConfig.cmake
+-PulseAudioConfigVersion.cmake
+-/Makefile
+-/Makefile.in
+-aclocal.m4
+-autom4te.cache
+-compile
+-config.guess
+-config.h
+-config.h.in
+-config.log
+-config.rpath
+-config.status
+-config.sub
+-configure
+-cscope.out
+-cscope.in.out
+-cscope.po.out
+-pulse-daemon.log
+-depcomp
+-install/
+-install-sh
+-libltdl
+-libtool
+-ltmain.sh
+-missing
+-mkinstalldirs
+-stamp-*
+-.dirstamp
+-*.orig
+-*.rej
+-subprojects/*/
+diff -uNr 32-pulseaudio/.gitlab/issue_templates/Bug.md 32-pulseaudio.mod/.gitlab/issue_templates/Bug.md
+--- 32-pulseaudio/.gitlab/issue_templates/Bug.md	2024-03-02 23:24:01.366702000 -0300
++++ 32-pulseaudio.mod/.gitlab/issue_templates/Bug.md	1969-12-31 21:00:00.000000000 -0300
+@@ -1,21 +0,0 @@
+-### Warning
+-Missing data may cause bugs to languish.
+-
+-### Summary
+-(Summarize the bug encountered concisely)
+-
+-### environment
+-Check to see if you have pa-info installed by running `which pa-info`
+-If yes please run it
+-If no please download and run https://gitlab.freedesktop.org/pulseaudio/pulseaudio/blob/master/src/utils/pa-info
+-Attach the output to this bug report as pa-info.txt
+-
+-### Steps to reproduce
+-(How one can reproduce the issue - this is very important)
+-
+-
+-### What is the current *bug* behavior?
+-(What actually happens)
+-
+-### What is the expected *correct* behavior?
+-(What you should see instead)
+diff -uNr 32-pulseaudio/.gitlab/merge_request_templates/Guidelines.md 32-pulseaudio.mod/.gitlab/merge_request_templates/Guidelines.md
+--- 32-pulseaudio/.gitlab/merge_request_templates/Guidelines.md	2024-03-02 23:24:01.366822000 -0300
++++ 32-pulseaudio.mod/.gitlab/merge_request_templates/Guidelines.md	1969-12-31 21:00:00.000000000 -0300
+@@ -1,67 +0,0 @@
+-# Contribution Guidelines
+-
+-## A note for contributors
+-
+-Thank you for your contribution!
+-
+-Please make sure you tick the box labelled `Allow commits from members who can
+-merge to the target branch`. This allows us to make minor edits ourselves, and
+-then automatically rebase and merge your changes.
+-
+-PulseAudio is currently maintained by three volunteer developers in their free
+-time (probably amounting to less than one full time developer), which is not
+-really enough, given the project size and scope. For this reason bug reports
+-and patch submissions are sometimes handled very slowly.
+-
+-For non-trivial patches, we meet biweekly on IRC to discuss and prioritise
+-outstanding MRs. If you haven't heard from us a few days after you create the
+-MR, please take a look at [the patch status
+-page](https://www.freedesktop.org/wiki/Software/PulseAudio/PatchStatus/).
+-
+-If you don't see your MR in that list either, please don't hesitate to drop a
+-comment pinging us, and we'll try to at least respond and make sure your
+-request is tracked on that list.
+-
+-## Coding Style
+-
+-Please take a look at the [coding style
+-documentation](https://www.freedesktop.org/wiki/Software/PulseAudio/Documentation/Developer/CodingStyle/)
+-on our wiki.
+-
+-## Commit messagse
+-
+-We follow the standard git commit message format of a summary on the first line
+-(<=50 characterss for preference, <=72 characters otherwise), followed by a new
+-line, followed by a detailed commit message. An additional line at the end may
+-link to an issue being fixed by this MR.
+-
+-The first line is usually a short description of "what" your commit does, and
+-the rest of the message describes the "why", along with any additional
+-information that readers might need to understand the rationale for the change.
+-If in doubt, more verbose is better than less.
+-
+-If you need to describe the "how" of the commit, that is usually best
+-documented along with the code itself.
+-
+-Commit messages are prefixed with the subsystem being affected. Your best bet
+-to figure out what is appropriate is to look at previous commit messages. An
+-example:
+-
+-```
+-sink: Reduce chat sink priority
+-
+-Some gaming sound cards have custom profiles with analog-game and
+-analog-chat mappings that exist simultaneously. The game sink should
+-have higher priority than the chat sink, but currently there's no way to
+-affect the sink priorities from the profile-set configuration (the
+-mapping priority is not propagated to the sink priority).
+-
+-I first thought about adding the mapping priority to the sink priority,
+-but that could mess up the prioritization system in
+-pa_device_init_priority(). I ended up checking for the intended roles
+-property to reduce the chat sink priority. I also reduced the iec958
+-priority so that the chat and iec958 sinks don't end up with the same
+-priority.
+-
+-Fixes: https://gitlab.freedesktop.org/pulseaudio/pulseaudio/issues/818
+-```
+diff -uNr 32-pulseaudio/.gitlab-ci.yml 32-pulseaudio.mod/.gitlab-ci.yml
+--- 32-pulseaudio/.gitlab-ci.yml	2024-01-12 14:22:09.000000000 -0300
++++ 32-pulseaudio.mod/.gitlab-ci.yml	1969-12-31 21:00:00.000000000 -0300
+@@ -1,110 +0,0 @@
+-# The build has two stages. The 'container' stage is used to build a Docker
+-# container and push it to the project's container registry on fd.o GitLab.
+-# This step is only run when the tag for the container changes, else it is
+-# effectively a no-op. All of this infrastructure is inherited from the
+-# freedesktop/ci-templates repository which is the recommended way to set up CI
+-# infrastructure on fd.o GitLab.
+-#
+-# Once the container stage is done, we move on to the 'build' stage where we
+-# run meson build. Currently, tests are also run as part of the build stage as
+-# there doesn't seem to be significant value to splitting the stages at the
+-# moment.
+-
+-stages:
+-  - container
+-  - build
+-
+-variables:
+-  # Update this tag when you want to trigger a rebuild the container in which
+-  # CI runs, for example when adding new packages to FDO_DISTRIBUTION_PACKAGES.
+-  # The tag is an arbitrary string that identifies the exact container
+-  # contents.
+-  FDO_DISTRIBUTION_TAG: '2023-08-13-00'
+-  FDO_DISTRIBUTION_VERSION: '20.04'
+-  FDO_UPSTREAM_REPO: 'pulseaudio/pulseaudio'
+-
+-include:
+-  # We pull templates from master to avoid the overhead of periodically
+-  # scanning for changes upstream. This does means builds might occasionally
+-  # break due to upstream changing things, so if you see unexpected build
+-  # failures, this might be one cause.
+-  - project: 'freedesktop/ci-templates'
+-    ref: 'master'
+-    file: '/templates/ubuntu.yml'
+-
+-build-container:
+-  extends: .fdo.container-build@ubuntu
+-  stage: container
+-  variables:
+-    GIT_STRATEGY: none # no need to pull the whole tree for rebuilding the image
+-
+-    # Remember to update FDO_DISTRIBUTION_TAG when modifying this package list!
+-    # Otherwise the changes won't have effect since an old container image will
+-    # be used.
+-    FDO_DISTRIBUTION_PACKAGES: >-
+-      autopoint
+-      bash-completion
+-      check
+-      curl
+-      dbus-x11
+-      doxygen
+-      g++
+-      gcc
+-      gettext
+-      git-core
+-      libasound2-dev
+-      libasyncns-dev
+-      libavahi-client-dev
+-      libbluetooth-dev
+-      libcap-dev
+-      libfftw3-dev
+-      libglib2.0-dev
+-      libgtk-3-dev
+-      libice-dev
+-      libjack-dev
+-      liblircclient-dev
+-      libltdl-dev
+-      liborc-0.4-dev
+-      libsbc-dev
+-      libsndfile1-dev
+-      libsoxr-dev
+-      libspeexdsp-dev
+-      libssl-dev
+-      libsystemd-dev
+-      libtdb-dev
+-      libudev-dev
+-      libwebrtc-audio-processing-dev
+-      libwrap0-dev
+-      libx11-xcb-dev
+-      libxcb1-dev
+-      libxml-parser-perl
+-      libxml2-utils
+-      libxtst-dev
+-      m4
+-      ninja-build
+-      pkg-config
+-      python3-setuptools
+-      systemd
+-      wget
+-
+-build-meson:
+-  extends: .fdo.distribution-image@ubuntu
+-  stage: build
+-  script:
+-    # Install meson (higher than our min version to support our wrap file)
+-    - wget -q https://github.com/mesonbuild/meson/releases/download/0.63.2/meson-0.63.2.tar.gz
+-    - tar -xf meson-0.63.2.tar.gz
+-    - cd meson-0.63.2
+-    - python3 setup.py install
+-    - cd ..
+-    # Do the actual build
+-    - meson build -Dwebrtc-aec=enabled
+-    - cd build
+-    - ninja
+-    - ulimit -c 0 # don't dump core files on tests that are supposed to assert
+-    - ninja test
+-    - ninja test-daemon
+-    - ninja dist
+-  artifacts:
+-    paths:
+-      - build/
+diff -uNr 32-pulseaudio/.mailmap 32-pulseaudio.mod/.mailmap
+--- 32-pulseaudio/.mailmap	2024-01-12 14:22:09.000000000 -0300
++++ 32-pulseaudio.mod/.mailmap	1969-12-31 21:00:00.000000000 -0300
+@@ -1,7 +0,0 @@
+-Diego Elio Pettenò <flameeyes@gmail.com>
+-Lennart Poettering <mzfuryy@0pointer.net>
+-Lennart Poettering <lennart@poettering.net>
+-Russ Dill <Russ.Dill@asu.edu>
+-Russ Dill <russ.dill@gmail.com>
+-Sjoerd Simons <sjoerd@luon.net>
+-Sjoerd Simons <sjoerd@debian.org>
+diff -uNr 32-pulseaudio/build.sh 32-pulseaudio.mod/build.sh
+--- 32-pulseaudio/build.sh	1969-12-31 21:00:00.000000000 -0300
++++ 32-pulseaudio.mod/build.sh	2024-03-02 23:14:31.248936000 -0300
+@@ -0,0 +1,2 @@
++meson setup -Dprefix=/data/data/com.micewine.emu/files/usr --cross-file=../../../packages/32-pulseaudio/meson-cross-file-aarch64 -Dbashcompletiondir=/data/data/com.micewine.emu/files/usr/share/bash-completion -Dalsa=disabled -Dx11=disabled -Dgtk=disabled -Dopenssl=disabled -Dgsettings=disabled -Ddoxygen=false -Ddatabase=simple -Dtests=false ..
++ninja -j 4 install
+diff -uNr 32-pulseaudio/build_dir/.gitignore 32-pulseaudio.mod/build_dir/.gitignore
+--- 32-pulseaudio/build_dir/.gitignore	1969-12-31 21:00:00.000000000 -0300
++++ 32-pulseaudio.mod/build_dir/.gitignore	2024-03-02 23:18:58.960051000 -0300
+@@ -0,0 +1,2 @@
++# This file is autogenerated by Meson. If you change or delete it, it won't be recreated.
++*
+diff -uNr 32-pulseaudio/build_dir/.hgignore 32-pulseaudio.mod/build_dir/.hgignore
+--- 32-pulseaudio/build_dir/.hgignore	1969-12-31 21:00:00.000000000 -0300
++++ 32-pulseaudio.mod/build_dir/.hgignore	2024-03-02 23:18:58.960111000 -0300
+@@ -0,0 +1,3 @@
++# This file is autogenerated by Meson. If you change or delete it, it won't be recreated.
++syntax: glob
++**/*
+diff -uNr 32-pulseaudio/build_dir/meson-info/meson-info.json 32-pulseaudio.mod/build_dir/meson-info/meson-info.json
+--- 32-pulseaudio/build_dir/meson-info/meson-info.json	1969-12-31 21:00:00.000000000 -0300
++++ 32-pulseaudio.mod/build_dir/meson-info/meson-info.json	2024-03-02 23:18:59.198946000 -0300
+@@ -0,0 +1 @@
++{"meson_version": {"full": "0.61.2", "major": 0, "minor": 61, "patch": 2}, "directories": {"source": "/home/pablo/MiceWine-RootFS-Generator/workdir/32-pulseaudio", "build": "/home/pablo/MiceWine-RootFS-Generator/workdir/32-pulseaudio/build_dir", "info": "/home/pablo/MiceWine-RootFS-Generator/workdir/32-pulseaudio/build_dir/meson-info"}, "introspection": {"version": {"full": "1.0.0", "major": 1, "minor": 0, "patch": 0}, "information": {"benchmarks": {"file": "intro-benchmarks.json", "updated": false}, "buildoptions": {"file": "intro-buildoptions.json", "updated": false}, "buildsystem_files": {"file": "intro-buildsystem_files.json", "updated": false}, "dependencies": {"file": "intro-dependencies.json", "updated": false}, "installed": {"file": "intro-installed.json", "updated": false}, "install_plan": {"file": "intro-install_plan.json", "updated": false}, "projectinfo": {"file": "intro-projectinfo.json", "updated": false}, "targets": {"file": "intro-targets.json", "updated": false}, "tests": {"file": "intro-tests.json", "updated": false}}}, "build_files_updated": false, "error": true, "error_list": ["Index 1 out of bounds of array of size 1."]}
+\ No newline at end of file
+diff -uNr 32-pulseaudio/build_dir/meson-logs/meson-log.txt 32-pulseaudio.mod/build_dir/meson-logs/meson-log.txt
+--- 32-pulseaudio/build_dir/meson-logs/meson-log.txt	1969-12-31 21:00:00.000000000 -0300
++++ 32-pulseaudio.mod/build_dir/meson-logs/meson-log.txt	2024-03-02 23:18:59.199181000 -0300
+@@ -0,0 +1,50 @@
++Build started at 2024-03-03T02:18:58.963598
++Main binary: /usr/bin/python3
++Build Options: -Dprefix=/data/data/com.micewine.emu/files/usr -Dbashcompletiondir=/data/data/com.micewine.emu/files/usr/share/bash-completion -Dalsa=disabled -Dx11=disabled -Dgtk=disabled -Dopenssl=disabled -Dgsettings=disabled -Ddoxygen=false -Ddatabase=simple -Dtests=false '--cross-file ../../../packages/32-pulseaudio/meson-cross-file-aarch64'
++Python system: Linux
++The Meson build system
++Version: 0.61.2
++Source dir: /home/pablo/MiceWine-RootFS-Generator/workdir/32-pulseaudio
++Build dir: /home/pablo/MiceWine-RootFS-Generator/workdir/32-pulseaudio/build_dir
++Build type: cross build
++Program git-version-gen found: YES (/home/pablo/MiceWine-RootFS-Generator/workdir/32-pulseaudio/git-version-gen)
++Running command: /home/pablo/MiceWine-RootFS-Generator/workdir/32-pulseaudio/git-version-gen /home/pablo/MiceWine-RootFS-Generator/workdir/32-pulseaudio/.tarball-version
++--- stdout ---
++
++--- stderr ---
++/home/pablo/MiceWine-RootFS-Generator/workdir/32-pulseaudio/git-version-gen: Failed to determine git revision
++
++
++Project name: pulseaudio
++Project version: 
++Sanity testing C compiler: aarch64-linux-android32-clang
++Is cross compiler: True.
++Sanity check compiler command line: aarch64-linux-android32-clang sanitycheckc.c -o sanitycheckc_cross.exe -D_FILE_OFFSET_BITS=64 -c
++Sanity check compile stdout:
++
++-----
++Sanity check compile stderr:
++
++-----
++C compiler for the host machine: aarch64-linux-android32-clang (clang 14.0.7 "Android (9352603, based on r450784d1) clang version 14.0.7 (https://android.googlesource.com/toolchain/llvm-project 4c603efb0cca074e9238af8b4106c30add4418f6)")
++C linker for the host machine: aarch64-linux-android32-clang ld.lld 14.0.7
++Sanity testing C compiler: cc
++Is cross compiler: False.
++Sanity check compiler command line: cc sanitycheckc.c -o sanitycheckc.exe -D_FILE_OFFSET_BITS=64
++Sanity check compile stdout:
++
++-----
++Sanity check compile stderr:
++
++-----
++Running test binary command: /home/pablo/MiceWine-RootFS-Generator/workdir/32-pulseaudio/build_dir/meson-private/sanitycheckc.exe
++C compiler for the build machine: cc (gcc 11.4.0 "cc (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0")
++C linker for the build machine: cc ld.bfd 2.38
++Build machine cpu family: x86_64
++Build machine cpu: x86_64
++Host machine cpu family: arm
++Host machine cpu: armv8
++Target machine cpu family: arm
++Target machine cpu: armv8
++
++../meson.build:17:0: ERROR: Index 1 out of bounds of array of size 1.
+diff -uNr 32-pulseaudio/build_dir/meson-private/sanitycheckc.c 32-pulseaudio.mod/build_dir/meson-private/sanitycheckc.c
+--- 32-pulseaudio/build_dir/meson-private/sanitycheckc.c	1969-12-31 21:00:00.000000000 -0300
++++ 32-pulseaudio.mod/build_dir/meson-private/sanitycheckc.c	2024-03-02 23:18:59.149847000 -0300
+@@ -0,0 +1 @@
++int main(void) { int class=0; return class; }
+Binary files 32-pulseaudio/build_dir/meson-private/sanitycheckc.exe and 32-pulseaudio.mod/build_dir/meson-private/sanitycheckc.exe differ
+Binary files 32-pulseaudio/build_dir/meson-private/sanitycheckc_cross.exe and 32-pulseaudio.mod/build_dir/meson-private/sanitycheckc_cross.exe differ
+diff -uNr 32-pulseaudio/include/libintl.h 32-pulseaudio.mod/include/libintl.h
+--- 32-pulseaudio/include/libintl.h	1969-12-31 21:00:00.000000000 -0300
++++ 32-pulseaudio.mod/include/libintl.h	2024-03-02 23:14:31.246150000 -0300
+@@ -0,0 +1,53 @@
++#ifndef _LIBINTL_H
++#define _LIBINTL_H
++
++#include <errno.h>
++#include <string.h>
++
++static __inline__ char* gettext(const char* msgid)
++{ return (char*) msgid; }
++
++static __inline__ char* dgettext(const char* domainname, const char* msgid)
++{ return (char*) msgid; }
++
++static __inline__ char* dcgettext(const char* domainname, const char* msgid, int category)
++{ return (char*) msgid; }
++
++static __inline__ char* ngettext(const char* msgid1, const char* msgid2, unsigned long int n)
++{ return (char *) ((n == 1) ? msgid1 : msgid2); }
++
++static __inline__ char* dngettext(const char* domainname, const char* msgid1, const char* msgid2, unsigned long int n)
++{ return (char *) ((n == 1) ? msgid1 : msgid2); }
++
++static __inline__ char* dcngettext(const char* domainname, const char* msgid1, const char* msgid2, unsigned long int n, int category)
++{ return (char *) ((n == 1) ? msgid1 : msgid2); }
++
++static __inline__ char* textdomain(const char* domainname)
++{
++	static const char default_str[] = "messages";
++	if (domainname && *domainname && strcmp(domainname, default_str)) {
++		errno = EINVAL;
++		return NULL;
++	}
++	return (char*) default_str;
++}
++
++static __inline__ char* bindtextdomain(const char* domainname, const char* dirname)
++{
++	static const char dir[] = "/";
++	if (!domainname || !*domainname || (dirname && ((dirname[0] != '/') || dirname[1]))) {
++		errno = EINVAL;
++		return NULL;
++	}
++	return (char*) dir;
++}
++
++static __inline__ char* bind_textdomain_codeset(const char* domainname, const char* codeset)
++{
++	if (!domainname || !*domainname || (codeset && strcasecmp(codeset, "UTF-8"))) {
++		errno = EINVAL;
++	}
++	return NULL;
++}
++
++#endif
+diff -uNr 32-pulseaudio/meson.build 32-pulseaudio.mod/meson.build
+--- 32-pulseaudio/meson.build	2024-01-12 14:22:09.000000000 -0300
++++ 32-pulseaudio.mod/meson.build	2024-03-02 23:21:21.567940000 -0300
+@@ -14,7 +14,7 @@
+ # (e.g.: v11.99.1-3-gad14bdb24 -> v11.99.1)
+ version_split = pa_version_str.split('-')[0].split('.')
+ pa_version_major = version_split[0].split('v')[0]
+-pa_version_minor = version_split[1]
++pa_version_minor = version_split[0]
+ if version_split.length() > 2
+   pa_version_micro = version_split[2]
+ else
+@@ -286,10 +286,6 @@
+   endif
+ endif
+ 
+-if cc.has_header_symbol('pthread.h', 'PTHREAD_PRIO_INHERIT')
+-  cdata.set('HAVE_PTHREAD_PRIO_INHERIT', 1)
+-endif
+-
+ # Headers which are usable
+ 
+ check_usable_headers = [
+@@ -381,7 +377,7 @@
+     libintl_dep = cc.find_library('intl')
+   endif
+ else
+-  libintl_dep = cc.find_library('intl')
++  libintl_dep = []
+ endif
+ 
+ # Symbols
+@@ -448,6 +444,8 @@
+ # Core Dependencies
+ 
+ libm_dep = cc.find_library('m', required : true)
++sles_dep = cc.find_library('OpenSLES', required : true)
++aaudio_dep = cc.find_library('aaudio', required : true)
+ 
+ thread_dep = dependency('threads')
+ foreach f : [
+diff -uNr 32-pulseaudio/setup-ndk.sh 32-pulseaudio.mod/setup-ndk.sh
+--- 32-pulseaudio/setup-ndk.sh	1969-12-31 21:00:00.000000000 -0300
++++ 32-pulseaudio.mod/setup-ndk.sh	2024-03-02 23:14:31.249014000 -0300
+@@ -0,0 +1 @@
++setupBuildEnv 25b 32 aarch64 --silent
+diff -uNr 32-pulseaudio/src/daemon/caps.c 32-pulseaudio.mod/src/daemon/caps.c
+--- 32-pulseaudio/src/daemon/caps.c	2024-01-12 14:22:09.000000000 -0300
++++ 32-pulseaudio.mod/src/daemon/caps.c	2024-03-02 23:14:31.246249000 -0300
+@@ -36,64 +36,11 @@
+ 
+ #include "caps.h"
+ 
+-/* Glibc <= 2.2 has broken unistd.h */
+-#if defined(__linux__) && (__GLIBC__ <= 2 && __GLIBC_MINOR__ <= 2)
+-int setresgid(gid_t r, gid_t e, gid_t s);
+-int setresuid(uid_t r, uid_t e, uid_t s);
+-#endif
+-
+-/* Drop root rights when called SUID root */
++/* Disable privilege dropping on Android. */
+ void pa_drop_root(void) {
+-
+-#ifdef HAVE_GETUID
+-    uid_t uid;
+-    gid_t gid;
+-
+-    pa_log_debug("Cleaning up privileges.");
+-    uid = getuid();
+-    gid = getgid();
+-
+-#if defined(HAVE_SETRESUID)
+-    pa_assert_se(setresuid(uid, uid, uid) >= 0);
+-    pa_assert_se(setresgid(gid, gid, gid) >= 0);
+-#elif defined(HAVE_SETREUID)
+-    pa_assert_se(setreuid(uid, uid) >= 0);
+-    pa_assert_se(setregid(gid, gid) >= 0);
+-#else
+-    pa_assert_se(setuid(uid) >= 0);
+-    pa_assert_se(seteuid(uid) >= 0);
+-    pa_assert_se(setgid(gid) >= 0);
+-    pa_assert_se(setegid(gid) >= 0);
+-#endif
+-
+-    pa_assert_se(getuid() == uid);
+-    pa_assert_se(geteuid() == uid);
+-    pa_assert_se(getgid() == gid);
+-    pa_assert_se(getegid() == gid);
+-
+-    if (uid != 0)
+-        pa_drop_caps();
+-#endif
++    return;
+ }
+ 
+ void pa_drop_caps(void) {
+-#ifdef HAVE_SYS_CAPABILITY_H
+-#if defined(__linux__)
+-    cap_t caps;
+-    pa_assert_se(caps = cap_init());
+-    pa_assert_se(cap_clear(caps) == 0);
+-    pa_assert_se(cap_set_proc(caps) == 0);
+-    pa_assert_se(cap_free(caps) == 0);
+-#elif defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+-    /* FreeBSD doesn't have this functionality, even though sys/capability.h is
+-     * available. See https://bugs.freedesktop.org/show_bug.cgi?id=72580 */
+-    pa_log_warn("FreeBSD cannot drop extra capabilities, implementation needed.");
+-#else
+-#error "Don't know how to do capabilities on your system.  Please send a patch."
+-#endif /* __linux__ */
+-#else /* HAVE_SYS_CAPABILITY_H */
+-    pa_log_warn("Normally all extra capabilities would be dropped now, but "
+-                "that's impossible because PulseAudio was built without "
+-                "capabilities support.");
+-#endif
++    return;
+ }
+diff -uNr 32-pulseaudio/src/daemon/main.c 32-pulseaudio.mod/src/daemon/main.c
+--- 32-pulseaudio/src/daemon/main.c	2024-01-12 14:22:09.000000000 -0300
++++ 32-pulseaudio.mod/src/daemon/main.c	2024-03-02 23:14:31.246290000 -0300
+@@ -162,206 +162,11 @@
+     }
+ }
+ 
++// Disable privilege dropping on Android.
+ 
+-#if defined(OS_IS_WIN32)
+-
+ static int change_user(void) {
+-    pa_log_info("Overriding system runtime/config base dir to '%s'.", pa_win32_get_system_appdata());
+-
+-    /* On other platforms, these paths are compiled into PulseAudio. This isn't
+-     * suitable on Windows. Firstly, Windows doesn't follow the FHS or use Unix
+-     * paths and the build system can't handle Windows-style paths properly.
+-     * Secondly, the idiomatic location for a service's state and shared data is
+-     * ProgramData, and the location of special folders is dynamic on Windows.
+-     * Also, this method of handling paths is consistent with how they are
+-     * handled on Windows in other parts of PA. Note that this is only needed
+-     * in system-wide mode since paths in user instances are already handled
+-     * properly.
+-     */
+-
+-    char *run_path = pa_sprintf_malloc("%s" PA_PATH_SEP "run", pa_win32_get_system_appdata());
+-    char *lib_path = pa_sprintf_malloc("%s" PA_PATH_SEP "lib", pa_win32_get_system_appdata());
+-
+-    /* https://docs.microsoft.com/en-us/windows/win32/secauthz/ace-strings */
+-    /* https://docs.microsoft.com/en-us/windows/win32/secauthz/modifying-the-acls-of-an-object-in-c-- */
+-    /* https://docs.microsoft.com/en-us/windows/win32/api/sddl/nf-sddl-convertstringsecuritydescriptortosecuritydescriptora */
+-    {
+-        mkdir(run_path);
+-        PSECURITY_DESCRIPTOR sd;
+-        if (ConvertStringSecurityDescriptorToSecurityDescriptorA(
+-            "D:PAI"                   /* DACL, disable inheritance from parent, enable propagation to children */
+-            "(A;OICI;FA;;;SY)"        /* give system full access */
+-            "(A;OICI;FA;;;CO)"        /* give owner full access */
+-            "(A;OICI;FA;;;BA)"        /* give administrators full access */
+-            "(A;OICI;0x1200a9;;;WD)", /* give everyone read/write/execute access */
+-            SDDL_REVISION_1, &sd, NULL
+-        )) {
+-            PACL acl;
+-            BOOL acl_present, acl_default;
+-            if (GetSecurityDescriptorDacl(sd, &acl_present, &acl, &acl_default)) {
+-                if (SetNamedSecurityInfo(run_path, SE_FILE_OBJECT, DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION, NULL, NULL, acl, NULL) != ERROR_SUCCESS) {
+-                    pa_log_warn("Failed to set DACL for runtime dir: failed to apply DACL: error %lu.", GetLastError());
+-                }
+-                LocalFree(acl);
+-            } else {
+-                pa_log_warn("Failed to set DACL for runtime dir: failed to get security descriptor DACL: error %lu.", GetLastError());
+-            }
+-        } else {
+-            pa_log_warn("Failed to set DACL for runtime dir: failed to parse security descriptor: error %lu.", GetLastError());
+-        }
+-    }
+-    {
+-        mkdir(lib_path);
+-        PSECURITY_DESCRIPTOR sd;
+-        if (ConvertStringSecurityDescriptorToSecurityDescriptorA(
+-            "D:PAI"             /* DACL, disable inheritance from parent, enable propagation to children */
+-            "(A;OICI;FA;;;SY)"  /* give system full access */
+-            "(A;OICI;FA;;;CO)"  /* give owner full access */
+-            "(A;OICI;FA;;;BA)", /* give administrators full access */
+-            SDDL_REVISION_1, &sd, NULL
+-        )) {
+-            PACL acl;
+-            BOOL acl_present, acl_default;
+-            if (GetSecurityDescriptorDacl(sd, &acl_present, &acl, &acl_default)) {
+-                if (SetNamedSecurityInfo(lib_path, SE_FILE_OBJECT, DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION, NULL, NULL, acl, NULL) != ERROR_SUCCESS) {
+-                    pa_log_warn("Failed to set DACL for lib dir: failed to apply DACL: error %lu.", GetLastError());
+-                }
+-                LocalFree(acl);
+-            } else {
+-                pa_log_warn("Failed to set DACL for lib dir: failed to get security descriptor DACL: error %lu.", GetLastError());
+-            }
+-        } else {
+-            pa_log_warn("Failed to set DACL for lib dir: failed to parse security descriptor: error %lu.", GetLastError());
+-        }
+-    }
+-
+-    pa_set_env("HOME", run_path);
+-    if (!getenv("PULSE_RUNTIME_PATH"))
+-        pa_set_env("PULSE_RUNTIME_PATH", run_path);
+-    if (!getenv("PULSE_CONFIG_PATH"))
+-        pa_set_env("PULSE_CONFIG_PATH", lib_path);
+-    if (!getenv("PULSE_STATE_PATH"))
+-        pa_set_env("PULSE_STATE_PATH", lib_path);
+-
+-    pa_xfree(run_path);
+-    pa_xfree(lib_path);
+-
+-    pa_log_info("Not changing user for system instance on Windows.");
+     return 0;
+ }
+-
+-#elif defined(HAVE_PWD_H) && defined(HAVE_GRP_H)
+-
+-static int change_user(void) {
+-    struct passwd *pw;
+-    struct group * gr;
+-    int r;
+-
+-    /* This function is called only in system-wide mode. It creates a
+-     * runtime dir in /var/run/ with proper UID/GID and drops privs
+-     * afterwards. */
+-
+-    if (!(pw = getpwnam(PA_SYSTEM_USER))) {
+-        pa_log(_("Failed to find user '%s'."), PA_SYSTEM_USER);
+-        return -1;
+-    }
+-
+-    if (!(gr = getgrnam(PA_SYSTEM_GROUP))) {
+-        pa_log(_("Failed to find group '%s'."), PA_SYSTEM_GROUP);
+-        return -1;
+-    }
+-
+-    pa_log_info("Found user '%s' (UID %lu) and group '%s' (GID %lu).",
+-                PA_SYSTEM_USER, (unsigned long) pw->pw_uid,
+-                PA_SYSTEM_GROUP, (unsigned long) gr->gr_gid);
+-
+-    if (pw->pw_gid != gr->gr_gid) {
+-        pa_log(_("GID of user '%s' and of group '%s' don't match."), PA_SYSTEM_USER, PA_SYSTEM_GROUP);
+-        return -1;
+-    }
+-
+-    if (!pa_streq(pw->pw_dir, PA_SYSTEM_RUNTIME_PATH))
+-        pa_log_warn(_("Home directory of user '%s' is not '%s', ignoring."), PA_SYSTEM_USER, PA_SYSTEM_RUNTIME_PATH);
+-
+-    if (pa_make_secure_dir(PA_SYSTEM_RUNTIME_PATH, 0755, pw->pw_uid, gr->gr_gid, true) < 0) {
+-        pa_log(_("Failed to create '%s': %s"), PA_SYSTEM_RUNTIME_PATH, pa_cstrerror(errno));
+-        return -1;
+-    }
+-
+-    if (pa_make_secure_dir(PA_SYSTEM_STATE_PATH, 0700, pw->pw_uid, gr->gr_gid, true) < 0) {
+-        pa_log(_("Failed to create '%s': %s"), PA_SYSTEM_STATE_PATH, pa_cstrerror(errno));
+-        return -1;
+-    }
+-
+-    /* We don't create the config dir here, because we don't need to write to it */
+-
+-    if (initgroups(PA_SYSTEM_USER, gr->gr_gid) != 0) {
+-        pa_log(_("Failed to change group list: %s"), pa_cstrerror(errno));
+-        return -1;
+-    }
+-
+-#if defined(HAVE_SETRESGID)
+-    r = setresgid(gr->gr_gid, gr->gr_gid, gr->gr_gid);
+-#elif defined(HAVE_SETEGID)
+-    if ((r = setgid(gr->gr_gid)) >= 0)
+-        r = setegid(gr->gr_gid);
+-#elif defined(HAVE_SETREGID)
+-    r = setregid(gr->gr_gid, gr->gr_gid);
+-#else
+-#error "No API to drop privileges"
+-#endif
+-
+-    if (r < 0) {
+-        pa_log(_("Failed to change GID: %s"), pa_cstrerror(errno));
+-        return -1;
+-    }
+-
+-#if defined(HAVE_SETRESUID)
+-    r = setresuid(pw->pw_uid, pw->pw_uid, pw->pw_uid);
+-#elif defined(HAVE_SETEUID)
+-    if ((r = setuid(pw->pw_uid)) >= 0)
+-        r = seteuid(pw->pw_uid);
+-#elif defined(HAVE_SETREUID)
+-    r = setreuid(pw->pw_uid, pw->pw_uid);
+-#else
+-#error "No API to drop privileges"
+-#endif
+-
+-    if (r < 0) {
+-        pa_log(_("Failed to change UID: %s"), pa_cstrerror(errno));
+-        return -1;
+-    }
+-
+-    pa_drop_caps();
+-
+-    pa_set_env("USER", PA_SYSTEM_USER);
+-    pa_set_env("USERNAME", PA_SYSTEM_USER);
+-    pa_set_env("LOGNAME", PA_SYSTEM_USER);
+-    pa_set_env("HOME", PA_SYSTEM_RUNTIME_PATH);
+-
+-    /* Relevant for pa_runtime_path() */
+-    if (!getenv("PULSE_RUNTIME_PATH"))
+-        pa_set_env("PULSE_RUNTIME_PATH", PA_SYSTEM_RUNTIME_PATH);
+-
+-    if (!getenv("PULSE_CONFIG_PATH"))
+-        pa_set_env("PULSE_CONFIG_PATH", PA_SYSTEM_CONFIG_PATH);
+-
+-    if (!getenv("PULSE_STATE_PATH"))
+-        pa_set_env("PULSE_STATE_PATH", PA_SYSTEM_STATE_PATH);
+-
+-    pa_log_info("Successfully changed user to \"" PA_SYSTEM_USER "\".");
+-
+-    return 0;
+-}
+-
+-#else /* HAVE_PWD_H && HAVE_GRP_H */
+-
+-static int change_user(void) {
+-    pa_log(_("System wide mode unsupported on this platform."));
+-    return -1;
+-}
+-
+-#endif /* HAVE_PWD_H && HAVE_GRP_H */
+ 
+ #ifdef HAVE_SYS_RESOURCE_H
+ 
+diff -uNr 32-pulseaudio/src/modules/aaudio/module-aaudio-sink.c 32-pulseaudio.mod/src/modules/aaudio/module-aaudio-sink.c
+--- 32-pulseaudio/src/modules/aaudio/module-aaudio-sink.c	1969-12-31 21:00:00.000000000 -0300
++++ 32-pulseaudio.mod/src/modules/aaudio/module-aaudio-sink.c	2024-03-02 23:14:31.246370000 -0300
+@@ -0,0 +1,450 @@
++/***
++  This file is part of PulseAudio.
++
++  Copyright 2004-2008 Lennart Poettering
++
++  PulseAudio is free software; you can redistribute it and/or modify
++  it under the terms of the GNU Lesser General Public License as published
++  by the Free Software Foundation; either version 2.1 of the License,
++  or (at your option) any later version.
++
++  PulseAudio is distributed in the hope that it will be useful, but
++  WITHOUT ANY WARRANTY; without even the implied warranty of
++  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++  General Public License for more details.
++
++  You should have received a copy of the GNU Lesser General Public License
++  along with PulseAudio; if not, see <http://www.gnu.org/licenses/>.
++***/
++
++#ifdef HAVE_CONFIG_H
++#include <config.h>
++#endif
++
++#include <stdlib.h>
++#include <stdio.h>
++#include <errno.h>
++#include <unistd.h>
++
++#include <pulse/rtclock.h>
++#include <pulse/timeval.h>
++#include <pulse/xmalloc.h>
++
++#include <pulsecore/i18n.h>
++#include <pulsecore/macro.h>
++#include <pulsecore/sink.h>
++#include <pulsecore/module.h>
++#include <pulsecore/core-util.h>
++#include <pulsecore/modargs.h>
++#include <pulsecore/log.h>
++#include <pulsecore/thread.h>
++#include <pulsecore/thread-mq.h>
++#include <pulsecore/rtpoll.h>
++
++#include <android/versioning.h>
++#undef __INTRODUCED_IN
++#define __INTRODUCED_IN(api_level)
++#include <aaudio/AAudio.h>
++
++PA_MODULE_AUTHOR("Tom Yan");
++PA_MODULE_DESCRIPTION("Android AAudio sink");
++PA_MODULE_VERSION(PACKAGE_VERSION);
++PA_MODULE_LOAD_ONCE(false);
++PA_MODULE_USAGE(
++    "sink_name=<name for the sink> "
++    "sink_properties=<properties for the sink> "
++    "rate=<sampling rate> "
++    "latency=<buffer length> "
++    "pm=<performance mode> "
++    "no_close_hack=<avoid segfault caused by AAudioStream_close()> "
++);
++
++#define DEFAULT_SINK_NAME "AAudio sink"
++
++enum {
++    SINK_MESSAGE_RENDER = PA_SINK_MESSAGE_MAX,
++    SINK_MESSAGE_OPEN_STREAM
++};
++
++struct userdata {
++    pa_core *core;
++    pa_module *module;
++    pa_sink *sink;
++
++    pa_thread *thread;
++    pa_thread_mq thread_mq;
++    pa_rtpoll *rtpoll;
++    pa_rtpoll_item *rtpoll_item;
++    pa_asyncmsgq *aaudio_msgq;
++
++    uint32_t rate;
++    uint32_t latency;
++    uint32_t pm;
++    bool no_close;
++
++    pa_memchunk memchunk;
++    size_t frame_size;
++
++    AAudioStreamBuilder *builder;
++    AAudioStream *stream;
++    pa_sample_spec ss;
++};
++
++static const char* const valid_modargs[] = {
++    "sink_name",
++    "sink_properties",
++    "rate",
++    "latency",
++    "pm",
++    "no_close_hack",
++    NULL
++};
++
++static int process_render(struct userdata *u, void *audioData, int64_t numFrames) {
++    pa_assert(u->sink->thread_info.state != PA_SINK_INIT);
++
++    /* a render message could be queued after a set state message */
++    if (!PA_SINK_IS_LINKED(u->sink->thread_info.state))
++        return AAUDIO_CALLBACK_RESULT_STOP;
++
++    u->memchunk.memblock = pa_memblock_new_fixed(u->core->mempool, audioData, u->frame_size * numFrames, false);
++    u->memchunk.length = pa_memblock_get_length(u->memchunk.memblock);
++    pa_sink_render_into_full(u->sink, &u->memchunk);
++    pa_memblock_unref_fixed(u->memchunk.memblock);
++
++    return AAUDIO_CALLBACK_RESULT_CONTINUE;
++}
++
++static aaudio_data_callback_result_t data_callback(AAudioStream *stream, void *userdata, void *audioData, int32_t numFrames) {
++    struct userdata* u = userdata;
++
++    pa_assert(u);
++
++    return pa_asyncmsgq_send(u->aaudio_msgq, PA_MSGOBJECT(u->sink), SINK_MESSAGE_RENDER, audioData, numFrames, NULL);
++}
++
++static void error_callback(AAudioStream *stream, void *userdata, aaudio_result_t error) {
++    struct userdata* u = userdata;
++
++    pa_assert(u);
++
++    while (u->sink->state == PA_SINK_INIT);
++
++    if (error != AAUDIO_ERROR_DISCONNECTED)
++        pa_log_debug("AAudio error: %d", error);
++
++    pa_sink_suspend(u->sink, true, PA_SUSPEND_UNAVAILABLE);
++    pa_sink_suspend(u->sink, false, PA_SUSPEND_UNAVAILABLE);
++}
++
++#define CHK(stmt) { \
++    aaudio_result_t res = stmt; \
++    if (res != AAUDIO_OK) { \
++        fprintf(stderr, "error %d at %s:%d\n", res, __FILE__, __LINE__); \
++        goto fail; \
++    } \
++}
++
++static int pa_open_aaudio_stream(struct userdata *u)
++{
++    bool want_float;
++    aaudio_format_t format;
++    pa_sample_spec *ss = &u->ss;
++
++    CHK(AAudio_createStreamBuilder(&u->builder));
++    AAudioStreamBuilder_setPerformanceMode(u->builder, AAUDIO_PERFORMANCE_MODE_NONE + u->pm);
++    AAudioStreamBuilder_setDataCallback(u->builder, data_callback, u);
++    AAudioStreamBuilder_setErrorCallback(u->builder, error_callback, u);
++
++    want_float = ss->format > PA_SAMPLE_S16BE;
++    ss->format = want_float ? PA_SAMPLE_FLOAT32LE : PA_SAMPLE_S16LE;
++    format = want_float ? AAUDIO_FORMAT_PCM_FLOAT : AAUDIO_FORMAT_PCM_I16;
++    AAudioStreamBuilder_setFormat(u->builder, format);
++
++    if (u->rate)
++        AAudioStreamBuilder_setSampleRate(u->builder, u->rate);
++
++    AAudioStreamBuilder_setChannelCount(u->builder, ss->channels);
++
++    CHK(AAudioStreamBuilder_openStream(u->builder, &u->stream));
++    CHK(AAudioStreamBuilder_delete(u->builder));
++
++    ss->rate = AAudioStream_getSampleRate(u->stream);
++    u->frame_size = pa_frame_size(ss);
++
++    return 0;
++
++fail:
++    return -1;
++}
++
++#undef CHK
++
++static pa_usec_t get_latency(struct userdata *u) {
++    if(!u->latency) {
++        return PA_USEC_PER_SEC * AAudioStream_getBufferSizeInFrames(u->stream) / u->ss.rate / 2;
++    } else {
++        return PA_USEC_PER_MSEC * u->latency;
++    }
++}
++
++static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offset, pa_memchunk *memchunk) {
++    struct userdata* u = PA_SINK(o)->userdata;
++
++    pa_assert(u);
++
++    switch (code) {
++        case SINK_MESSAGE_RENDER:
++            return process_render(u, data, offset);
++        case SINK_MESSAGE_OPEN_STREAM:
++            if (pa_open_aaudio_stream(u) < 0) {
++                pa_log("pa_open_aaudio_stream() failed.");
++                return -1;
++            }
++            code = PA_SINK_MESSAGE_SET_FIXED_LATENCY;
++            offset = get_latency(u);
++            break;
++    }
++
++    return pa_sink_process_msg(o, code, data, offset, memchunk);
++};
++
++static int state_func_main(pa_sink *s, pa_sink_state_t state, pa_suspend_cause_t suspend_cause) {
++    struct userdata *u = s->userdata;
++    uint32_t idx;
++    pa_sink_input *i;
++    pa_idxset *inputs;
++
++    if (s->state == PA_SINK_SUSPENDED && PA_SINK_IS_OPENED(state)) {
++        if (pa_asyncmsgq_send(u->aaudio_msgq, PA_MSGOBJECT(u->sink), SINK_MESSAGE_OPEN_STREAM, NULL, 0, NULL) < 0)
++            return -1;
++
++        inputs = pa_idxset_copy(s->inputs, NULL);
++        PA_IDXSET_FOREACH(i, inputs, idx) {
++            if (i->state == PA_SINK_INPUT_RUNNING) {
++                pa_sink_input_cork(i, true);
++            } else {
++                pa_idxset_remove_by_index(inputs, idx);
++            }
++        }
++
++        s->alternate_sample_rate = u->ss.rate;
++        pa_sink_reconfigure(s, &u->ss, false);
++        s->default_sample_rate = u->ss.rate;
++
++        /* Avoid infinite loop triggered if uncork in this case */
++        if (s->suspend_cause == PA_SUSPEND_IDLE)
++            pa_sink_suspend(u->sink, true, PA_SUSPEND_UNAVAILABLE);
++
++        PA_IDXSET_FOREACH(i, inputs, idx) pa_sink_input_cork(i, false);
++        pa_idxset_free(inputs, NULL);
++    }
++    return 0;
++}
++
++static int state_func_io(pa_sink *s, pa_sink_state_t state, pa_suspend_cause_t suspend_cause) {
++    struct userdata *u = s->userdata;
++
++    if (PA_SINK_IS_OPENED(s->thread_info.state) &&
++        (state == PA_SINK_SUSPENDED || state == PA_SINK_UNLINKED)) {
++        if (!u->no_close)
++            AAudioStream_close(u->stream);
++        else
++            AAudioStream_requestStop(u->stream);
++    } else if (s->thread_info.state == PA_SINK_SUSPENDED && PA_SINK_IS_OPENED(state)) {
++        if (AAudioStream_requestStart(u->stream) < 0)
++            pa_log("AAudioStream_requestStart() failed.");
++    } else if (s->thread_info.state == PA_SINK_INIT && PA_SINK_IS_LINKED(state)) {
++        if (PA_SINK_IS_OPENED(state)) {
++            if (AAudioStream_requestStart(u->stream) < 0)
++                pa_log("AAudioStream_requestStart() failed.");
++        } else {
++            if (!u->no_close)
++                AAudioStream_close(u->stream);
++        }
++    }
++    return 0;
++}
++
++static void reconfigure_func(pa_sink *s, pa_sample_spec *ss, bool passthrough) {
++    s->sample_spec.rate = ss->rate;
++}
++
++static void thread_func(void *userdata) {
++    struct userdata *u = userdata;
++
++    pa_assert(u);
++
++    pa_log_debug("Thread starting up");
++    pa_thread_mq_install(&u->thread_mq);
++
++    for (;;) {
++        int ret;
++
++        if (PA_UNLIKELY(u->sink->thread_info.rewind_requested))
++          pa_sink_process_rewind(u->sink, 0);
++
++        if ((ret = pa_rtpoll_run(u->rtpoll)) < 0)
++            goto fail;
++
++        if (ret == 0)
++            goto finish;
++    }
++
++fail:
++    /* If this was no regular exit from the loop we have to continue
++     * processing messages until we received PA_MESSAGE_SHUTDOWN */
++    pa_asyncmsgq_post(u->thread_mq.outq, PA_MSGOBJECT(u->core), PA_CORE_MESSAGE_UNLOAD_MODULE, u->module, 0, NULL, NULL);
++    pa_asyncmsgq_wait_for(u->thread_mq.inq, PA_MESSAGE_SHUTDOWN);
++
++finish:
++    pa_log_debug("Thread shutting down");
++}
++
++int pa__init(pa_module*m) {
++    struct userdata *u = NULL;
++    pa_channel_map map;
++    pa_modargs *ma = NULL;
++    pa_sink_new_data data;
++
++    pa_assert(m);
++
++    m->userdata = u = pa_xnew0(struct userdata, 1);
++
++    u->core = m->core;
++    u->module = m;
++    u->rtpoll = pa_rtpoll_new();
++
++    if (pa_thread_mq_init(&u->thread_mq, m->core->mainloop, u->rtpoll) < 0) {
++        pa_log("pa_thread_mq_init() failed.");
++        goto fail;
++    }
++
++    /* The queue linking the AudioTrack thread and our RT thread */
++    u->aaudio_msgq = pa_asyncmsgq_new(0);
++    if (!u->aaudio_msgq) {
++        pa_log("pa_asyncmsgq_new() failed.");
++        goto fail;
++    }
++
++    /* The msgq from the AudioTrack RT thread should have an even higher
++     * priority than the normal message queues, to match the guarantee
++     * all other drivers make: supplying the audio device with data is
++     * the top priority -- and as long as that is possible we don't do
++     * anything else */
++    u->rtpoll_item = pa_rtpoll_item_new_asyncmsgq_read(u->rtpoll, PA_RTPOLL_EARLY-1, u->aaudio_msgq);
++
++    if (!(ma = pa_modargs_new(m->argument, valid_modargs))) {
++        pa_log("Failed to parse module arguments.");
++        goto fail;
++    }
++
++    u->ss = m->core->default_sample_spec;
++    map = m->core->default_channel_map;
++    pa_modargs_get_sample_rate(ma, &u->rate);
++
++    pa_modargs_get_value_u32(ma, "latency", &u->latency);
++
++    u->pm = AAUDIO_PERFORMANCE_MODE_LOW_LATENCY - AAUDIO_PERFORMANCE_MODE_NONE;
++    pa_modargs_get_value_u32(ma, "pm", &u->pm);
++
++    pa_modargs_get_value_boolean(ma, "no_close_hack", &u->no_close);
++
++    if (pa_open_aaudio_stream(u) < 0)
++        goto fail;
++
++    pa_sink_new_data_init(&data);
++    data.driver = __FILE__;
++    data.module = m;
++    pa_sink_new_data_set_name(&data, pa_modargs_get_value(ma, "sink_name", DEFAULT_SINK_NAME));
++    pa_sink_new_data_set_sample_spec(&data, &u->ss);
++    pa_sink_new_data_set_alternate_sample_rate(&data, u->ss.rate);
++    pa_sink_new_data_set_channel_map(&data, &map);
++    pa_proplist_sets(data.proplist, PA_PROP_DEVICE_DESCRIPTION, _("AAudio Output"));
++    pa_proplist_sets(data.proplist, PA_PROP_DEVICE_CLASS, "abstract");
++
++    if (pa_modargs_get_proplist(ma, "sink_properties", data.proplist, PA_UPDATE_REPLACE) < 0) {
++        pa_log("Invalid properties");
++        pa_sink_new_data_done(&data);
++        goto fail;
++    }
++
++    u->sink = pa_sink_new(m->core, &data, 0);
++    pa_sink_new_data_done(&data);
++
++    if (!u->sink) {
++        pa_log("Failed to create sink object.");
++        goto fail;
++    }
++
++    u->sink->parent.process_msg = sink_process_msg;
++    u->sink->set_state_in_main_thread = state_func_main;
++    u->sink->set_state_in_io_thread = state_func_io;
++    u->sink->reconfigure = reconfigure_func;
++    u->sink->userdata = u;
++
++    pa_sink_set_asyncmsgq(u->sink, u->thread_mq.inq);
++    pa_sink_set_rtpoll(u->sink, u->rtpoll);
++    pa_sink_set_fixed_latency(u->sink, get_latency(u));
++
++    if (!(u->thread = pa_thread_new("aaudio-sink", thread_func, u))) {
++        pa_log("Failed to create thread.");
++        goto fail;
++    }
++
++    pa_sink_put(u->sink);
++
++    pa_modargs_free(ma);
++
++    return 0;
++
++fail:
++    if (ma)
++        pa_modargs_free(ma);
++
++    pa__done(m);
++
++    return -1;
++}
++
++int pa__get_n_used(pa_module *m) {
++    struct userdata *u;
++
++    pa_assert(m);
++    pa_assert_se(u = m->userdata);
++
++    return pa_sink_linked_by(u->sink);
++}
++
++void pa__done(pa_module*m) {
++    struct userdata *u;
++
++    pa_assert(m);
++
++    if (!(u = m->userdata))
++        return;
++
++    if (u->sink)
++        pa_sink_unlink(u->sink);
++
++    if (u->thread) {
++        pa_asyncmsgq_send(u->thread_mq.inq, NULL, PA_MESSAGE_SHUTDOWN, NULL, 0, NULL);
++        pa_thread_free(u->thread);
++    }
++
++    pa_thread_mq_done(&u->thread_mq);
++
++    if (u->sink)
++        pa_sink_unref(u->sink);
++
++    if (u->rtpoll_item)
++        pa_rtpoll_item_free(u->rtpoll_item);
++
++    if (u->aaudio_msgq)
++        pa_asyncmsgq_unref(u->aaudio_msgq);
++
++    if (u->rtpoll)
++        pa_rtpoll_free(u->rtpoll);
++
++    pa_xfree(u);
++}
+diff -uNr 32-pulseaudio/src/modules/echo-cancel/module-echo-cancel.c 32-pulseaudio.mod/src/modules/echo-cancel/module-echo-cancel.c
+--- 32-pulseaudio/src/modules/echo-cancel/module-echo-cancel.c	2024-01-12 14:22:09.000000000 -0300
++++ 32-pulseaudio.mod/src/modules/echo-cancel/module-echo-cancel.c	2024-03-02 23:14:31.246439000 -0300
+@@ -2067,18 +2067,18 @@
+     }
+ 
+     if (u->save_aec) {
+-        pa_log("Creating AEC files in /tmp");
+-        u->captured_file = fopen("/tmp/aec_rec.sw", "wb");
++        pa_log("Creating AEC files in /data/data/com.micewine.emu/files/usr/tmp");
++        u->captured_file = fopen("/data/data/com.micewine.emu/files/usr/tmp/aec_rec.sw", "wb");
+         if (u->captured_file == NULL)
+             perror ("fopen failed");
+-        u->played_file = fopen("/tmp/aec_play.sw", "wb");
++        u->played_file = fopen("/data/data/com.micewine.emu/files/usr/tmp/aec_play.sw", "wb");
+         if (u->played_file == NULL)
+             perror ("fopen failed");
+-        u->canceled_file = fopen("/tmp/aec_out.sw", "wb");
++        u->canceled_file = fopen("/data/data/com.micewine.emu/files/usr/tmp/aec_out.sw", "wb");
+         if (u->canceled_file == NULL)
+             perror ("fopen failed");
+         if (u->ec->params.drift_compensation) {
+-            u->drift_file = fopen("/tmp/aec_drift.txt", "w");
++            u->drift_file = fopen("/data/data/com.micewine.emu/files/usr/tmp/aec_drift.txt", "w");
+             if (u->drift_file == NULL)
+                 perror ("fopen failed");
+         }
+diff -uNr 32-pulseaudio/src/modules/meson.build 32-pulseaudio.mod/src/modules/meson.build
+--- 32-pulseaudio/src/modules/meson.build	2024-01-12 14:22:09.000000000 -0300
++++ 32-pulseaudio.mod/src/modules/meson.build	2024-03-02 23:14:31.246481000 -0300
+@@ -58,6 +58,9 @@
+   [ 'module-virtual-sink', 'module-virtual-sink.c' ],
+   [ 'module-virtual-source', 'module-virtual-source.c' ],
+   [ 'module-volume-restore', 'module-volume-restore.c' ],
++  [ 'module-sles-sink', 'sles/module-sles-sink.c', [], [], [sles_dep] ],
++  [ 'module-sles-source', 'sles/module-sles-source.c', [], [], [sles_dep] ],
++  [ 'module-aaudio-sink', 'aaudio/module-aaudio-sink.c', [], [], [aaudio_dep] ],
+ ]
+ 
+ if host_machine.system() == 'windows'
+diff -uNr 32-pulseaudio/src/modules/module-pipe-source.c 32-pulseaudio.mod/src/modules/module-pipe-source.c
+--- 32-pulseaudio/src/modules/module-pipe-source.c	2024-01-12 14:22:09.000000000 -0300
++++ 32-pulseaudio.mod/src/modules/module-pipe-source.c	2024-03-02 23:14:31.246516000 -0300
+@@ -59,7 +59,7 @@
+         "channels=<number of channels> "
+         "channel_map=<channel map>");
+ 
+-#define DEFAULT_FILE_NAME "/tmp/music.input"
++#define DEFAULT_FILE_NAME "/data/data/com.micewine.emu/files/usr/tmp/music.input"
+ #define DEFAULT_SOURCE_NAME "fifo_input"
+ 
+ struct userdata {
+diff -uNr 32-pulseaudio/src/modules/module-protocol-stub.c 32-pulseaudio.mod/src/modules/module-protocol-stub.c
+--- 32-pulseaudio/src/modules/module-protocol-stub.c	2024-01-12 14:22:09.000000000 -0300
++++ 32-pulseaudio.mod/src/modules/module-protocol-stub.c	2024-03-02 23:14:31.246553000 -0300
+@@ -303,13 +303,13 @@
+     /* Windows doesn't support getuid(), so we ignore the per-user Esound socket compile flag.
+      * Moreover, Esound Unix sockets haven't been supported on Windows historically. */
+ #    if defined(USE_PER_USER_ESOUND_SOCKET) && !defined(OS_IS_WIN32)
+-    u->socket_path = pa_sprintf_malloc("/tmp/.esd-%lu/socket", (unsigned long) getuid());
++    u->socket_path = pa_sprintf_malloc("/data/data/com.micewine.emu/files/usr/tmp/.esd-%lu/socket", (unsigned long) getuid());
+ #    else
+-    u->socket_path = pa_xstrdup("/tmp/.esd/socket");
++    u->socket_path = pa_xstrdup("/data/data/com.micewine.emu/files/usr/tmp/.esd/socket");
+ #    endif
+ 
+     /* This socket doesn't reside in our own runtime dir but in
+-     * /tmp/.esd/, hence we have to create the dir first */
++     * /data/data/com.micewine.emu/files/usr/tmp/.esd/, hence we have to create the dir first */
+ 
+     if (pa_make_secure_parent_dir(u->socket_path, pa_in_system_mode() ? 0755U : 0700U, (uid_t)-1, (gid_t)-1, false) < 0) {
+         pa_log("Failed to create socket directory '%s': %s\n", u->socket_path, pa_cstrerror(errno));
+diff -uNr 32-pulseaudio/src/modules/sles/module-sles-sink.c 32-pulseaudio.mod/src/modules/sles/module-sles-sink.c
+--- 32-pulseaudio/src/modules/sles/module-sles-sink.c	1969-12-31 21:00:00.000000000 -0300
++++ 32-pulseaudio.mod/src/modules/sles/module-sles-sink.c	2024-03-02 23:14:31.246630000 -0300
+@@ -0,0 +1,661 @@
++/***
++  This file is part of PulseAudio.
++
++  Copyright 2004-2008 Lennart Poettering
++
++  PulseAudio is free software; you can redistribute it and/or modify
++  it under the terms of the GNU Lesser General Public License as published
++  by the Free Software Foundation; either version 2.1 of the License,
++  or (at your option) any later version.
++
++  PulseAudio is distributed in the hope that it will be useful, but
++  WITHOUT ANY WARRANTY; without even the implied warranty of
++  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++  General Public License for more details.
++
++  You should have received a copy of the GNU Lesser General Public License
++  along with PulseAudio; if not, see <http://www.gnu.org/licenses/>.
++***/
++
++#ifdef HAVE_CONFIG_H
++#include <config.h>
++#endif
++
++#include <errno.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <unistd.h>
++
++#include <pulse/rtclock.h>
++#include <pulse/timeval.h>
++#include <pulse/xmalloc.h>
++
++#include <pulsecore/core-util.h>
++#include <pulsecore/log.h>
++#include <pulsecore/macro.h>
++#include <pulsecore/modargs.h>
++#include <pulsecore/module.h>
++#include <pulsecore/rtpoll.h>
++#include <pulsecore/sink.h>
++#include <pulsecore/thread-mq.h>
++#include <pulsecore/thread.h>
++
++#include <SLES/OpenSLES.h>
++#include <SLES/OpenSLES_Android.h>
++
++PA_MODULE_AUTHOR("Lennart Poettering, Nathan Martynov, Patrick Gaskin");
++PA_MODULE_DESCRIPTION("Android OpenSL ES sink");
++PA_MODULE_VERSION(PACKAGE_VERSION);
++PA_MODULE_LOAD_ONCE(false);
++PA_MODULE_USAGE(
++    "sink_name=<name for the sink> "
++    "sink_properties=<properties for the sink> "
++    "latency=<buffer length> "
++    "format=<sample format> "
++    "channels=<number of channels> "
++    "rate=<sample rate> "
++    "channel_map=<channel map> "
++);
++
++#define DEFAULT_SINK_NAME "OpenSL ES sink"
++
++enum { SINK_MESSAGE_RENDER = PA_SINK_MESSAGE_MAX };
++
++struct userdata {
++    pa_core *core;
++    pa_module *module;
++    pa_sink *sink;
++
++    pa_thread *thread;
++    pa_thread_mq thread_mq;
++    pa_rtpoll *rtpoll;
++    pa_rtpoll_item *rtpoll_item;
++    pa_asyncmsgq *sles_msgq;
++
++    pa_usec_t block_usec;
++
++    pa_memchunk memchunk;
++    void *buf;
++    size_t nbytes;
++
++    SLObjectItf EngineObject;
++    SLObjectItf OutputMixObject;
++    SLObjectItf PlayerObject;
++
++    SLEngineItf EngineItf;
++    SLPlayItf PlayItf;
++    SLBufferQueueItf BufferQueueItf;
++};
++
++static const char* const valid_modargs[] = {
++    "sink_name",
++    "sink_properties",
++    "latency",
++    "format",
++    "channels",
++    "rate",
++    "channel_map",
++    NULL
++};
++
++static void process_render(void *userdata) {
++    struct userdata* u = userdata;
++    pa_assert(u);
++
++    /* a render message could be queued after a set state message */
++    if (!PA_SINK_IS_LINKED(u->sink->thread_info.state))
++        return;
++
++    u->memchunk.length = u->nbytes;
++    pa_sink_render_into(u->sink, &u->memchunk);
++    (*u->BufferQueueItf)->Enqueue(u->BufferQueueItf, u->buf, u->memchunk.length);
++}
++
++static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offset, pa_memchunk *memchunk) {
++    switch (code) {
++        case SINK_MESSAGE_RENDER:
++            process_render(data);
++            return 0;
++        case PA_SINK_MESSAGE_GET_LATENCY:
++            code = PA_SINK_MESSAGE_GET_FIXED_LATENCY; // FIXME: is there a way to get the real latency?
++            break;
++    }
++
++    return pa_sink_process_msg(o, code, data, offset, memchunk);
++};
++
++static void sles_callback(SLBufferQueueItf bqPlayerBufferQueue, void *userdata) {
++    struct userdata* u = userdata;
++    pa_assert(u);
++    pa_assert_se(pa_asyncmsgq_send(u->sles_msgq, PA_MSGOBJECT(u->sink), SINK_MESSAGE_RENDER, u, 0, NULL) == 0);
++}
++
++// pa_channel_position_to_sl_speaker converts a PulseAudio channel position to
++// the equivalent OpenSL ES speaker. If the channel does not have a OpenSL ES
++// equivalent or is PA_CHANNEL_POSITION_INVALID, -1 is returned.
++//
++// https://freedesktop.org/software/pulseaudio/doxygen/channelmap_8h.html#af1cbe2738487c74f99e613779bd34bf2
++// https://www.khronos.org/files/opensl_es_1_0_provisional_specs.pdf#9.2.47
++static SLuint32 pa_channel_position_to_sl_speaker(enum pa_channel_position x) {
++    static const SLuint32 pa_channel_position_sl_speaker[] = {
++        // note: all SL_SPEAKER values != 0, and the empty array elements will be initialized to 0
++        [PA_CHANNEL_POSITION_MONO]                  = SL_SPEAKER_FRONT_CENTER,
++        [PA_CHANNEL_POSITION_FRONT_LEFT]            = SL_SPEAKER_FRONT_LEFT,
++        [PA_CHANNEL_POSITION_FRONT_RIGHT]           = SL_SPEAKER_FRONT_RIGHT,
++        [PA_CHANNEL_POSITION_FRONT_CENTER]          = SL_SPEAKER_FRONT_CENTER,
++        [PA_CHANNEL_POSITION_REAR_CENTER]           = SL_SPEAKER_BACK_CENTER,
++        [PA_CHANNEL_POSITION_REAR_LEFT]             = SL_SPEAKER_BACK_LEFT,
++        [PA_CHANNEL_POSITION_REAR_RIGHT]            = SL_SPEAKER_BACK_RIGHT,
++        [PA_CHANNEL_POSITION_LFE]                   = SL_SPEAKER_LOW_FREQUENCY,
++        [PA_CHANNEL_POSITION_FRONT_LEFT_OF_CENTER]  = SL_SPEAKER_FRONT_LEFT_OF_CENTER,
++        [PA_CHANNEL_POSITION_FRONT_RIGHT_OF_CENTER] = SL_SPEAKER_FRONT_RIGHT_OF_CENTER,
++        [PA_CHANNEL_POSITION_SIDE_LEFT]             = SL_SPEAKER_SIDE_LEFT,
++        [PA_CHANNEL_POSITION_SIDE_RIGHT]            = SL_SPEAKER_SIDE_RIGHT,
++        [PA_CHANNEL_POSITION_TOP_CENTER]            = SL_SPEAKER_TOP_CENTER,
++        [PA_CHANNEL_POSITION_TOP_FRONT_LEFT]        = SL_SPEAKER_TOP_FRONT_LEFT,
++        [PA_CHANNEL_POSITION_TOP_FRONT_RIGHT]       = SL_SPEAKER_TOP_FRONT_RIGHT,
++        [PA_CHANNEL_POSITION_TOP_FRONT_CENTER]      = SL_SPEAKER_TOP_FRONT_CENTER,
++        [PA_CHANNEL_POSITION_TOP_REAR_LEFT]         = SL_SPEAKER_TOP_BACK_LEFT,
++        [PA_CHANNEL_POSITION_TOP_REAR_RIGHT]        = SL_SPEAKER_TOP_BACK_RIGHT,
++        [PA_CHANNEL_POSITION_TOP_REAR_CENTER]       = SL_SPEAKER_TOP_BACK_CENTER,
++    };
++    pa_assert(x < PA_CHANNEL_POSITION_MAX);
++    return pa_channel_position_sl_speaker[x] ?: (SLuint32)(-1);
++}
++
++// sl_speaker_to_pa_channel_position converts an OpenSL ES speaker to the
++// equivalent PulseAudio channel position. If the channel does not have a PA
++// equivalent or is invalid, PA_CHANNEL_POSITION_INVALID is returned. Note that
++// this function does not handle the edge case where (SL_SPEAKER_FRONT_CENTER &&
++// channels == 1) is PA_CHANNEL_POSITION_MONO.
++//
++// https://freedesktop.org/software/pulseaudio/doxygen/channelmap_8h.html#af1cbe2738487c74f99e613779bd34bf2
++// https://www.khronos.org/files/opensl_es_1_0_provisional_specs.pdf#9.2.47
++static enum pa_channel_position sl_speaker_to_pa_channel_position(SLuint32 x) {
++    for (enum pa_channel_position pa = 0; pa < PA_CHANNEL_POSITION_MAX; pa++) {
++        if (pa != PA_CHANNEL_POSITION_MONO && pa_channel_position_to_sl_speaker(pa) == x) {
++            return pa;
++        }
++    }
++    return -1;
++}
++
++// pa_channel_map_to_sl_channel_mask converts a PulseAudio channel map to an
++// OpenSL ES channel mask. If an unknown or unsupported channel position is
++// found, -1 is returned. If map is NULL, 0 is returned.
++//
++// https://freedesktop.org/software/pulseaudio/doxygen/channelmap_8h.html#af1cbe2738487c74f99e613779bd34bf2
++// https://www.khronos.org/files/opensl_es_1_0_provisional_specs.pdf#9.1.8
++static SLuint32 pa_channel_map_to_sl_channel_mask(pa_channel_map *map) {
++    SLuint32 mask = 0, cur = 0, last = 0;
++    if (!map)
++        return 0;
++    for (int i = 0; i < map->channels; i++) {
++        if (map->map[i] == PA_CHANNEL_POSITION_INVALID) {
++            pa_log("Invalid channel found in channel map at position %d.", i);
++            return -1;
++        }
++        if ((cur = pa_channel_position_to_sl_speaker(map->map[i])) == -1) {
++            pa_log("No OpenSL ES equivalent for %s.", pa_channel_position_to_string(map->map[i]));;
++            return -1;
++        }
++        if (cur < last)
++            pa_log("Warning: Channel map does not match the OpenSL ES speaker order (%s should be before %s).", pa_channel_position_to_string(cur), pa_channel_position_to_string(last));
++        mask |= last = cur;
++    }
++    return mask;
++}
++
++// sl_channel_mask_to_pa_channel_map converts an OpenSL ES channel mask to a
++// PulseAudio channel map by sorting the channels in order. On success, a 0 is
++// returned. If an unknown channel is present or there are too many channels, -1
++// is returned and rmap is left untouched.
++//
++// https://www.khronos.org/files/opensl_es_1_0_provisional_specs.pdf#9.1.8
++static int sl_channel_mask_to_pa_channel_map(SLuint32 mask, pa_channel_map *rmap) {
++    static const SLuint32 speakers[] = {
++        SL_SPEAKER_FRONT_LEFT, SL_SPEAKER_FRONT_RIGHT, SL_SPEAKER_FRONT_CENTER,
++        SL_SPEAKER_LOW_FREQUENCY, SL_SPEAKER_BACK_LEFT, SL_SPEAKER_BACK_RIGHT,
++        SL_SPEAKER_FRONT_LEFT_OF_CENTER, SL_SPEAKER_FRONT_RIGHT_OF_CENTER,
++        SL_SPEAKER_BACK_CENTER, SL_SPEAKER_SIDE_LEFT, SL_SPEAKER_SIDE_RIGHT,
++        SL_SPEAKER_TOP_CENTER, SL_SPEAKER_TOP_FRONT_LEFT,
++        SL_SPEAKER_TOP_FRONT_CENTER, SL_SPEAKER_TOP_FRONT_RIGHT,
++        SL_SPEAKER_TOP_BACK_LEFT, SL_SPEAKER_TOP_BACK_CENTER,
++        SL_SPEAKER_TOP_BACK_RIGHT,
++    };
++    pa_channel_map map = {0};
++    pa_assert(rmap);
++    if (mask == SL_SPEAKER_FRONT_CENTER) {
++        rmap->channels = 1;
++        rmap->map[0] = PA_CHANNEL_POSITION_MONO;
++        return 0;
++    }
++    for (size_t i = 0; i < sizeof(speakers)/sizeof(*speakers); i++) {
++        pa_assert(i == 0 || speakers[i] > speakers[i-1]);
++        if (mask & speakers[i]) {
++            mask ^= speakers[i];
++            pa_assert((map.map[map.channels] = sl_speaker_to_pa_channel_position(speakers[i])) != -1);
++            if (++map.channels == PA_CHANNELS_MAX) {
++                pa_log("Too many channels in sl mask");
++                return -1;
++            }
++        }
++    }
++    if (mask) {
++        pa_log("Unknown channel in sl mask (left: %u)", mask);
++        return -1;
++    }
++    *rmap = map;
++    return 0;
++}
++
++// sl_guess_channel_mask guesses the speakers used for a certain number of
++// channels. It uses the same logic as Chromium and works correctly on most
++// devices. If the number of channels is unsupported, -1 is returned.
++//
++// https://source.chromium.org/chromium/chromium/src/+/master:media/audio/android/opensles_util.cc;l=23-50;drc=6ae2127739229f68ed7cd466012db4c6e5e6bbcd
++// https://github.com/google/oboe/blob/52e2163781c8f485f5e67b081c94043a6e8dff15/src/opensles/AudioOutputStreamOpenSLES.cpp#L69-L110
++// https://www2.iis.fraunhofer.de/AAC/multichannel.html (for testing)
++// https://www.youtube.com/watch?v=MkVyFZi8ClE (also good for testing)
++static SLuint32 sl_guess_channel_mask(int channels) {
++    #define SL_ANDROID_SPEAKER_QUAD (SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT | SL_SPEAKER_BACK_LEFT | SL_SPEAKER_BACK_RIGHT)
++    #define SL_ANDROID_SPEAKER_5DOT1 (SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT | SL_SPEAKER_FRONT_CENTER | SL_SPEAKER_LOW_FREQUENCY | SL_SPEAKER_BACK_LEFT | SL_SPEAKER_BACK_RIGHT)
++    #define SL_ANDROID_SPEAKER_7DOT1 (SL_ANDROID_SPEAKER_5DOT1 | SL_SPEAKER_SIDE_LEFT | SL_SPEAKER_SIDE_RIGHT)
++    if (channels > 2)
++        pa_log("Warning: Guessing channel layout for > 2 channels, order may be be incorrect.");
++    switch (channels) {
++        case 1: return SL_SPEAKER_FRONT_CENTER;
++        case 2: return SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT;
++        case 3: return SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT | SL_SPEAKER_FRONT_CENTER;
++        case 4: return SL_ANDROID_SPEAKER_QUAD;
++        case 5: return SL_ANDROID_SPEAKER_QUAD | SL_SPEAKER_FRONT_CENTER;
++        case 6: return SL_ANDROID_SPEAKER_5DOT1;
++        case 7: return SL_ANDROID_SPEAKER_5DOT1 | SL_SPEAKER_BACK_CENTER;
++        case 8: return SL_ANDROID_SPEAKER_7DOT1;
++        default:
++            pa_log("No guess for %d channels.", channels);
++            return -1;
++    }
++    #undef SL_ANDROID_SPEAKER_7DOT1
++    #undef SL_ANDROID_SPEAKER_5DOT1
++    #undef SL_ANDROID_SPEAKER_QUAD
++}
++
++static int pa_sample_spec_to_sl_format(pa_sample_spec *ss, pa_channel_map *map, SLAndroidDataFormat_PCM_EX *sl) {
++    pa_assert(ss);
++    pa_assert(sl);
++
++    *sl = (SLAndroidDataFormat_PCM_EX){0};
++
++    sl->sampleRate = ss->rate * 1000; // Hz to mHz
++
++    switch (ss->format) {
++        case PA_SAMPLE_S16LE: // fallthrough
++        case PA_SAMPLE_S24LE: // fallthrough
++        case PA_SAMPLE_S32LE: // fallthrough
++        case PA_SAMPLE_S16BE: // fallthrough
++        case PA_SAMPLE_S24BE: // fallthrough
++        case PA_SAMPLE_S32BE:
++            sl->formatType     = SL_DATAFORMAT_PCM;
++            sl->representation = SL_ANDROID_PCM_REPRESENTATION_SIGNED_INT;
++            break;
++        case PA_SAMPLE_FLOAT32LE: // fallthrough
++        case PA_SAMPLE_FLOAT32BE:
++            sl->formatType     = SL_ANDROID_DATAFORMAT_PCM_EX;
++            sl->representation = SL_ANDROID_PCM_REPRESENTATION_FLOAT;
++            break;
++        default:
++            pa_log_error("Unsupported sample format: only s16/24/32 and f32 formats are supported.");
++            return 1;
++    }
++    sl->endianness = pa_sample_format_is_le(ss->format)
++        ? SL_BYTEORDER_LITTLEENDIAN
++        : SL_BYTEORDER_BIGENDIAN;
++    sl->bitsPerSample = sl->containerSize = pa_sample_size(ss) * 8;
++    sl->sampleRate = ss->rate * 1000; // Hz to mHz
++
++    if (map) {
++        pa_assert((sl->numChannels = ss->channels) == map->channels);
++        if ((sl->channelMask = pa_channel_map_to_sl_channel_mask(map)) == (SLuint32)(-1)) {
++            pa_log_error("Unsupported sample format: no sl equivalent for channel map.");
++            return 1;
++        }
++    } else {
++        if ((sl->channelMask = sl_guess_channel_mask((sl->numChannels = ss->channels))) == (SLuint32)(-1)) {
++            pa_log_error("Unsupported sample format: could not guess channel mask for provided number of channels.");
++            return 1;
++        }
++    }
++
++    return 0;
++}
++
++// pa_channel_map_init_sles is pa_channel_map_init from PulseAudio, but modified
++// to use sl_guess_channel_mask.
++//
++// https://github.com/pulseaudio/pulseaudio/blob/7f4d7fcf5f6407913e50604c6195d0d5356195b1/src/pulse/channelmap.c#L165-L395
++static pa_channel_map *pa_channel_map_init_sles(pa_channel_map *m, unsigned channels) {
++    pa_assert(m);
++    pa_assert(pa_channels_valid(channels));
++    pa_channel_map_init(m);
++    SLuint32 mask = sl_guess_channel_mask(channels);
++    if (mask == (SLuint32)(-1))
++        return NULL;
++    pa_assert(sl_channel_mask_to_pa_channel_map(mask, m) != -1);
++    pa_assert(m->channels == channels);
++    return m;
++}
++
++// pa_channel_map_init_extend_sles is pa_channel_map_init_extend from
++// PulseAudio, but modified to use pa_channel_map_init_sles.
++//
++// https://github.com/pulseaudio/pulseaudio/blob/7f4d7fcf5f6407913e50604c6195d0d5356195b1/src/pulse/channelmap.c#L397-L424
++static pa_channel_map* pa_channel_map_init_extend_sles(pa_channel_map *m, unsigned channels) {
++    unsigned c;
++    pa_assert(m);
++    pa_assert(pa_channels_valid(channels));
++    pa_channel_map_init(m);
++    for (c = channels; c > 0; c--) {
++        if (pa_channel_map_init_sles(m, c)) {
++            unsigned i = 0;
++            for (; c < channels; c++) {
++                m->map[c] = PA_CHANNEL_POSITION_AUX0 + i;
++                i++;
++            }
++            m->channels = (uint8_t) channels;
++            return m;
++        }
++    }
++    return NULL;
++}
++
++// pa_modargs_get_sample_spec_and_channel_map_sles is
++// pa_modargs_get_sample_spec_and_channel_map from PulseAudio, but modified
++// to use the previous two functions.
++//
++// https://github.com/pulseaudio/pulseaudio/blob/7f4d7fcf5f6407913e50604c6195d0d5356195b1/src/pulsecore/modargs.c#L479-L515
++static int pa_modargs_get_sample_spec_and_channel_map_sles(pa_modargs *ma, pa_sample_spec *rss, pa_channel_map *rmap) {
++    pa_sample_spec ss;
++    pa_channel_map map;
++    pa_assert(rss);
++    pa_assert(rmap);
++    ss = *rss;
++    if (pa_modargs_get_sample_spec(ma, &ss) < 0)
++        return -1;
++    map = *rmap;
++    if (ss.channels != map.channels)
++        pa_channel_map_init_extend_sles(&map, ss.channels);
++    if (pa_modargs_get_channel_map(ma, NULL, &map) < 0)
++        return -1;
++    if (map.channels != ss.channels) {
++        if (!pa_modargs_get_value(ma, "channels", NULL))
++            ss.channels = map.channels;
++        else
++            return -1;
++    }
++    *rmap = map;
++    *rss = ss;
++    return 0;
++}
++
++static int pa_init_sles_player(struct userdata *u, pa_sample_spec *ss, pa_channel_map *map) {
++    pa_assert(u);
++
++    // check and convert the sample spec
++    SLAndroidDataFormat_PCM_EX pcm;
++    if (pa_sample_spec_to_sl_format(ss, map, &pcm))
++        return 1;
++
++    // common sles error handling
++    #define CHK(stmt) {                                                        \
++        SLresult res = (stmt);                                                 \
++        if (res != SL_RESULT_SUCCESS) {                                        \
++            pa_log_error("Failed to initialize OpenSL ES: error %d at %s:%d",  \
++                res, __FILE__, __LINE__);                                      \
++            return 1;                                                          \
++        }                                                                      \
++    }
++
++    // create the engine
++    CHK(slCreateEngine(&u->EngineObject, 0, NULL, 0, NULL, NULL));
++    CHK((*u->EngineObject)->Realize(u->EngineObject, SL_BOOLEAN_FALSE));
++
++    // create the outputmix
++    CHK((*u->EngineObject)->GetInterface(u->EngineObject, SL_IID_ENGINE, &(u->EngineItf)));
++    CHK((*u->EngineItf)->CreateOutputMix(u->EngineItf, &u->OutputMixObject, 0, NULL, NULL));
++    CHK((*u->OutputMixObject)->Realize(u->OutputMixObject, SL_BOOLEAN_FALSE));
++
++    // create the player
++    CHK(({
++        SLresult r = (*u->EngineItf)->CreateAudioPlayer(u->EngineItf,
++            &u->PlayerObject,
++            &(SLDataSource){
++                .pLocator = &(SLDataLocator_BufferQueue){
++                    .locatorType = SL_DATALOCATOR_BUFFERQUEUE,
++                    .numBuffers  = 8,
++                },
++                .pFormat = &pcm,
++            },
++            &(SLDataSink){
++                .pLocator = &(SLDataLocator_OutputMix){
++                    .locatorType = SL_DATALOCATOR_OUTPUTMIX,
++                    .outputMix   = u->OutputMixObject,
++                },
++                .pFormat = NULL,
++            },
++            1,
++            (SLInterfaceID[]){SL_IID_BUFFERQUEUE},
++            (SLboolean[]){SL_BOOLEAN_TRUE}
++        );
++        if (r == SL_RESULT_CONTENT_UNSUPPORTED)
++            pa_log(
++                "Failed to initialize OpenSL ES; try checking logcat and "
++                "searching for messages with 'libOpenSLES:'"
++            );
++        r;
++    }));
++
++    // realize the player
++    CHK((*u->PlayerObject)->Realize(u->PlayerObject, SL_BOOLEAN_FALSE));
++    CHK((*u->PlayerObject)->GetInterface(u->PlayerObject, SL_IID_PLAY, &u->PlayItf));
++
++    // register the callback
++    CHK((*u->PlayerObject)->GetInterface(u->PlayerObject, SL_IID_BUFFERQUEUE, &u->BufferQueueItf));
++    CHK((*u->BufferQueueItf)->RegisterCallback(u->BufferQueueItf, sles_callback, u));
++
++    // cleanup
++    #undef CHK
++
++    return 0;
++}
++
++static void thread_func(void *userdata) {
++    struct userdata *u = userdata;
++
++    pa_assert(u);
++
++    pa_log_debug("Thread starting up");
++    pa_thread_mq_install(&u->thread_mq);
++
++    for (;;) {
++        int ret;
++
++        if (PA_UNLIKELY(u->sink->thread_info.rewind_requested))
++          pa_sink_process_rewind(u->sink, 0);
++
++        if ((ret = pa_rtpoll_run(u->rtpoll)) < 0)
++            goto fail;
++
++        if (ret == 0)
++            goto finish;
++    }
++
++fail:
++    /* If this was no regular exit from the loop we have to continue
++     * processing messages until we received PA_MESSAGE_SHUTDOWN */
++    pa_asyncmsgq_post(u->thread_mq.outq, PA_MSGOBJECT(u->core), PA_CORE_MESSAGE_UNLOAD_MODULE, u->module, 0, NULL, NULL);
++    pa_asyncmsgq_wait_for(u->thread_mq.inq, PA_MESSAGE_SHUTDOWN);
++
++finish:
++    pa_log_debug("Thread shutting down");
++}
++
++static int state_func(pa_sink *s, pa_sink_state_t state, pa_suspend_cause_t suspend_cause) {
++    struct userdata *u = s->userdata;
++    pa_assert(u);
++
++    if (PA_SINK_IS_OPENED(s->state) && (state == PA_SINK_SUSPENDED || state == PA_SINK_UNLINKED))
++        (*u->PlayItf)->SetPlayState(u->PlayItf, SL_PLAYSTATE_STOPPED);
++    else if ((s->state == PA_SINK_SUSPENDED || s->state == PA_SINK_INIT) && PA_SINK_IS_OPENED(state))
++        (*u->PlayItf)->SetPlayState(u->PlayItf, SL_PLAYSTATE_PLAYING);
++    return 0;
++}
++
++int pa__init(pa_module*m) {
++    struct userdata *u = NULL;
++    pa_modargs *ma = NULL;
++    pa_sink_new_data sink_data;
++    pa_sample_spec ss;
++    pa_channel_map map;
++    uint32_t latency = 0;
++
++    pa_assert(m);
++
++    m->userdata = u = pa_xnew0(struct userdata, 1);
++    if (!(ma = pa_modargs_new(m->argument, valid_modargs))) {
++        pa_log("Failed to parse module arguments.");
++        goto fail;
++    }
++
++    u->core   = m->core;
++    u->module = m;
++
++    u->rtpoll = pa_rtpoll_new();
++    if (pa_thread_mq_init(&u->thread_mq, m->core->mainloop, u->rtpoll) < 0) {
++        pa_log("pa_thread_mq_init() failed.");
++        goto fail;
++    }
++    if (!(u->sles_msgq = pa_asyncmsgq_new(0))) {
++        pa_log("pa_asyncmsgq_new() failed.");
++        goto fail;
++    }
++    u->rtpoll_item = pa_rtpoll_item_new_asyncmsgq_read(u->rtpoll, PA_RTPOLL_EARLY-1, u->sles_msgq);
++
++    pa_sink_new_data_init(&sink_data);
++    sink_data.driver = __FILE__;
++    sink_data.module = m;
++
++    ss  = m->core->default_sample_spec;
++    map = m->core->default_channel_map;
++    if (pa_modargs_get_sample_spec_and_channel_map_sles(ma, &ss, &map) < 0) {
++        pa_log("Invalid sample format specification or channel map.");
++        goto fail;
++    }
++
++    if (pa_init_sles_player(u, &ss, &map))
++        goto fail;
++
++    pa_sink_new_data_set_name(&sink_data, pa_modargs_get_value(ma, "sink_name", DEFAULT_SINK_NAME));
++    pa_sink_new_data_set_sample_spec(&sink_data, &ss);
++    pa_sink_new_data_set_channel_map(&sink_data, &map);
++    pa_proplist_sets(sink_data.proplist, PA_PROP_DEVICE_DESCRIPTION, "OpenSL ES Output");
++    pa_proplist_sets(sink_data.proplist, PA_PROP_DEVICE_CLASS, "abstract");
++
++    if (pa_modargs_get_proplist(ma, "sink_properties", sink_data.proplist, PA_UPDATE_REPLACE) < 0) {
++        pa_log("Invalid properties.");
++        pa_sink_new_data_done(&sink_data);
++        goto fail;
++    }
++
++    if (!(u->sink = pa_sink_new(m->core, &sink_data, 0))) {
++        pa_log("Failed to create sink object.");
++        pa_sink_new_data_done(&sink_data);
++        goto fail;
++    }
++    pa_sink_new_data_done(&sink_data);
++
++    u->sink->userdata = u;
++    u->sink->parent.process_msg = sink_process_msg;
++    u->sink->set_state_in_main_thread = state_func;
++
++    pa_sink_set_asyncmsgq(u->sink, u->thread_mq.inq);
++    pa_sink_set_rtpoll(u->sink, u->rtpoll);
++
++    pa_modargs_get_value_u32(ma, "latency", &latency);
++    u->block_usec = latency
++        ? PA_USEC_PER_MSEC * latency
++        : PA_USEC_PER_MSEC * 125;
++    pa_sink_set_fixed_latency(u->sink, u->block_usec);
++
++    u->nbytes = pa_usec_to_bytes(u->block_usec, &u->sink->sample_spec);
++    u->buf = calloc(1, u->nbytes);
++    u->memchunk.memblock = pa_memblock_new_fixed(m->core->mempool, u->buf, u->nbytes, false);
++
++    if (!(u->thread = pa_thread_new("sles-sink", thread_func, u))) {
++        pa_log("Failed to create thread.");
++        goto fail;
++    }
++
++    pa_sink_put(u->sink);
++    sles_callback(u->BufferQueueItf, u);
++
++    pa_modargs_free(ma);
++
++    return 0;
++
++fail:
++    if (ma)
++        pa_modargs_free(ma);
++    pa__done(m);
++
++    return -1;
++}
++
++int pa__get_n_used(pa_module *m) {
++    struct userdata *u;
++
++    pa_assert(m);
++    pa_assert_se(u = m->userdata);
++
++    return pa_sink_linked_by(u->sink);
++}
++
++void pa__done(pa_module *m) {
++    struct userdata *u;
++
++    pa_assert(m);
++
++    if (!(u = m->userdata))
++        return;
++
++    if (u->sink)
++        pa_sink_unlink(u->sink);
++
++    if (u->PlayerObject)
++        (*u->PlayerObject)->Destroy(u->PlayerObject);
++    if (u->OutputMixObject)
++        (*u->OutputMixObject)->Destroy(u->OutputMixObject);
++    if (u->EngineObject)
++        (*u->EngineObject)->Destroy(u->EngineObject);
++
++    if (u->memchunk.memblock)
++        pa_memblock_unref_fixed(u->memchunk.memblock);
++    free(u->buf);
++
++    if (u->thread) {
++        pa_asyncmsgq_send(u->thread_mq.inq, NULL, PA_MESSAGE_SHUTDOWN, NULL, 0, NULL);
++        pa_thread_free(u->thread);
++    }
++    pa_thread_mq_done(&u->thread_mq);
++
++    if (u->sink)
++        pa_sink_unref(u->sink);
++    if (u->rtpoll_item)
++        pa_rtpoll_item_free(u->rtpoll_item);
++    if (u->sles_msgq)
++        pa_asyncmsgq_unref(u->sles_msgq);
++    if (u->rtpoll)
++        pa_rtpoll_free(u->rtpoll);
++
++    pa_xfree(u);
++}
+diff -uNr 32-pulseaudio/src/modules/sles/module-sles-source.c 32-pulseaudio.mod/src/modules/sles/module-sles-source.c
+--- 32-pulseaudio/src/modules/sles/module-sles-source.c	1969-12-31 21:00:00.000000000 -0300
++++ 32-pulseaudio.mod/src/modules/sles/module-sles-source.c	2024-03-02 23:14:31.246671000 -0300
+@@ -0,0 +1,435 @@
++/***
++  This file is part of PulseAudio.
++
++  Copyright 2008 Lennart Poettering
++
++  PulseAudio is free software; you can redistribute it and/or modify
++  it under the terms of the GNU Lesser General Public License as published
++  by the Free Software Foundation; either version 2.1 of the License,
++  or (at your option) any later version.
++
++  PulseAudio is distributed in the hope that it will be useful, but
++  WITHOUT ANY WARRANTY; without even the implied warranty of
++  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++  General Public License for more details.
++
++  You should have received a copy of the GNU Lesser General Public License
++  along with PulseAudio; if not, see <http://www.gnu.org/licenses/>.
++***/
++
++#ifdef HAVE_CONFIG_H
++#include <config.h>
++#endif
++
++#include <errno.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <unistd.h>
++
++#include <pulse/rtclock.h>
++#include <pulse/timeval.h>
++#include <pulse/xmalloc.h>
++
++#include <pulsecore/core-util.h>
++#include <pulsecore/log.h>
++#include <pulsecore/modargs.h>
++#include <pulsecore/module.h>
++#include <pulsecore/rtpoll.h>
++#include <pulsecore/source.h>
++#include <pulsecore/thread-mq.h>
++#include <pulsecore/thread.h>
++
++#include <SLES/OpenSLES.h>
++#include <SLES/OpenSLES_Android.h>
++#include <SLES/OpenSLES_AndroidConfiguration.h>
++
++PA_MODULE_AUTHOR("Lennart Poettering, Patrick Gaskin");
++PA_MODULE_DESCRIPTION("Android OpenSL ES source");
++PA_MODULE_VERSION(PACKAGE_VERSION);
++PA_MODULE_LOAD_ONCE(false);
++PA_MODULE_USAGE(
++    "source_name=<name for the source> "
++    "source_properties=<properties for the source> "
++    "latency=<buffer length> "
++    "format=<sample format> "
++    "channels=<number of channels> "
++    "rate=<sample rate> "
++    "channel_map=<channel map> "
++);
++
++#define DEFAULT_SOURCE_NAME "OpenSL ES source"
++
++enum { SOURCE_MESSAGE_RENDER = PA_SOURCE_MESSAGE_MAX };
++
++struct userdata {
++    pa_core *core;
++    pa_module *module;
++    pa_source *source;
++
++    pa_thread *thread;
++    pa_thread_mq thread_mq;
++    pa_rtpoll *rtpoll;
++    pa_rtpoll_item *rtpoll_item;
++    pa_asyncmsgq *sles_msgq;
++
++    pa_usec_t block_usec;
++
++    pa_memchunk memchunk;
++    void *buf;
++    size_t nbytes;
++
++    SLObjectItf EngineObject;
++    SLObjectItf RecorderObject;
++    SLEngineItf EngineItf;
++    SLRecordItf RecordItf;
++    SLAndroidConfigurationItf ConfigurationItf;
++    SLAndroidSimpleBufferQueueItf BufferQueueItf;
++};
++
++static const char *const valid_modargs[] = {
++    "source_name",
++    "source_properties",
++    "latency",
++    "format",
++    "channels",
++    "rate",
++    "channel_map",
++    NULL
++};
++
++static void process_render(void *userdata) {
++    struct userdata *u = userdata;
++    pa_assert(u);
++
++    (*u->RecordItf)->SetRecordState(u->RecordItf, SL_RECORDSTATE_RECORDING);
++    if (!PA_SOURCE_IS_LINKED(u->source->thread_info.state))
++        return;
++
++    u->memchunk.length = u->nbytes;
++    (*u->BufferQueueItf)->Enqueue(u->BufferQueueItf, u->buf, u->memchunk.length);
++    pa_source_post(u->source, &u->memchunk);
++}
++
++static int source_process_msg(pa_msgobject *o, int code, void *data, int64_t offset, pa_memchunk *memchunk) {
++    switch (code) {
++        case SOURCE_MESSAGE_RENDER:
++            process_render(data);
++            return 0;
++        case PA_SINK_MESSAGE_GET_LATENCY:
++            code = PA_SINK_MESSAGE_GET_FIXED_LATENCY;  // FIXME: is there a way to get the real latency?
++            break;
++    }
++    return pa_source_process_msg(o, code, data, offset, memchunk);
++};
++
++static void sles_callback(SLAndroidSimpleBufferQueueItf recBuffQueueItf, void *userdata) {
++    struct userdata *u = userdata;
++    pa_assert(u);
++    pa_assert_se(pa_asyncmsgq_send(u->sles_msgq, PA_MSGOBJECT(u->source), SOURCE_MESSAGE_RENDER, u, 0, NULL) == 0);
++}
++
++static int pa_sample_spec_to_sl_format(pa_sample_spec *ss, SLAndroidDataFormat_PCM_EX *sl) {
++    pa_assert(ss);
++    pa_assert(sl);
++
++    *sl = (SLAndroidDataFormat_PCM_EX){0};
++
++    switch ((sl->numChannels = ss->channels)) {
++        case 1:
++            sl->channelMask = SL_SPEAKER_FRONT_LEFT;
++            break;
++        case 2:
++            sl->channelMask = SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT;
++            break;
++        default:
++            pa_log_error("Unsupported sample format: only stereo or mono channels are supported.");
++            return 1;
++    }
++    sl->sampleRate = ss->rate * 1000; // Hz to mHz
++
++    switch (ss->format) {
++        case PA_SAMPLE_S16LE: // fallthrough
++        case PA_SAMPLE_S24LE: // fallthrough
++        case PA_SAMPLE_S32LE: // fallthrough
++        case PA_SAMPLE_S16BE: // fallthrough
++        case PA_SAMPLE_S24BE: // fallthrough
++        case PA_SAMPLE_S32BE:
++            sl->formatType     = SL_DATAFORMAT_PCM;
++            sl->representation = SL_ANDROID_PCM_REPRESENTATION_SIGNED_INT;
++            break;
++        case PA_SAMPLE_FLOAT32LE: // fallthrough
++        case PA_SAMPLE_FLOAT32BE:
++            sl->formatType     = SL_ANDROID_DATAFORMAT_PCM_EX;
++            sl->representation = SL_ANDROID_PCM_REPRESENTATION_FLOAT;
++            break;
++        default:
++            pa_log_error("Unsupported sample format: only s16/24/32 and f32 formats are supported.");
++            return 1;
++    }
++    sl->endianness = pa_sample_format_is_le(ss->format)
++        ? SL_BYTEORDER_LITTLEENDIAN
++        : SL_BYTEORDER_BIGENDIAN;
++    sl->bitsPerSample = sl->containerSize = pa_sample_size(ss) * 8;
++
++    return 0;
++}
++
++static int pa_init_sles_record(struct userdata *u, pa_sample_spec *ss) {
++    pa_assert(u);
++
++    // check and convert the sample spec
++    SLAndroidDataFormat_PCM_EX pcm;
++    if (pa_sample_spec_to_sl_format(ss, &pcm))
++        return 1;
++
++    // common sles error handling
++    #define CHK(stmt) {                                                        \
++        SLresult res = (stmt);                                                 \
++        if (res != SL_RESULT_SUCCESS) {                                        \
++            pa_log_error("Failed to initialize OpenSL ES: error %d at %s:%d",  \
++                res, __FILE__, __LINE__);                                      \
++            return 1;                                                          \
++        }                                                                      \
++    }
++
++    // create the engine
++    CHK(slCreateEngine(&u->EngineObject, 0, NULL, 0, NULL, NULL));
++    CHK(({
++        SLresult r = (*u->EngineObject)->Realize(u->EngineObject, SL_BOOLEAN_FALSE);
++        if (r == SL_RESULT_CONTENT_UNSUPPORTED)
++            pa_log(
++                "Failed to initialize OpenSL ES; did you grant Termux the "
++                "RECORD_AUDIO permission (you can use termux-microphone-record "
++                "from Termux:API for this)?"
++            );
++        r;
++    }));
++
++    // create the recorder
++    CHK((*u->EngineObject)->GetInterface(u->EngineObject, SL_IID_ENGINE, &u->EngineItf));
++    CHK(({
++        SLresult r = (*u->EngineItf)->CreateAudioRecorder(u->EngineItf,
++            &u->RecorderObject,
++
++            // source/sink
++            &(SLDataSource){
++                .pLocator = &(SLDataLocator_IODevice){
++                    .locatorType = SL_DATALOCATOR_IODEVICE,
++                    .deviceType  = SL_IODEVICE_AUDIOINPUT,
++                    .deviceID    = SL_DEFAULTDEVICEID_AUDIOINPUT,
++                    .device      = NULL,
++                },
++                .pFormat = NULL,
++            },
++            &(SLDataSink){
++                .pLocator = &(SLDataLocator_AndroidSimpleBufferQueue){
++                    .locatorType = SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE,
++                    .numBuffers  = 8,
++                },
++                .pFormat  = &pcm,
++            },
++
++            // required interfaces
++            2,
++            (SLInterfaceID[]){SL_IID_ANDROIDSIMPLEBUFFERQUEUE, SL_IID_ANDROIDCONFIGURATION}, 
++            (SLboolean[])    {SL_BOOLEAN_TRUE,                 SL_BOOLEAN_TRUE}
++        );
++        if (r == SL_RESULT_CONTENT_UNSUPPORTED)
++            pa_log(
++                "Failed to initialize OpenSL ES; try checking logcat and "
++                "searching for messages with 'libOpenSLES:'"
++            );
++        r;
++    }));
++
++    // update the configuration
++    CHK((*u->RecorderObject)->GetInterface(u->RecorderObject, SL_IID_ANDROIDCONFIGURATION, &u->ConfigurationItf));
++    CHK((*u->ConfigurationItf)->SetConfiguration(u->ConfigurationItf, SL_ANDROID_KEY_RECORDING_PRESET, &(SLuint32){SL_ANDROID_RECORDING_PRESET_VOICE_RECOGNITION}, sizeof(SLuint32)));
++
++    // realize the recorder
++    CHK((*u->RecorderObject)->Realize(u->RecorderObject, SL_BOOLEAN_FALSE));
++    CHK((*u->RecorderObject)->GetInterface(u->RecorderObject, SL_IID_RECORD, &u->RecordItf));
++
++    // register the callback
++    CHK((*u->RecorderObject)->GetInterface(u->RecorderObject, SL_IID_ANDROIDSIMPLEBUFFERQUEUE, &u->BufferQueueItf));
++    CHK((*u->BufferQueueItf)->RegisterCallback(u->BufferQueueItf, sles_callback, u));
++
++    // cleanup
++    #undef CHK
++
++    return 0;
++}
++
++static void thread_func(void *userdata) {
++    struct userdata *u = userdata;
++    pa_assert(u);
++
++    pa_thread_mq_install(&u->thread_mq);
++    for (;;) {
++        int ret;
++        if ((ret = pa_rtpoll_run(u->rtpoll)) < 0) {
++            pa_asyncmsgq_post(u->thread_mq.outq, PA_MSGOBJECT(u->core), PA_CORE_MESSAGE_UNLOAD_MODULE, u->module, 0, NULL, NULL);
++            pa_asyncmsgq_wait_for(u->thread_mq.inq, PA_MESSAGE_SHUTDOWN);
++            break;
++        }
++        if (ret == 0) {
++            break;
++        }
++    }
++}
++
++static int state_func(pa_source *s, pa_source_state_t state, pa_suspend_cause_t suspend_cause) {
++    struct userdata *u = s->userdata;
++    pa_assert(u);
++
++    if (PA_SOURCE_IS_OPENED(s->state) && (state == PA_SOURCE_SUSPENDED || state == PA_SOURCE_UNLINKED))
++        (*u->RecordItf)->SetRecordState(u->RecordItf, SL_RECORDSTATE_STOPPED);
++    else if ((s->state == PA_SOURCE_SUSPENDED || s->state == PA_SOURCE_INIT) && PA_SOURCE_IS_OPENED(state))
++        (*u->RecordItf)->SetRecordState(u->RecordItf, SL_RECORDSTATE_RECORDING);
++    return 0;
++}
++
++int pa__init(pa_module *m) {
++    struct userdata *u = NULL;
++    pa_modargs *ma = NULL;
++    pa_source_new_data source_data;
++    pa_sample_spec ss;
++    pa_channel_map map;
++    uint32_t latency = 0;
++
++    pa_assert(m);
++
++    m->userdata = u = pa_xnew0(struct userdata, 1);
++    if (!(ma = pa_modargs_new(m->argument, valid_modargs))) {
++        pa_log("Failed to parse module arguments.");
++        goto fail;
++    }
++
++    u->core   = m->core;
++    u->module = m;
++
++    u->rtpoll = pa_rtpoll_new();
++    if (pa_thread_mq_init(&u->thread_mq, m->core->mainloop, u->rtpoll) < 0) {
++        pa_log("pa_thread_mq_init() failed.");
++        goto fail;
++    }
++    if (!(u->sles_msgq = pa_asyncmsgq_new(0))) {
++        pa_log("pa_asyncmsgq_new() failed.");
++        goto fail;
++    }
++    u->rtpoll_item = pa_rtpoll_item_new_asyncmsgq_read(u->rtpoll, PA_RTPOLL_EARLY - 1, u->sles_msgq);
++
++    pa_source_new_data_init(&source_data);
++    source_data.driver = __FILE__;
++    source_data.module = m;
++
++    ss  = m->core->default_sample_spec;
++    map = m->core->default_channel_map;
++    if (pa_modargs_get_sample_spec_and_channel_map(ma, &ss, &map, PA_CHANNEL_MAP_DEFAULT) < 0) {
++        pa_log("Invalid sample format specification or channel map.");
++        goto fail;
++    }
++
++    if (pa_init_sles_record(u, &ss))
++        goto fail;
++
++    pa_source_new_data_set_name(&source_data, pa_modargs_get_value(ma, "source_name", DEFAULT_SOURCE_NAME));
++    pa_source_new_data_set_sample_spec(&source_data, &ss);
++    pa_proplist_sets(source_data.proplist, PA_PROP_DEVICE_DESCRIPTION, "OpenSL ES Input");
++    pa_proplist_sets(source_data.proplist, PA_PROP_DEVICE_CLASS,       "abstract");
++
++    if (pa_modargs_get_proplist(ma, "source_properties", source_data.proplist, PA_UPDATE_REPLACE) < 0) {
++        pa_log("Invalid properties.");
++        pa_source_new_data_done(&source_data);
++        goto fail;
++    }
++
++    if (!(u->source = pa_source_new(m->core, &source_data, PA_SOURCE_LATENCY))) {
++        pa_log("Failed to create source.");
++        pa_source_new_data_done(&source_data);
++        goto fail;
++    }
++    pa_source_new_data_done(&source_data);
++
++    u->source->userdata = u;
++    u->source->parent.process_msg = source_process_msg;
++    u->source->set_state_in_main_thread = state_func;
++
++    pa_source_set_asyncmsgq(u->source, u->thread_mq.inq);
++    pa_source_set_rtpoll(u->source, u->rtpoll);
++
++    pa_modargs_get_value_u32(ma, "latency", &latency);
++    u->block_usec = latency
++        ? PA_USEC_PER_MSEC * latency
++        : PA_USEC_PER_MSEC * 125;
++    pa_source_set_fixed_latency(u->source, u->block_usec);
++
++    u->nbytes = pa_usec_to_bytes(u->block_usec, &u->source->sample_spec);
++    u->buf = calloc(1, u->nbytes);
++    u->memchunk.memblock = pa_memblock_new_fixed(m->core->mempool, u->buf, u->nbytes, false);
++
++    if (!(u->thread = pa_thread_new("sles-source", thread_func, u))) {
++        pa_log("Failed to create thread.");
++        goto fail;
++    }
++    pa_source_put(u->source);
++    sles_callback(u->BufferQueueItf, u);
++
++    pa_modargs_free(ma);
++
++    return 0;
++
++fail:
++    if (ma)
++        pa_modargs_free(ma);
++    pa__done(m);
++
++    return -1;
++}
++
++int pa__get_n_used(pa_module *m) {
++    struct userdata *u;
++
++    pa_assert(m);
++    pa_assert_se(u = m->userdata);
++
++    return pa_source_linked_by(u->source);
++}
++
++void pa__done(pa_module *m) {
++    struct userdata *u;
++
++    pa_assert(m);
++
++    if (!(u = m->userdata))
++        return;
++
++    if (u->source)
++        pa_source_unlink(u->source);
++
++    if (u->RecorderObject)
++        (*u->RecorderObject)->Destroy(u->RecorderObject);
++    if (u->EngineObject)
++        (*u->EngineObject)->Destroy(u->EngineObject);
++
++    if (u->memchunk.memblock)
++        pa_memblock_unref_fixed(u->memchunk.memblock);
++    free(u->buf);
++
++    if (u->thread) {
++        pa_asyncmsgq_send(u->thread_mq.inq, NULL, PA_MESSAGE_SHUTDOWN, NULL, 0, NULL);
++        pa_thread_free(u->thread);
++    }
++    pa_thread_mq_done(&u->thread_mq);
++
++    if (u->source)
++        pa_source_unref(u->source);
++    if (u->rtpoll_item)
++        pa_rtpoll_item_free(u->rtpoll_item);
++    if (u->sles_msgq)
++        pa_asyncmsgq_unref(u->sles_msgq);
++    if (u->rtpoll)
++        pa_rtpoll_free(u->rtpoll);
++
++    pa_xfree(u);
++}
+diff -uNr 32-pulseaudio/src/pulsecore/core-util.c 32-pulseaudio.mod/src/pulsecore/core-util.c
+--- 32-pulseaudio/src/pulsecore/core-util.c	2024-01-12 14:22:09.000000000 -0300
++++ 32-pulseaudio.mod/src/pulsecore/core-util.c	2024-03-02 23:14:31.246726000 -0300
+@@ -1766,7 +1766,7 @@
+      * users, too. Since we need POSIX locking and UNIX sockets in
+      * this directory, we try XDG_RUNTIME_DIR first, and if that isn't
+      * set create a directory in $HOME and link it to a random subdir
+-     * in /tmp, if it was not explicitly configured. */
++     * in /data/data/com.micewine.emu/files/usr/tmp, if it was not explicitly configured. */
+ 
+     m = pa_in_system_mode() ? 0755U : 0700U;
+ 
+@@ -1839,7 +1839,7 @@
+ 
+ #ifdef HAVE_SYMLINK
+             /* Hmm, so the runtime directory didn't exist yet, so let's
+-             * create one in /tmp and symlink that to it */
++             * create one in /data/data/com.micewine.emu/files/usr/tmp and symlink that to it */
+ 
+             if (make_random_dir_and_link(0700, k) < 0) {
+ 
+@@ -3229,8 +3229,8 @@
+     if ((f = pa_fopen_cloexec(PA_MACHINE_ID, "r")) ||
+         (f = pa_fopen_cloexec(PA_MACHINE_ID_FALLBACK, "r")) ||
+ #if !defined(OS_IS_WIN32)
+-        (f = pa_fopen_cloexec("/etc/machine-id", "r")) ||
+-        (f = pa_fopen_cloexec("/var/lib/dbus/machine-id", "r"))
++        (f = pa_fopen_cloexec("/data/data/com.micewine.emu/files/usr/etc/machine-id", "r")) ||
++        (f = pa_fopen_cloexec("/data/data/com.micewine.emu/files/usr/var/lib/dbus/machine-id", "r"))
+ #else
+         false
+ #endif
+@@ -3595,7 +3595,7 @@
+         pa_is_path_absolute(t))
+         return t;
+ 
+-    return "/tmp";
++    return "/data/data/com.micewine.emu/files/usr/tmp";
+ }
+ 
+ int pa_open_cloexec(const char *fn, int flags, mode_t mode) {
+diff -uNr 32-pulseaudio/src/pulsecore/esound.h 32-pulseaudio.mod/src/pulsecore/esound.h
+--- 32-pulseaudio/src/pulsecore/esound.h	2024-01-12 14:22:09.000000000 -0300
++++ 32-pulseaudio.mod/src/pulsecore/esound.h	2024-03-02 23:14:31.246764000 -0300
+@@ -23,8 +23,8 @@
+ /* Most of the following is blatantly stolen from esound. */
+ 
+ /* path and name of the default EsounD domain socket */
+-#define ESD_UNIX_SOCKET_DIR     "/tmp/.esd"
+-#define ESD_UNIX_SOCKET_NAME    "/tmp/.esd/socket"
++#define ESD_UNIX_SOCKET_DIR     "/data/data/com.micewine.emu/files/usr/tmp/.esd"
++#define ESD_UNIX_SOCKET_NAME    "/data/data/com.micewine.emu/files/usr/tmp/.esd/socket"
+ 
+ /* length of the audio buffer size */
+ #define ESD_BUF_SIZE (4 * 1024)
+diff -uNr 32-pulseaudio/src/pulsecore/meson.build 32-pulseaudio.mod/src/pulsecore/meson.build
+--- 32-pulseaudio/src/pulsecore/meson.build	2024-01-12 14:22:09.000000000 -0300
++++ 32-pulseaudio.mod/src/pulsecore/meson.build	2024-03-02 23:14:31.246800000 -0300
+@@ -185,14 +185,7 @@
+ foreach simd_kwargs : simd_variants
+ 
+   if host_machine.cpu_family() == 'arm' and 'neon' in simd_kwargs
+-    if not cc.compiles('''
+-        #include <arm_neon.h>
+-        int main() {
+-            return sizeof(uint8x8_t) + sizeof(int32x4_t) + sizeof(float32x4_t);
+-        }
+-        ''', name : 'neon code')
+-      continue
+-    endif
++    continue
+   endif
+ 
+   libpulsecore_simd = simd.check('libpulsecore_simd',
+diff -uNr 32-pulseaudio/src/pulsecore/shm.c 32-pulseaudio.mod/src/pulsecore/shm.c
+--- 32-pulseaudio/src/pulsecore/shm.c	2024-01-12 14:22:09.000000000 -0300
++++ 32-pulseaudio.mod/src/pulsecore/shm.c	2024-03-02 23:14:31.246837000 -0300
+@@ -65,9 +65,9 @@
+ 
+ #ifdef __linux__
+ /* On Linux we know that the shared memory blocks are files in
+- * /dev/shm. We can use that information to list all blocks and
++ * /dev/shm. But on Android don't have /dev/shm, use /data/data/com.micewine.emu/files/usr/tmp instead, We can use that information to list all blocks and
+  * cleanup unused ones */
+-#define SHM_PATH "/dev/shm/"
++#define SHM_PATH "/data/data/com.micewine.emu/files/usr/tmp/"
+ #define SHM_ID_LEN 10
+ #elif defined(__sun)
+ #define SHM_PATH "/tmp"
+diff -uNr 32-pulseaudio/src/tests/meson.build 32-pulseaudio.mod/src/tests/meson.build
+--- 32-pulseaudio/src/tests/meson.build	2024-01-12 14:22:09.000000000 -0300
++++ 32-pulseaudio.mod/src/tests/meson.build	2024-03-02 23:14:31.246879000 -0300
+@@ -106,8 +106,6 @@
+     default_tests += [
+       [ 'sigbus-test', 'sigbus-test.c',
+         [ check_dep, libpulse_dep, libpulsecommon_dep, libpulsecore_dep ] ],
+-      [ 'usergroup-test', 'usergroup-test.c',
+-        [ check_dep, libpulse_dep, libpulsecommon_dep, libpulsecore_dep ] ],
+     ]
+   endif
+ 
