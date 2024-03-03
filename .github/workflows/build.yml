@@ -16,7 +16,7 @@ jobs:
     - name: "Environment Preparation"
       run: |
         sudo apt update
-        sudo apt install -y python3 python3-pip cmake meson wget git p7zip build-essential pkg-config xmlto fop xsltproc llvm
+        sudo apt install -y python3 python3-pip cmake meson wget git p7zip build-essential pkg-config xmlto fop xsltproc llvm autoconf
         pip3 install mako
         wget https://dl.google.com/android/repository/android-ndk-r26b-linux.zip
         wget https://dl.google.com/android/repository/android-ndk-r25b-linux.zip

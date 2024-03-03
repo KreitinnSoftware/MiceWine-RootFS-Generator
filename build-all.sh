@@ -55,6 +55,8 @@ setupBuildEnv()
 
 downloadPackages()
 {
+	mkdir -p $PREFIX/include
+	
 	for package in $PACKAGES; do 
 		unset SRC_URL CONFIGURE_ARGS MESON_ARGS CMAKE_ARGS USE_NDK_VERSION RUN_POST_APPLY_PATCH CFLAGS LDFLAGS LIBS
 
@@ -85,12 +87,15 @@ downloadPackages()
 			for patch in $(ls ../../packages/$package | sed "s/build.sh//g"); do
 				echo "Applying '$patch' for '$package'..."
 				git apply -v ../../packages/$package/$patch
-				$RUN_POST_APPLY_PATCH
+
+				if [ "$RUN_POST_APPLY_PATCH" != "" ]; then
+					$RUN_POST_APPLY_PATCH
+				fi
 				echo
 			done
 		esac
 
-		#echo "export CFLAGS=$CFLAGS LIBS=$LIBS LDFLAGS=$LDFLAGS" > build.sh
+		echo "export CFLAGS=$CFLAGS LIBS=$LIBS LDFLAGS=$LDFLAGS" > build.sh
 
 		if [ -e "configure" ]; then
 			echo "../configure --prefix=$PREFIX $CONFIGURE_ARGS" >> build.sh
