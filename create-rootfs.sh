@@ -40,9 +40,11 @@ case $* in *"--strip-all"*)
   llvm-strip $PREFIX/lib/*.so*
 esac
 
-case $* in *"--strip-all"*|*"--clean-all"*)
+case $* in *"--no-save-zip"*)
+  ;;
+  *"--strip-all"*|*"--clean-all"*)
   7z a ~/MiceWine-RootFS-Stripped.zip
-   ;;
+  ;;
   *)
   7z a ~/MiceWine-RootFS.zip
 esac
