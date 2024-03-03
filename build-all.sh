@@ -90,7 +90,7 @@ downloadPackages()
 			done
 		esac
 
-		echo "export CFLAGS=$CFLAGS LIBS=$LIBS LDFLAGS=$LDFLAGS" > build.sh
+		#echo "export CFLAGS=$CFLAGS LIBS=$LIBS LDFLAGS=$LDFLAGS" > build.sh
 
 		if [ -e "configure" ]; then
 			echo "../configure --prefix=$PREFIX $CONFIGURE_ARGS" >> build.sh
