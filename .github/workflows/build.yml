@@ -33,28 +33,24 @@ jobs:
       run: |
         ./build-all.sh
 
-    - name: "Create Zip File"
-      run: |
-        ./create-rootfs.sh
-
     - name: "Upload Artifact"
       uses: actions/upload-artifact@v3
       with:
-          name: MiceWine-RootFS-Stripped.zip
+          name: MiceWine-RootFS.zip
           path: /data/data/com.micewine.emu/files/usr
     
     - name: "Create Zip File Stripped"
       run: |
-        ./create-rootfs.sh --clean-all --strip-all
+        ./create-rootfs.sh --clean-all --strip-all --no-save-zip
 
     - name: "Upload Artifact Stripped"
       uses: actions/upload-artifact@v3
       with:
-          name: MiceWine-RootFS.zip
+          name: MiceWine-RootFS-Stripped.zip
           path: /data/data/com.micewine.emu/files/usr
           
     - name: "Upload Logs"
       uses: actions/upload-artifact@v3
       with:
           name: MiceWine-Logs
-          path: /home/runner/MiceWine-RootFS-Generator/MiceWine-RootFS-Generator/logs
+          path: logs
