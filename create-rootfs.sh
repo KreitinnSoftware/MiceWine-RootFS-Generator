@@ -4,7 +4,7 @@ symlink2hardlink() {
   for i in *; do
     link=$(readlink $i)
     if [ "$link" != "" ]; then
-      echo rm $i
+      rm $i
       ln -f $link $i
     fi 
   done
