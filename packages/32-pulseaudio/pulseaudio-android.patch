@@ -1,10 +1,3 @@
-diff -uNr 32-pulseaudio/build.sh 32-pulseaudio.mod/build.sh
---- 32-pulseaudio/build.sh	1970-01-01 00:00:00.000000000 +0000
-+++ 32-pulseaudio.mod/build.sh	2024-03-04 21:51:25.188484000 +0000
-@@ -0,0 +1,3 @@
-+export CFLAGS=-I/data/data/com.micewine.emu/files/usr/include LIBS=-L/data/data/com.micewine.emu/files/usr/lib LDFLAGS=-L/data/data/com.micewine.emu/files/usr/lib -Wl,--undefined-version
-+meson setup -Dprefix=/data/data/com.micewine.emu/files/usr --cross-file=../../../packages/32-pulseaudio/meson-cross-file-aarch64 -Dglib=disabled -Dgsettings=disabled -Dbashcompletiondir=/data/data/com.micewine.emu/files/usr/share/bash-completion -Dalsa=disabled -Dx11=disabled -Dgtk=disabled -Dopenssl=disabled -Dgsettings=disabled -Ddoxygen=false -Ddatabase=simple -Dtests=false ..
-+ninja -j 4 install
 diff -uNr 32-pulseaudio/include/libintl.h 32-pulseaudio.mod/include/libintl.h
 --- 32-pulseaudio/include/libintl.h	1970-01-01 00:00:00.000000000 +0000
 +++ 32-pulseaudio.mod/include/libintl.h	2024-03-04 21:51:25.185485000 +0000
@@ -112,11 +105,6 @@ diff -uNr 32-pulseaudio/meson.build 32-pulseaudio.mod/meson.build
    if get_option('gsettings').enabled()
      assert(gio_dep.found(), 'GSettings support needs glib I/O library (GIO)')
      cdata.set('HAVE_GSETTINGS', 1)
-diff -uNr 32-pulseaudio/setup-ndk.sh 32-pulseaudio.mod/setup-ndk.sh
---- 32-pulseaudio/setup-ndk.sh	1970-01-01 00:00:00.000000000 +0000
-+++ 32-pulseaudio.mod/setup-ndk.sh	2024-03-04 21:51:25.188549000 +0000
-@@ -0,0 +1 @@
-+setupBuildEnv 25b 32 aarch64 --silent
 diff -uNr 32-pulseaudio/src/daemon/caps.c 32-pulseaudio.mod/src/daemon/caps.c
 --- 32-pulseaudio/src/daemon/caps.c	2024-01-12 17:22:09.000000000 +0000
 +++ 32-pulseaudio.mod/src/daemon/caps.c	2024-03-04 21:51:25.185568000 +0000
