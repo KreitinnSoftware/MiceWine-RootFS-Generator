@@ -1,9 +1,9 @@
 [binaries]
-pkg-config = ['env PKG_CONFIG_PATH=/data/data/com.micewine.emu/files/usr/share/pkgconfig:/data/data/com.micewine.emu/files/usr/lib/pkgconfig', '/usr/bin/pkg-config']
+pkgconfig = '/usr/bin/pkg-config'
 cmake = '/usr/bin/cmake'
 
 [host_machine]
 system = 'linux'
-cpu_family = 'arm64'
+cpu_family = 'aarch64'
 cpu = 'aarch64'
 endian = 'little'

@@ -1,357 +1,6 @@
-diff -uNr 32-pulseaudio/.gitignore 32-pulseaudio.mod/.gitignore
---- 32-pulseaudio/.gitignore	2024-01-12 14:22:09.000000000 -0300
-+++ 32-pulseaudio.mod/.gitignore	1969-12-31 21:00:00.000000000 -0300
-@@ -1,40 +0,0 @@
--.tarball-version
--.version
--.*.swp
--ABOUT-NLS
--build*
--*~
--*.tar.gz
--*.pc
--PulseAudioConfig.cmake
--PulseAudioConfigVersion.cmake
--/Makefile
--/Makefile.in
--aclocal.m4
--autom4te.cache
--compile
--config.guess
--config.h
--config.h.in
--config.log
--config.rpath
--config.status
--config.sub
--configure
--cscope.out
--cscope.in.out
--cscope.po.out
--pulse-daemon.log
--depcomp
--install/
--install-sh
--libltdl
--libtool
--ltmain.sh
--missing
--mkinstalldirs
--stamp-*
--.dirstamp
--*.orig
--*.rej
--subprojects/*/
-diff -uNr 32-pulseaudio/.gitlab/issue_templates/Bug.md 32-pulseaudio.mod/.gitlab/issue_templates/Bug.md
---- 32-pulseaudio/.gitlab/issue_templates/Bug.md	2024-03-02 23:24:01.366702000 -0300
-+++ 32-pulseaudio.mod/.gitlab/issue_templates/Bug.md	1969-12-31 21:00:00.000000000 -0300
-@@ -1,21 +0,0 @@
--### Warning
--Missing data may cause bugs to languish.
--
--### Summary
--(Summarize the bug encountered concisely)
--
--### environment
--Check to see if you have pa-info installed by running `which pa-info`
--If yes please run it
--If no please download and run https://gitlab.freedesktop.org/pulseaudio/pulseaudio/blob/master/src/utils/pa-info
--Attach the output to this bug report as pa-info.txt
--
--### Steps to reproduce
--(How one can reproduce the issue - this is very important)
--
--
--### What is the current *bug* behavior?
--(What actually happens)
--
--### What is the expected *correct* behavior?
--(What you should see instead)
-diff -uNr 32-pulseaudio/.gitlab/merge_request_templates/Guidelines.md 32-pulseaudio.mod/.gitlab/merge_request_templates/Guidelines.md
---- 32-pulseaudio/.gitlab/merge_request_templates/Guidelines.md	2024-03-02 23:24:01.366822000 -0300
-+++ 32-pulseaudio.mod/.gitlab/merge_request_templates/Guidelines.md	1969-12-31 21:00:00.000000000 -0300
-@@ -1,67 +0,0 @@
--# Contribution Guidelines
--
--## A note for contributors
--
--Thank you for your contribution!
--
--Please make sure you tick the box labelled `Allow commits from members who can
--merge to the target branch`. This allows us to make minor edits ourselves, and
--then automatically rebase and merge your changes.
--
--PulseAudio is currently maintained by three volunteer developers in their free
--time (probably amounting to less than one full time developer), which is not
--really enough, given the project size and scope. For this reason bug reports
--and patch submissions are sometimes handled very slowly.
--
--For non-trivial patches, we meet biweekly on IRC to discuss and prioritise
--outstanding MRs. If you haven't heard from us a few days after you create the
--MR, please take a look at [the patch status
--page](https://www.freedesktop.org/wiki/Software/PulseAudio/PatchStatus/).
--
--If you don't see your MR in that list either, please don't hesitate to drop a
--comment pinging us, and we'll try to at least respond and make sure your
--request is tracked on that list.
--
--## Coding Style
--
--Please take a look at the [coding style
--documentation](https://www.freedesktop.org/wiki/Software/PulseAudio/Documentation/Developer/CodingStyle/)
--on our wiki.
--
--## Commit messagse
--
--We follow the standard git commit message format of a summary on the first line
--(<=50 characterss for preference, <=72 characters otherwise), followed by a new
--line, followed by a detailed commit message. An additional line at the end may
--link to an issue being fixed by this MR.
--
--The first line is usually a short description of "what" your commit does, and
--the rest of the message describes the "why", along with any additional
--information that readers might need to understand the rationale for the change.
--If in doubt, more verbose is better than less.
--
--If you need to describe the "how" of the commit, that is usually best
--documented along with the code itself.
--
--Commit messages are prefixed with the subsystem being affected. Your best bet
--to figure out what is appropriate is to look at previous commit messages. An
--example:
--
--```
--sink: Reduce chat sink priority
--
--Some gaming sound cards have custom profiles with analog-game and
--analog-chat mappings that exist simultaneously. The game sink should
--have higher priority than the chat sink, but currently there's no way to
--affect the sink priorities from the profile-set configuration (the
--mapping priority is not propagated to the sink priority).
--
--I first thought about adding the mapping priority to the sink priority,
--but that could mess up the prioritization system in
--pa_device_init_priority(). I ended up checking for the intended roles
--property to reduce the chat sink priority. I also reduced the iec958
--priority so that the chat and iec958 sinks don't end up with the same
--priority.
--
--Fixes: https://gitlab.freedesktop.org/pulseaudio/pulseaudio/issues/818
--```
-diff -uNr 32-pulseaudio/.gitlab-ci.yml 32-pulseaudio.mod/.gitlab-ci.yml
---- 32-pulseaudio/.gitlab-ci.yml	2024-01-12 14:22:09.000000000 -0300
-+++ 32-pulseaudio.mod/.gitlab-ci.yml	1969-12-31 21:00:00.000000000 -0300
-@@ -1,110 +0,0 @@
--# The build has two stages. The 'container' stage is used to build a Docker
--# container and push it to the project's container registry on fd.o GitLab.
--# This step is only run when the tag for the container changes, else it is
--# effectively a no-op. All of this infrastructure is inherited from the
--# freedesktop/ci-templates repository which is the recommended way to set up CI
--# infrastructure on fd.o GitLab.
--#
--# Once the container stage is done, we move on to the 'build' stage where we
--# run meson build. Currently, tests are also run as part of the build stage as
--# there doesn't seem to be significant value to splitting the stages at the
--# moment.
--
--stages:
--  - container
--  - build
--
--variables:
--  # Update this tag when you want to trigger a rebuild the container in which
--  # CI runs, for example when adding new packages to FDO_DISTRIBUTION_PACKAGES.
--  # The tag is an arbitrary string that identifies the exact container
--  # contents.
--  FDO_DISTRIBUTION_TAG: '2023-08-13-00'
--  FDO_DISTRIBUTION_VERSION: '20.04'
--  FDO_UPSTREAM_REPO: 'pulseaudio/pulseaudio'
--
--include:
--  # We pull templates from master to avoid the overhead of periodically
--  # scanning for changes upstream. This does means builds might occasionally
--  # break due to upstream changing things, so if you see unexpected build
--  # failures, this might be one cause.
--  - project: 'freedesktop/ci-templates'
--    ref: 'master'
--    file: '/templates/ubuntu.yml'
--
--build-container:
--  extends: .fdo.container-build@ubuntu
--  stage: container
--  variables:
--    GIT_STRATEGY: none # no need to pull the whole tree for rebuilding the image
--
--    # Remember to update FDO_DISTRIBUTION_TAG when modifying this package list!
--    # Otherwise the changes won't have effect since an old container image will
--    # be used.
--    FDO_DISTRIBUTION_PACKAGES: >-
--      autopoint
--      bash-completion
--      check
--      curl
--      dbus-x11
--      doxygen
--      g++
--      gcc
--      gettext
--      git-core
--      libasound2-dev
--      libasyncns-dev
--      libavahi-client-dev
--      libbluetooth-dev
--      libcap-dev
--      libfftw3-dev
--      libglib2.0-dev
--      libgtk-3-dev
--      libice-dev
--      libjack-dev
--      liblircclient-dev
--      libltdl-dev
--      liborc-0.4-dev
--      libsbc-dev
--      libsndfile1-dev
--      libsoxr-dev
--      libspeexdsp-dev
--      libssl-dev
--      libsystemd-dev
--      libtdb-dev
--      libudev-dev
--      libwebrtc-audio-processing-dev
--      libwrap0-dev
--      libx11-xcb-dev
--      libxcb1-dev
--      libxml-parser-perl
--      libxml2-utils
--      libxtst-dev
--      m4
--      ninja-build
--      pkg-config
--      python3-setuptools
--      systemd
--      wget
--
--build-meson:
--  extends: .fdo.distribution-image@ubuntu
--  stage: build
--  script:
--    # Install meson (higher than our min version to support our wrap file)
--    - wget -q https://github.com/mesonbuild/meson/releases/download/0.63.2/meson-0.63.2.tar.gz
--    - tar -xf meson-0.63.2.tar.gz
--    - cd meson-0.63.2
--    - python3 setup.py install
--    - cd ..
--    # Do the actual build
--    - meson build -Dwebrtc-aec=enabled
--    - cd build
--    - ninja
--    - ulimit -c 0 # don't dump core files on tests that are supposed to assert
--    - ninja test
--    - ninja test-daemon
--    - ninja dist
--  artifacts:
--    paths:
--      - build/
-diff -uNr 32-pulseaudio/.mailmap 32-pulseaudio.mod/.mailmap
---- 32-pulseaudio/.mailmap	2024-01-12 14:22:09.000000000 -0300
-+++ 32-pulseaudio.mod/.mailmap	1969-12-31 21:00:00.000000000 -0300
-@@ -1,7 +0,0 @@
--Diego Elio Pettenò <flameeyes@gmail.com>
--Lennart Poettering <mzfuryy@0pointer.net>
--Lennart Poettering <lennart@poettering.net>
--Russ Dill <Russ.Dill@asu.edu>
--Russ Dill <russ.dill@gmail.com>
--Sjoerd Simons <sjoerd@luon.net>
--Sjoerd Simons <sjoerd@debian.org>
-diff -uNr 32-pulseaudio/build.sh 32-pulseaudio.mod/build.sh
---- 32-pulseaudio/build.sh	1969-12-31 21:00:00.000000000 -0300
-+++ 32-pulseaudio.mod/build.sh	2024-03-02 23:14:31.248936000 -0300
-@@ -0,0 +1,2 @@
-+meson setup -Dprefix=/data/data/com.micewine.emu/files/usr --cross-file=../../../packages/32-pulseaudio/meson-cross-file-aarch64 -Dbashcompletiondir=/data/data/com.micewine.emu/files/usr/share/bash-completion -Dalsa=disabled -Dx11=disabled -Dgtk=disabled -Dopenssl=disabled -Dgsettings=disabled -Ddoxygen=false -Ddatabase=simple -Dtests=false ..
-+ninja -j 4 install
-diff -uNr 32-pulseaudio/build_dir/.gitignore 32-pulseaudio.mod/build_dir/.gitignore
---- 32-pulseaudio/build_dir/.gitignore	1969-12-31 21:00:00.000000000 -0300
-+++ 32-pulseaudio.mod/build_dir/.gitignore	2024-03-02 23:18:58.960051000 -0300
-@@ -0,0 +1,2 @@
-+# This file is autogenerated by Meson. If you change or delete it, it won't be recreated.
-+*
-diff -uNr 32-pulseaudio/build_dir/.hgignore 32-pulseaudio.mod/build_dir/.hgignore
---- 32-pulseaudio/build_dir/.hgignore	1969-12-31 21:00:00.000000000 -0300
-+++ 32-pulseaudio.mod/build_dir/.hgignore	2024-03-02 23:18:58.960111000 -0300
-@@ -0,0 +1,3 @@
-+# This file is autogenerated by Meson. If you change or delete it, it won't be recreated.
-+syntax: glob
-+**/*
-diff -uNr 32-pulseaudio/build_dir/meson-info/meson-info.json 32-pulseaudio.mod/build_dir/meson-info/meson-info.json
---- 32-pulseaudio/build_dir/meson-info/meson-info.json	1969-12-31 21:00:00.000000000 -0300
-+++ 32-pulseaudio.mod/build_dir/meson-info/meson-info.json	2024-03-02 23:18:59.198946000 -0300
-@@ -0,0 +1 @@
-+{"meson_version": {"full": "0.61.2", "major": 0, "minor": 61, "patch": 2}, "directories": {"source": "/home/pablo/MiceWine-RootFS-Generator/workdir/32-pulseaudio", "build": "/home/pablo/MiceWine-RootFS-Generator/workdir/32-pulseaudio/build_dir", "info": "/home/pablo/MiceWine-RootFS-Generator/workdir/32-pulseaudio/build_dir/meson-info"}, "introspection": {"version": {"full": "1.0.0", "major": 1, "minor": 0, "patch": 0}, "information": {"benchmarks": {"file": "intro-benchmarks.json", "updated": false}, "buildoptions": {"file": "intro-buildoptions.json", "updated": false}, "buildsystem_files": {"file": "intro-buildsystem_files.json", "updated": false}, "dependencies": {"file": "intro-dependencies.json", "updated": false}, "installed": {"file": "intro-installed.json", "updated": false}, "install_plan": {"file": "intro-install_plan.json", "updated": false}, "projectinfo": {"file": "intro-projectinfo.json", "updated": false}, "targets": {"file": "intro-targets.json", "updated": false}, "tests": {"file": "intro-tests.json", "updated": false}}}, "build_files_updated": false, "error": true, "error_list": ["Index 1 out of bounds of array of size 1."]}
-\ No newline at end of file
-diff -uNr 32-pulseaudio/build_dir/meson-logs/meson-log.txt 32-pulseaudio.mod/build_dir/meson-logs/meson-log.txt
---- 32-pulseaudio/build_dir/meson-logs/meson-log.txt	1969-12-31 21:00:00.000000000 -0300
-+++ 32-pulseaudio.mod/build_dir/meson-logs/meson-log.txt	2024-03-02 23:18:59.199181000 -0300
-@@ -0,0 +1,50 @@
-+Build started at 2024-03-03T02:18:58.963598
-+Main binary: /usr/bin/python3
-+Build Options: -Dprefix=/data/data/com.micewine.emu/files/usr -Dbashcompletiondir=/data/data/com.micewine.emu/files/usr/share/bash-completion -Dalsa=disabled -Dx11=disabled -Dgtk=disabled -Dopenssl=disabled -Dgsettings=disabled -Ddoxygen=false -Ddatabase=simple -Dtests=false '--cross-file ../../../packages/32-pulseaudio/meson-cross-file-aarch64'
-+Python system: Linux
-+The Meson build system
-+Version: 0.61.2
-+Source dir: /home/pablo/MiceWine-RootFS-Generator/workdir/32-pulseaudio
-+Build dir: /home/pablo/MiceWine-RootFS-Generator/workdir/32-pulseaudio/build_dir
-+Build type: cross build
-+Program git-version-gen found: YES (/home/pablo/MiceWine-RootFS-Generator/workdir/32-pulseaudio/git-version-gen)
-+Running command: /home/pablo/MiceWine-RootFS-Generator/workdir/32-pulseaudio/git-version-gen /home/pablo/MiceWine-RootFS-Generator/workdir/32-pulseaudio/.tarball-version
-+--- stdout ---
-+
-+--- stderr ---
-+/home/pablo/MiceWine-RootFS-Generator/workdir/32-pulseaudio/git-version-gen: Failed to determine git revision
-+
-+
-+Project name: pulseaudio
-+Project version: 
-+Sanity testing C compiler: aarch64-linux-android32-clang
-+Is cross compiler: True.
-+Sanity check compiler command line: aarch64-linux-android32-clang sanitycheckc.c -o sanitycheckc_cross.exe -D_FILE_OFFSET_BITS=64 -c
-+Sanity check compile stdout:
-+
-+-----
-+Sanity check compile stderr:
-+
-+-----
-+C compiler for the host machine: aarch64-linux-android32-clang (clang 14.0.7 "Android (9352603, based on r450784d1) clang version 14.0.7 (https://android.googlesource.com/toolchain/llvm-project 4c603efb0cca074e9238af8b4106c30add4418f6)")
-+C linker for the host machine: aarch64-linux-android32-clang ld.lld 14.0.7
-+Sanity testing C compiler: cc
-+Is cross compiler: False.
-+Sanity check compiler command line: cc sanitycheckc.c -o sanitycheckc.exe -D_FILE_OFFSET_BITS=64
-+Sanity check compile stdout:
-+
-+-----
-+Sanity check compile stderr:
-+
-+-----
-+Running test binary command: /home/pablo/MiceWine-RootFS-Generator/workdir/32-pulseaudio/build_dir/meson-private/sanitycheckc.exe
-+C compiler for the build machine: cc (gcc 11.4.0 "cc (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0")
-+C linker for the build machine: cc ld.bfd 2.38
-+Build machine cpu family: x86_64
-+Build machine cpu: x86_64
-+Host machine cpu family: arm
-+Host machine cpu: armv8
-+Target machine cpu family: arm
-+Target machine cpu: armv8
-+
-+../meson.build:17:0: ERROR: Index 1 out of bounds of array of size 1.
-diff -uNr 32-pulseaudio/build_dir/meson-private/sanitycheckc.c 32-pulseaudio.mod/build_dir/meson-private/sanitycheckc.c
---- 32-pulseaudio/build_dir/meson-private/sanitycheckc.c	1969-12-31 21:00:00.000000000 -0300
-+++ 32-pulseaudio.mod/build_dir/meson-private/sanitycheckc.c	2024-03-02 23:18:59.149847000 -0300
-@@ -0,0 +1 @@
-+int main(void) { int class=0; return class; }
-Binary files 32-pulseaudio/build_dir/meson-private/sanitycheckc.exe and 32-pulseaudio.mod/build_dir/meson-private/sanitycheckc.exe differ
-Binary files 32-pulseaudio/build_dir/meson-private/sanitycheckc_cross.exe and 32-pulseaudio.mod/build_dir/meson-private/sanitycheckc_cross.exe differ
 diff -uNr 32-pulseaudio/include/libintl.h 32-pulseaudio.mod/include/libintl.h
---- 32-pulseaudio/include/libintl.h	1969-12-31 21:00:00.000000000 -0300
-+++ 32-pulseaudio.mod/include/libintl.h	2024-03-02 23:14:31.246150000 -0300
+--- 32-pulseaudio/include/libintl.h	1970-01-01 00:00:00.000000000 +0000
++++ 32-pulseaudio.mod/include/libintl.h	2024-03-04 01:52:46.316081000 +0000
 @@ -0,0 +1,53 @@
 +#ifndef _LIBINTL_H
 +#define _LIBINTL_H
@@ -407,8 +56,8 @@ diff -uNr 32-pulseaudio/include/libintl.h 32-pulseaudio.mod/include/libintl.h
 +
 +#endif
 diff -uNr 32-pulseaudio/meson.build 32-pulseaudio.mod/meson.build
---- 32-pulseaudio/meson.build	2024-01-12 14:22:09.000000000 -0300
-+++ 32-pulseaudio.mod/meson.build	2024-03-02 23:21:21.567940000 -0300
+--- 32-pulseaudio/meson.build	2024-01-12 17:22:09.000000000 +0000
++++ 32-pulseaudio.mod/meson.build	2024-03-04 01:52:46.316177000 +0000
 @@ -14,7 +14,7 @@
  # (e.g.: v11.99.1-3-gad14bdb24 -> v11.99.1)
  version_split = pa_version_str.split('-')[0].split('.')
@@ -447,14 +96,9 @@ diff -uNr 32-pulseaudio/meson.build 32-pulseaudio.mod/meson.build
  
  thread_dep = dependency('threads')
  foreach f : [
-diff -uNr 32-pulseaudio/setup-ndk.sh 32-pulseaudio.mod/setup-ndk.sh
---- 32-pulseaudio/setup-ndk.sh	1969-12-31 21:00:00.000000000 -0300
-+++ 32-pulseaudio.mod/setup-ndk.sh	2024-03-02 23:14:31.249014000 -0300
-@@ -0,0 +1 @@
-+setupBuildEnv 25b 32 aarch64 --silent
 diff -uNr 32-pulseaudio/src/daemon/caps.c 32-pulseaudio.mod/src/daemon/caps.c
---- 32-pulseaudio/src/daemon/caps.c	2024-01-12 14:22:09.000000000 -0300
-+++ 32-pulseaudio.mod/src/daemon/caps.c	2024-03-02 23:14:31.246249000 -0300
+--- 32-pulseaudio/src/daemon/caps.c	2024-01-12 17:22:09.000000000 +0000
++++ 32-pulseaudio.mod/src/daemon/caps.c	2024-03-04 01:52:46.094845000 +0000
 @@ -36,64 +36,11 @@
  
  #include "caps.h"
@@ -524,17 +168,16 @@ diff -uNr 32-pulseaudio/src/daemon/caps.c 32-pulseaudio.mod/src/daemon/caps.c
 +    return;
  }
 diff -uNr 32-pulseaudio/src/daemon/main.c 32-pulseaudio.mod/src/daemon/main.c
---- 32-pulseaudio/src/daemon/main.c	2024-01-12 14:22:09.000000000 -0300
-+++ 32-pulseaudio.mod/src/daemon/main.c	2024-03-02 23:14:31.246290000 -0300
-@@ -162,206 +162,11 @@
+--- 32-pulseaudio/src/daemon/main.c	2024-01-12 17:22:09.000000000 +0000
++++ 32-pulseaudio.mod/src/daemon/main.c	2024-03-04 01:52:46.094907000 +0000
+@@ -162,207 +162,12 @@
      }
  }
  
-+// Disable privilege dropping on Android.
- 
+-
 -#if defined(OS_IS_WIN32)
 -
- static int change_user(void) {
+-static int change_user(void) {
 -    pa_log_info("Overriding system runtime/config base dir to '%s'.", pa_win32_get_system_appdata());
 -
 -    /* On other platforms, these paths are compiled into PulseAudio. This isn't
@@ -616,12 +259,13 @@ diff -uNr 32-pulseaudio/src/daemon/main.c 32-pulseaudio.mod/src/daemon/main.c
 -    pa_xfree(lib_path);
 -
 -    pa_log_info("Not changing user for system instance on Windows.");
-     return 0;
- }
+-    return 0;
+-}
 -
 -#elif defined(HAVE_PWD_H) && defined(HAVE_GRP_H)
--
--static int change_user(void) {
++// Disable privilege dropping on Android.
+ 
+ static int change_user(void) {
 -    struct passwd *pw;
 -    struct group * gr;
 -    int r;
@@ -720,9 +364,9 @@ diff -uNr 32-pulseaudio/src/daemon/main.c 32-pulseaudio.mod/src/daemon/main.c
 -
 -    pa_log_info("Successfully changed user to \"" PA_SYSTEM_USER "\".");
 -
--    return 0;
--}
--
+     return 0;
+ }
+ 
 -#else /* HAVE_PWD_H && HAVE_GRP_H */
 -
 -static int change_user(void) {
@@ -731,12 +375,13 @@ diff -uNr 32-pulseaudio/src/daemon/main.c 32-pulseaudio.mod/src/daemon/main.c
 -}
 -
 -#endif /* HAVE_PWD_H && HAVE_GRP_H */
- 
+-
  #ifdef HAVE_SYS_RESOURCE_H
  
+ static int set_one_rlimit(const pa_rlimit *r, int resource, const char *name) {
 diff -uNr 32-pulseaudio/src/modules/aaudio/module-aaudio-sink.c 32-pulseaudio.mod/src/modules/aaudio/module-aaudio-sink.c
---- 32-pulseaudio/src/modules/aaudio/module-aaudio-sink.c	1969-12-31 21:00:00.000000000 -0300
-+++ 32-pulseaudio.mod/src/modules/aaudio/module-aaudio-sink.c	2024-03-02 23:14:31.246370000 -0300
+--- 32-pulseaudio/src/modules/aaudio/module-aaudio-sink.c	1970-01-01 00:00:00.000000000 +0000
++++ 32-pulseaudio.mod/src/modules/aaudio/module-aaudio-sink.c	2024-03-04 01:52:46.230534000 +0000
 @@ -0,0 +1,450 @@
 +/***
 +  This file is part of PulseAudio.
@@ -1189,8 +834,8 @@ diff -uNr 32-pulseaudio/src/modules/aaudio/module-aaudio-sink.c 32-pulseaudio.mo
 +    pa_xfree(u);
 +}
 diff -uNr 32-pulseaudio/src/modules/echo-cancel/module-echo-cancel.c 32-pulseaudio.mod/src/modules/echo-cancel/module-echo-cancel.c
---- 32-pulseaudio/src/modules/echo-cancel/module-echo-cancel.c	2024-01-12 14:22:09.000000000 -0300
-+++ 32-pulseaudio.mod/src/modules/echo-cancel/module-echo-cancel.c	2024-03-02 23:14:31.246439000 -0300
+--- 32-pulseaudio/src/modules/echo-cancel/module-echo-cancel.c	2024-01-12 17:22:09.000000000 +0000
++++ 32-pulseaudio.mod/src/modules/echo-cancel/module-echo-cancel.c	2024-03-04 01:52:46.185577000 +0000
 @@ -2067,18 +2067,18 @@
      }
  
@@ -1216,8 +861,8 @@ diff -uNr 32-pulseaudio/src/modules/echo-cancel/module-echo-cancel.c 32-pulseaud
                  perror ("fopen failed");
          }
 diff -uNr 32-pulseaudio/src/modules/meson.build 32-pulseaudio.mod/src/modules/meson.build
---- 32-pulseaudio/src/modules/meson.build	2024-01-12 14:22:09.000000000 -0300
-+++ 32-pulseaudio.mod/src/modules/meson.build	2024-03-02 23:14:31.246481000 -0300
+--- 32-pulseaudio/src/modules/meson.build	2024-01-12 17:22:09.000000000 +0000
++++ 32-pulseaudio.mod/src/modules/meson.build	2024-03-04 01:52:46.230626000 +0000
 @@ -58,6 +58,9 @@
    [ 'module-virtual-sink', 'module-virtual-sink.c' ],
    [ 'module-virtual-source', 'module-virtual-source.c' ],
@@ -1229,8 +874,8 @@ diff -uNr 32-pulseaudio/src/modules/meson.build 32-pulseaudio.mod/src/modules/me
  
  if host_machine.system() == 'windows'
 diff -uNr 32-pulseaudio/src/modules/module-pipe-source.c 32-pulseaudio.mod/src/modules/module-pipe-source.c
---- 32-pulseaudio/src/modules/module-pipe-source.c	2024-01-12 14:22:09.000000000 -0300
-+++ 32-pulseaudio.mod/src/modules/module-pipe-source.c	2024-03-02 23:14:31.246516000 -0300
+--- 32-pulseaudio/src/modules/module-pipe-source.c	2024-01-12 17:22:09.000000000 +0000
++++ 32-pulseaudio.mod/src/modules/module-pipe-source.c	2024-03-04 01:52:46.230682000 +0000
 @@ -59,7 +59,7 @@
          "channels=<number of channels> "
          "channel_map=<channel map>");
@@ -1241,8 +886,8 @@ diff -uNr 32-pulseaudio/src/modules/module-pipe-source.c 32-pulseaudio.mod/src/m
  
  struct userdata {
 diff -uNr 32-pulseaudio/src/modules/module-protocol-stub.c 32-pulseaudio.mod/src/modules/module-protocol-stub.c
---- 32-pulseaudio/src/modules/module-protocol-stub.c	2024-01-12 14:22:09.000000000 -0300
-+++ 32-pulseaudio.mod/src/modules/module-protocol-stub.c	2024-03-02 23:14:31.246553000 -0300
+--- 32-pulseaudio/src/modules/module-protocol-stub.c	2024-01-12 17:22:09.000000000 +0000
++++ 32-pulseaudio.mod/src/modules/module-protocol-stub.c	2024-03-04 01:52:46.230744000 +0000
 @@ -303,13 +303,13 @@
      /* Windows doesn't support getuid(), so we ignore the per-user Esound socket compile flag.
       * Moreover, Esound Unix sockets haven't been supported on Windows historically. */
@@ -1261,8 +906,8 @@ diff -uNr 32-pulseaudio/src/modules/module-protocol-stub.c 32-pulseaudio.mod/src
      if (pa_make_secure_parent_dir(u->socket_path, pa_in_system_mode() ? 0755U : 0700U, (uid_t)-1, (gid_t)-1, false) < 0) {
          pa_log("Failed to create socket directory '%s': %s\n", u->socket_path, pa_cstrerror(errno));
 diff -uNr 32-pulseaudio/src/modules/sles/module-sles-sink.c 32-pulseaudio.mod/src/modules/sles/module-sles-sink.c
---- 32-pulseaudio/src/modules/sles/module-sles-sink.c	1969-12-31 21:00:00.000000000 -0300
-+++ 32-pulseaudio.mod/src/modules/sles/module-sles-sink.c	2024-03-02 23:14:31.246630000 -0300
+--- 32-pulseaudio/src/modules/sles/module-sles-sink.c	1970-01-01 00:00:00.000000000 +0000
++++ 32-pulseaudio.mod/src/modules/sles/module-sles-sink.c	2024-03-04 01:52:46.230870000 +0000
 @@ -0,0 +1,661 @@
 +/***
 +  This file is part of PulseAudio.
@@ -1926,8 +1571,8 @@ diff -uNr 32-pulseaudio/src/modules/sles/module-sles-sink.c 32-pulseaudio.mod/sr
 +    pa_xfree(u);
 +}
 diff -uNr 32-pulseaudio/src/modules/sles/module-sles-source.c 32-pulseaudio.mod/src/modules/sles/module-sles-source.c
---- 32-pulseaudio/src/modules/sles/module-sles-source.c	1969-12-31 21:00:00.000000000 -0300
-+++ 32-pulseaudio.mod/src/modules/sles/module-sles-source.c	2024-03-02 23:14:31.246671000 -0300
+--- 32-pulseaudio/src/modules/sles/module-sles-source.c	1970-01-01 00:00:00.000000000 +0000
++++ 32-pulseaudio.mod/src/modules/sles/module-sles-source.c	2024-03-04 01:52:46.230928000 +0000
 @@ -0,0 +1,435 @@
 +/***
 +  This file is part of PulseAudio.
@@ -2365,8 +2010,8 @@ diff -uNr 32-pulseaudio/src/modules/sles/module-sles-source.c 32-pulseaudio.mod/
 +    pa_xfree(u);
 +}
 diff -uNr 32-pulseaudio/src/pulsecore/core-util.c 32-pulseaudio.mod/src/pulsecore/core-util.c
---- 32-pulseaudio/src/pulsecore/core-util.c	2024-01-12 14:22:09.000000000 -0300
-+++ 32-pulseaudio.mod/src/pulsecore/core-util.c	2024-03-02 23:14:31.246726000 -0300
+--- 32-pulseaudio/src/pulsecore/core-util.c	2024-01-12 17:22:09.000000000 +0000
++++ 32-pulseaudio.mod/src/pulsecore/core-util.c	2024-03-04 01:52:46.273714000 +0000
 @@ -1766,7 +1766,7 @@
       * users, too. Since we need POSIX locking and UNIX sockets in
       * this directory, we try XDG_RUNTIME_DIR first, and if that isn't
@@ -2406,8 +2051,8 @@ diff -uNr 32-pulseaudio/src/pulsecore/core-util.c 32-pulseaudio.mod/src/pulsecor
  
  int pa_open_cloexec(const char *fn, int flags, mode_t mode) {
 diff -uNr 32-pulseaudio/src/pulsecore/esound.h 32-pulseaudio.mod/src/pulsecore/esound.h
---- 32-pulseaudio/src/pulsecore/esound.h	2024-01-12 14:22:09.000000000 -0300
-+++ 32-pulseaudio.mod/src/pulsecore/esound.h	2024-03-02 23:14:31.246764000 -0300
+--- 32-pulseaudio/src/pulsecore/esound.h	2024-01-12 17:22:09.000000000 +0000
++++ 32-pulseaudio.mod/src/pulsecore/esound.h	2024-03-04 01:52:46.274078000 +0000
 @@ -23,8 +23,8 @@
  /* Most of the following is blatantly stolen from esound. */
  
@@ -2419,9 +2064,21 @@ diff -uNr 32-pulseaudio/src/pulsecore/esound.h 32-pulseaudio.mod/src/pulsecore/e
  
  /* length of the audio buffer size */
  #define ESD_BUF_SIZE (4 * 1024)
+diff -uNr 32-pulseaudio/src/pulsecore/log.c 32-pulseaudio.mod/src/pulsecore/log.c
+--- 32-pulseaudio/src/pulsecore/log.c	2024-01-12 17:22:09.000000000 +0000
++++ 32-pulseaudio.mod/src/pulsecore/log.c	2024-03-04 01:52:46.248563000 +0000
+@@ -229,6 +229,8 @@
+     skip_backtrace = nlevels;
+ }
+ 
++#undef HAVE_EXECINFO_H
++
+ #ifdef HAVE_EXECINFO_H
+ 
+ static char* get_backtrace(unsigned show_nframes) {
 diff -uNr 32-pulseaudio/src/pulsecore/meson.build 32-pulseaudio.mod/src/pulsecore/meson.build
---- 32-pulseaudio/src/pulsecore/meson.build	2024-01-12 14:22:09.000000000 -0300
-+++ 32-pulseaudio.mod/src/pulsecore/meson.build	2024-03-02 23:14:31.246800000 -0300
+--- 32-pulseaudio/src/pulsecore/meson.build	2024-01-12 17:22:09.000000000 +0000
++++ 32-pulseaudio.mod/src/pulsecore/meson.build	2024-03-04 01:52:46.274135000 +0000
 @@ -185,14 +185,7 @@
  foreach simd_kwargs : simd_variants
  
@@ -2439,8 +2096,8 @@ diff -uNr 32-pulseaudio/src/pulsecore/meson.build 32-pulseaudio.mod/src/pulsecor
  
    libpulsecore_simd = simd.check('libpulsecore_simd',
 diff -uNr 32-pulseaudio/src/pulsecore/shm.c 32-pulseaudio.mod/src/pulsecore/shm.c
---- 32-pulseaudio/src/pulsecore/shm.c	2024-01-12 14:22:09.000000000 -0300
-+++ 32-pulseaudio.mod/src/pulsecore/shm.c	2024-03-02 23:14:31.246837000 -0300
+--- 32-pulseaudio/src/pulsecore/shm.c	2024-01-12 17:22:09.000000000 +0000
++++ 32-pulseaudio.mod/src/pulsecore/shm.c	2024-03-04 01:52:46.274191000 +0000
 @@ -65,9 +65,9 @@
  
  #ifdef __linux__
@@ -2454,8 +2111,8 @@ diff -uNr 32-pulseaudio/src/pulsecore/shm.c 32-pulseaudio.mod/src/pulsecore/shm.
  #elif defined(__sun)
  #define SHM_PATH "/tmp"
 diff -uNr 32-pulseaudio/src/tests/meson.build 32-pulseaudio.mod/src/tests/meson.build
---- 32-pulseaudio/src/tests/meson.build	2024-01-12 14:22:09.000000000 -0300
-+++ 32-pulseaudio.mod/src/tests/meson.build	2024-03-02 23:14:31.246879000 -0300
+--- 32-pulseaudio/src/tests/meson.build	2024-01-12 17:22:09.000000000 +0000
++++ 32-pulseaudio.mod/src/tests/meson.build	2024-03-04 01:52:46.309175000 +0000
 @@ -106,8 +106,6 @@
      default_tests += [
        [ 'sigbus-test', 'sigbus-test.c',
