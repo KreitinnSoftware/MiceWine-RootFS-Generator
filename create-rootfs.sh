@@ -1,13 +1,17 @@
 #!/bin/bash
 
 symlink2hardlink() {
-  for i in *; do
+  cd $1
+
+  for i in $(ls); do
     link=$(readlink $i)
     if [ "$link" != "" ]; then
       rm $i
       ln -f $link $i
     fi 
   done
+
+  cd $OLDPWD
 }
 
 export PREFIX=/data/data/com.micewine.emu/files/usr
@@ -17,9 +21,9 @@ if [ ! -e "$PREFIX" ]; then
   exit
 fi
 
-cd $PREFIX/lib
+symlink2hardlink $PREFIX/lib
 
-symlink2hardlink
+symlink2hardlink $PREFIX/virglrenderer/lib
 
 cd $PREFIX/..
 

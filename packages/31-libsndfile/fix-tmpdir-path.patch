@@ -6,7 +6,7 @@ diff -uNr libsndfile/src/common.c libsndfile.mod/src/common.c
  	else
  	{	tmpdir = getenv ("TMPDIR") ;
 -		tmpdir = tmpdir == NULL ? "/tmp" : tmpdir ;
-+		tmpdir = tmpdir == NULL ? "@TERMUX_PREFIX@/tmp" : tmpdir ;
++		tmpdir = tmpdir == NULL ? "/data/data/com.micewine.emu/files/usr/tmp" : tmpdir ;
  		} ;
  
  	if (tmpdir && access (tmpdir, R_OK | W_OK | X_OK) == 0)

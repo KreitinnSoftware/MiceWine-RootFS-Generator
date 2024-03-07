@@ -1073,7 +1073,7 @@ diff -uNr 34-virglrenderer/vtest/vtest_protocol.h 34-virglrenderer.mod/vtest/vte
  #define VTEST_PROTOCOL
  
 -#define VTEST_DEFAULT_SOCKET_NAME "/tmp/.virgl_test"
-+#define VTEST_DEFAULT_SOCKET_NAME "/data/data/com.micewine.emu/files/usr/tmp/.virgl_test"
++#define VTEST_DEFAULT_SOCKET_NAME "/data/data/com.termux/files/usr/tmp/.virgl_test"
  
  #ifdef VIRGL_RENDERER_UNSTABLE_APIS
  #define VTEST_PROTOCOL_VERSION 3

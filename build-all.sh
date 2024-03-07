@@ -58,35 +58,40 @@ downloadPackages()
 	mkdir -p $PREFIX/include
 	
 	for package in $PACKAGES; do 
-		unset SRC_URL CONFIGURE_ARGS MESON_ARGS CMAKE_ARGS USE_NDK_VERSION RUN_POST_APPLY_PATCH CFLAGS LDFLAGS LIBS
+		unset SRC_URL CONFIGURE_ARGS MESON_ARGS CMAKE_ARGS USE_NDK_VERSION RUN_POST_APPLY_PATCH RUN_POST_BUILD CFLAGS LDFLAGS LIBS OVERRIDE_PREFIX OVERRIDE_PKG_CONFIG_PATH
 
-		. ../packages/$package/build.sh
+		. $INIT_DIR/packages/$package/build.sh
 
-		echo "Downloading '$package'..."
+		mkdir -p "$INIT_DIR/cache"
 
-		curl -# -L -O $SRC_URL
+		if [ -e "$INIT_DIR/cache/$(basename $SRC_URL)" ]; then
+			echo "Package '$package' already downloaded."
+		else
+			echo "Downloading '$package'..."
+			curl --output-dir "$INIT_DIR/cache" -# -L -O $SRC_URL
+		fi
 
 		case "$(basename $SRC_URL)" in *".tar"*)
-			tar -xf "$(basename $SRC_URL)"
+			tar -xf "$INIT_DIR/cache/$(basename $SRC_URL)"
 
-			ARCHIVE_CONTENT=$(tar -tf "$(basename $SRC_URL)")
+			ARCHIVE_CONTENT=$(tar -tf "$INIT_DIR/cache/$(basename $SRC_URL)")
 			;;
 			*".zip"*)
-			unzip -o "$(basename $SRC_URL)" 1> /dev/null
+			unzip -o "$INIT_DIR/cache/$(basename $SRC_URL)" 1> /dev/null
 
-			ARCHIVE_CONTENT=$(unzip -Z1 "$(basename $SRC_URL)")
+			ARCHIVE_CONTENT=$(unzip -Z1 "$INIT_DIR/cache/$(basename $SRC_URL)")
 		esac
 
 		cd $(echo $ARCHIVE_CONTENT | cut -d"/" -f 1 | head -n 1)
 
 		echo
 
-		case $(ls ../../packages/$package | sed "s/build.sh//g") in "")
+		case $(ls $INIT_DIR/packages/$package | grep "patch") in "")
 			;;
 			*)
-			for patch in $(ls ../../packages/$package | sed "s/build.sh//g"); do
+			for patch in $(ls $INIT_DIR/packages/$package | sed "s/build.sh//g"); do
 				echo "Applying '$patch' for '$package'..."
-				git apply -v ../../packages/$package/$patch
+				git apply -v $INIT_DIR/packages/$package/$patch
 
 				if [ "$RUN_POST_APPLY_PATCH" != "" ]; then
 					$RUN_POST_APPLY_PATCH
@@ -97,21 +102,37 @@ downloadPackages()
 
 		echo "export CFLAGS=$CFLAGS LIBS=$LIBS LDFLAGS=$LDFLAGS" > build.sh
 
+		if [ "$OVERRIDE_PREFIX" != "" ]; then
+			PREFIX_DIR=$OVERRIDE_PREFIX
+		else
+			PREFIX_DIR=$PREFIX
+		fi
+
+		if [ "$OVERRIDE_PKG_CONFIG_PATH" != "" ]; then
+			echo "export PKG_CONFIG_PATH=$OVERRIDE_PKG_CONFIG_PATH" >> build.sh
+		else
+			echo "export PKG_CONFIG_PATH=$PKG_CONFIG_PATH" >> build.sh
+		fi
+
 		if [ -e "configure" ]; then
-			echo "../configure --prefix=$PREFIX $CONFIGURE_ARGS" >> build.sh
+			echo "../configure --prefix=$PREFIX_DIR $CONFIGURE_ARGS" >> build.sh
 			echo "make -j $(nproc) install" >> build.sh
 		elif [ -e "autogen.sh" ]; then
-			echo "../autogen.sh --prefix=$PREFIX $CONFIGURE_ARGS" >> build.sh
+			echo "../autogen.sh --prefix=$PREFIX_DIR $CONFIGURE_ARGS" >> build.sh
 			echo "make -j $(nproc) install" >> build.sh
 		elif [ -e "CMakeLists.txt" ]; then
-			echo "cmake -DCMAKE_INSTALL_PREFIX=$PREFIX -DCMAKE_INSTALL_LIBDIR=$PREFIX/lib $CMAKE_ARGS .." >> build.sh
+			echo "cmake -DCMAKE_INSTALL_PREFIX=$PREFIX_DIR -DCMAKE_INSTALL_LIBDIR=$PREFIX_DIR/lib $CMAKE_ARGS .." >> build.sh
 			echo "make -j $(nproc) install" >> build.sh
 		elif [ -e "meson.build" ]; then
-			echo "meson setup -Dprefix=$PREFIX $MESON_ARGS .." >> build.sh
+			echo "meson setup -Dprefix=$PREFIX_DIR $MESON_ARGS .." >> build.sh
 			echo "ninja -j $(nproc) install" >> build.sh
 		else
 			echo "Unsupported build system. Stopping..."
 			exit 1
+		fi
+
+		if [ -e "$INIT_DIR/packages/$package/post-install.sh" ]; then
+			echo "$INIT_DIR/packages/$package/post-install.sh" >> build.sh
 		fi
 
 		echo "setupBuildEnv $USE_NDK_VERSION 32 $ARCHITECTURE --silent" > setup-ndk.sh
@@ -121,8 +142,6 @@ downloadPackages()
 		cd ..
 
 		mv $(echo $ARCHIVE_CONTENT | cut -d"/" -f 1 | head -n 1) $package
-
-		rm "$(basename $SRC_URL)"
 	done
 }
 
@@ -147,19 +166,29 @@ export PREFIX=/data/data/com.micewine.emu/files/usr
 
 export ARCHITECTURE=aarch64
 
-if [ "$NDK_ROOT" == "" ]; then
+if [ "$NDK_ROOT" == "" ] && [ "$*" != "--download-only" ]; then
 	echo "Please Provide a Valid Folder with NDK 25b and 26b on 'NDK_ROOT' environment variable."
 	exit
 fi
 
-if [ ! -e "$PREFIX" ]; then
-	sudo mkdir -p "$PREFIX"
-	sudo chown -R $(whoami):$(whoami) "$PREFIX"
-	sudo chmod 755 -R "$PREFIX"
-else
-	echo "Cleaning Prefix..."
+if [ "$*" != "--download-only" ]; then
+	if [ ! -e "$PREFIX" ]; then
+		sudo mkdir -p "$PREFIX"
+		sudo chown -R $(whoami):$(whoami) "$PREFIX"
+		sudo chmod 755 -R "$PREFIX"
+	else
+		echo "Cleaning Prefix..."
 
-	rm -rf $PREFIX/*
+		rm -rf $PREFIX/*
+	fi
+else
+	echo "This script will download packages only."
+fi
+
+if [ "$*" == "--clean-cache" ]; then
+	echo "Cleaning Cache..."
+
+	rm -rf cache
 fi
 
 if [ -e "workdir" ]; then
@@ -167,12 +196,14 @@ if [ -e "workdir" ]; then
 	rm -rf workdir
 fi
 
-if [ -e "logs" ]; then
+if [ -e "logs" ] && [ "$*" != "--download-only" ]; then
 	echo "Cleaning logs..."
 	rm -rf logs
 fi
 
-setupBuildEnv 26b 32 aarch64 --silent
+if [ "$*" != "--download-only" ]; then
+	setupBuildEnv 26b 32 aarch64 --silent
+fi
 
 export PACKAGES=$(ls packages)
 
@@ -184,4 +215,10 @@ mkdir -p workdir
 cd workdir
 
 downloadPackages
-compileAll
+
+if [ "$*" != "--download-only" ]; then
+	compileAll
+
+	# Copy libc++_shared.so from NDK
+	cp $NDK_ROOT/26.1.10909125/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so $PREFIX/lib
+fi

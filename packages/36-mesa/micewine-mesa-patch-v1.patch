@@ -1,0 +1,493 @@
+diff -uNr 36-mesa/include/vulkan/vk_android_native_buffer.h 36-mesa.mod/include/vulkan/vk_android_native_buffer.h
+--- 36-mesa/include/vulkan/vk_android_native_buffer.h	2024-03-04 15:11:16.000000000 -0300
++++ 36-mesa.mod/include/vulkan/vk_android_native_buffer.h	2024-03-04 21:49:41.061818000 -0300
+@@ -18,18 +18,18 @@
+ #define __VK_ANDROID_NATIVE_BUFFER_H__
+ 
+ /* MESA: A hack to avoid #ifdefs in driver code. */
+-#ifdef __ANDROID__
+-#include <cutils/native_handle.h>
+-#include <vulkan/vulkan.h>
++//#ifdef __ANDROID__
++//#include <cutils/native_handle.h>
++//#include <vulkan/vulkan.h>
+ 
+-#if ANDROID_API_LEVEL < 28
++//#if ANDROID_API_LEVEL < 28
+ /* buffer_handle_t was defined in the deprecated system/window.h */
+-typedef const native_handle_t *buffer_handle_t;
+-#endif
++//typedef const native_handle_t *buffer_handle_t;
++//#endif
+ 
+-#else
++//#else
+ typedef void *buffer_handle_t;
+-#endif
++//#endif
+ 
+ #ifdef __cplusplus
+ extern "C" {
+diff -uNr 36-mesa/meson.build 36-mesa.mod/meson.build
+--- 36-mesa/meson.build	2024-03-04 15:11:16.000000000 -0300
++++ 36-mesa.mod/meson.build	2024-03-04 21:49:41.061867000 -0300
+@@ -1376,7 +1376,7 @@
+   endif
+ endif
+ 
+-foreach h : ['xlocale.h', 'linux/futex.h', 'endian.h', 'dlfcn.h', 'sys/shm.h',
++foreach h : ['linux/futex.h', 'endian.h', 'dlfcn.h', 'sys/shm.h',
+              'cet.h', 'pthread_np.h', 'renderdoc_app.h', 'sys/inotify.h']
+   if cc.check_header(h)
+     pre_args += '-DHAVE_@0@'.format(h.to_upper().underscorify())
+@@ -1386,11 +1386,9 @@
+ functions_to_detect = {
+   'strtof': '',
+   'mkostemp': '',
+-  'memfd_create': '',
+   'random_r': '',
+   'flock': '',
+   'strtok_r': '',
+-  'getrandom': '',
+   'qsort_s': '',
+   'posix_fallocate': '',
+   'secure_getenv': '',
+diff -uNr 36-mesa/src/freedreno/vulkan/tu_device.cc 36-mesa.mod/src/freedreno/vulkan/tu_device.cc
+--- 36-mesa/src/freedreno/vulkan/tu_device.cc	2024-03-04 15:11:16.000000000 -0300
++++ 36-mesa.mod/src/freedreno/vulkan/tu_device.cc	2024-03-04 21:49:41.061936000 -0300
+@@ -2739,6 +2739,14 @@
+       uint64_t client_address = 0;
+       BITMASK_ENUM(tu_bo_alloc_flags) alloc_flags = TU_BO_ALLOC_NO_FLAGS;
+ 
++      const VkExportMemoryAllocateInfo *export_info = vk_find_struct_const(
++         pAllocateInfo->pNext, EXPORT_MEMORY_ALLOCATE_INFO);
++      if (export_info && (export_info->handleTypes &
++                          (VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT |
++                           VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT))) {
++         alloc_flags |= TU_BO_ALLOC_SHAREABLE;
++      }
++
+       const VkMemoryOpaqueCaptureAddressAllocateInfo *replay_info =
+          vk_find_struct_const(pAllocateInfo->pNext,
+                               MEMORY_OPAQUE_CAPTURE_ADDRESS_ALLOCATE_INFO);
+diff -uNr 36-mesa/src/freedreno/vulkan/tu_knl.h 36-mesa.mod/src/freedreno/vulkan/tu_knl.h
+--- 36-mesa/src/freedreno/vulkan/tu_knl.h	2024-03-04 15:11:16.000000000 -0300
++++ 36-mesa.mod/src/freedreno/vulkan/tu_knl.h	2024-03-04 21:49:41.061966000 -0300
+@@ -21,6 +21,7 @@
+    TU_BO_ALLOC_ALLOW_DUMP = 1 << 0,
+    TU_BO_ALLOC_GPU_READ_ONLY = 1 << 1,
+    TU_BO_ALLOC_REPLAYABLE = 1 << 2,
++   TU_BO_ALLOC_SHAREABLE = 1 << 3,
+ };
+ 
+ /* Define tu_timeline_sync type based on drm syncobj for a point type
+@@ -53,6 +54,7 @@
+    uint32_t bo_list_idx;
+ 
+    bool implicit_sync : 1;
++   int dmabuf_fd;
+ };
+ 
+ struct tu_knl {
+diff -uNr 36-mesa/src/freedreno/vulkan/tu_knl_kgsl.cc 36-mesa.mod/src/freedreno/vulkan/tu_knl_kgsl.cc
+--- 36-mesa/src/freedreno/vulkan/tu_knl_kgsl.cc	2024-03-04 15:11:16.000000000 -0300
++++ 36-mesa.mod/src/freedreno/vulkan/tu_knl_kgsl.cc	2024-03-04 21:49:41.062002000 -0300
+@@ -11,6 +11,7 @@
+ #include <stdint.h>
+ #include <sys/ioctl.h>
+ #include <sys/mman.h>
++#include <linux/dma-heap.h>
+ 
+ #include "msm_kgsl.h"
+ #include "vk_util.h"
+@@ -18,6 +19,7 @@
+ #include "util/u_debug.h"
+ #include "util/u_vector.h"
+ #include "util/libsync.h"
++#include "util/os_file.h"
+ #include "util/timespec.h"
+ 
+ #include "tu_cmd_buffer.h"
+@@ -67,6 +69,57 @@
+    safe_ioctl(dev->physical_device->local_fd, IOCTL_KGSL_DRAWCTXT_DESTROY, &req);
+ }
+ 
++static int
++dmabuf_alloc(uint64_t size)
++{
++   int ret;
++   int dma_heap = open("/dev/dma_heap/system", O_RDONLY);
++
++   if (dma_heap < 0) {
++      int ion_heap = open("/dev/ion", O_RDONLY);
++
++      if (ion_heap < 0)
++         return -1;
++
++      struct ion_allocation_data {
++         __u64 len;
++         __u32 heap_id_mask;
++         __u32 flags;
++         __u32 fd;
++         __u32 unused;
++      } alloc_data = {
++         .len = size,
++         /* ION_HEAP_SYSTEM | ION_SYSTEM_HEAP_ID */
++         .heap_id_mask = (1U << 0) | (1U << 25),
++         .flags = 0, /* uncached */
++      };
++
++      ret = safe_ioctl(ion_heap, _IOWR('I', 0, struct ion_allocation_data),
++                      &alloc_data);
++
++      close(ion_heap);
++
++      if (ret)
++         return -1;
++
++      return alloc_data.fd;
++   } else {
++      struct dma_heap_allocation_data alloc_data = {
++         .len = size,
++         .fd_flags = O_RDWR | O_CLOEXEC,
++      };
++
++      ret = safe_ioctl(dma_heap, DMA_HEAP_IOCTL_ALLOC, &alloc_data);
++
++      close(dma_heap);
++
++      if (ret)
++         return -1;
++
++      return alloc_data.fd;
++   }
++}
++
+ static VkResult
+ kgsl_bo_init(struct tu_device *dev,
+              struct tu_bo **out_bo,
+@@ -78,6 +131,21 @@
+ {
+    assert(client_iova == 0);
+ 
++   if (flags & TU_BO_ALLOC_SHAREABLE) {
++      int fd = dmabuf_alloc(size);
++
++      if (fd < 0) {
++         return vk_errorf(dev, VK_ERROR_OUT_OF_DEVICE_MEMORY,
++                       "DMABUF_ALLOC failed (%s)", strerror(errno));
++      }
++
++      VkResult res = tu_bo_init_dmabuf(dev, out_bo, size, fd);
++
++      close(fd);
++
++      return res;
++   }
++
+    struct kgsl_gpumem_alloc_id req = {
+       .size = size,
+    };
+@@ -113,6 +181,7 @@
+       .iova = req.gpuaddr,
+       .name = tu_debug_bos_add(dev, req.mmapsize, name),
+       .refcnt = 1,
++      .dmabuf_fd = -1,
+    };
+ 
+    *out_bo = bo;
+@@ -162,6 +231,7 @@
+       .iova = info_req.gpuaddr,
+       .name = tu_debug_bos_add(dev, info_req.size, "dmabuf"),
+       .refcnt = 1,
++      .dmabuf_fd = os_dupfd_cloexec(fd),
+    };
+ 
+    *out_bo = bo;
+@@ -172,9 +242,7 @@
+ static int
+ kgsl_bo_export_dmabuf(struct tu_device *dev, struct tu_bo *bo)
+ {
+-   tu_stub();
+-
+-   return -1;
++   return os_dupfd_cloexec(bo->dmabuf_fd);
+ }
+ 
+ static VkResult
+@@ -183,6 +251,15 @@
+    if (bo->map)
+       return VK_SUCCESS;
+ 
++   if (bo->dmabuf_fd != -1) {
++      void *map = mmap(0, bo->size, PROT_READ | PROT_WRITE, MAP_SHARED, bo->dmabuf_fd, 0);
++
++      if (map != MAP_FAILED) {
++         bo->map = map;
++         return VK_SUCCESS;
++      }
++   }
++
+    uint64_t offset = bo->gem_handle << 12;
+    void *map = mmap(0, bo->size, PROT_READ | PROT_WRITE, MAP_SHARED,
+                     dev->physical_device->local_fd, offset);
+@@ -209,6 +286,9 @@
+ 
+    if (bo->map)
+       munmap(bo->map, bo->size);
++
++   if (bo->dmabuf_fd != -1)
++      close(bo->dmabuf_fd);
+ 
+    struct kgsl_gpumem_free_id req = {
+       .id = bo->gem_handle
+diff -uNr 36-mesa/src/freedreno/vulkan/tu_shader.cc 36-mesa.mod/src/freedreno/vulkan/tu_shader.cc
+--- 36-mesa/src/freedreno/vulkan/tu_shader.cc	2024-03-04 15:11:16.000000000 -0300
++++ 36-mesa.mod/src/freedreno/vulkan/tu_shader.cc	2024-03-04 21:49:41.062049000 -0300
+@@ -2151,10 +2151,10 @@
+       size += vpc_size;
+    }
+ 
+-   pthread_mutex_lock(&dev->pipeline_mutex);
++   mtx_lock(&dev->pipeline_mutex);
+    VkResult result = tu_suballoc_bo_alloc(&shader->bo, &dev->pipeline_suballoc,
+                                           size * 4, 128);
+-   pthread_mutex_unlock(&dev->pipeline_mutex);
++   mtx_unlock(&dev->pipeline_mutex);
+ 
+    if (result != VK_SUCCESS)
+       return result;
+@@ -2184,9 +2184,9 @@
+ 
+    result = tu_setup_pvtmem(dev, shader, &pvtmem_config, pvtmem_size, per_wave);
+    if (result != VK_SUCCESS) {
+-      pthread_mutex_lock(&dev->pipeline_mutex);
++      mtx_lock(&dev->pipeline_mutex);
+       tu_suballoc_bo_free(&dev->pipeline_suballoc, &shader->bo);
+-      pthread_mutex_unlock(&dev->pipeline_mutex);
++      mtx_unlock(&dev->pipeline_mutex);
+       return result;
+    }
+ 
+@@ -2876,10 +2876,10 @@
+    if (!shader)
+       return VK_ERROR_OUT_OF_HOST_MEMORY;
+ 
+-   pthread_mutex_lock(&dev->pipeline_mutex);
++   mtx_lock(&dev->pipeline_mutex);
+    VkResult result = tu_suballoc_bo_alloc(&shader->bo, &dev->pipeline_suballoc,
+                                           32 * 4, 128);
+-   pthread_mutex_unlock(&dev->pipeline_mutex);
++   mtx_unlock(&dev->pipeline_mutex);
+ 
+    if (result != VK_SUCCESS) {
+       vk_free(&dev->vk.alloc, shader);
+@@ -2988,9 +2988,9 @@
+ {
+    tu_cs_finish(&shader->cs);
+ 
+-   pthread_mutex_lock(&dev->pipeline_mutex);
++   mtx_lock(&dev->pipeline_mutex);
+    tu_suballoc_bo_free(&dev->pipeline_suballoc, &shader->bo);
+-   pthread_mutex_unlock(&dev->pipeline_mutex);
++   mtx_unlock(&dev->pipeline_mutex);
+ 
+    if (shader->pvtmem_bo)
+       tu_bo_finish(dev, shader->pvtmem_bo);
+diff -uNr 36-mesa/src/gallium/drivers/llvmpipe/lp_scene.c 36-mesa.mod/src/gallium/drivers/llvmpipe/lp_scene.c
+--- 36-mesa/src/gallium/drivers/llvmpipe/lp_scene.c	2024-03-04 15:11:16.000000000 -0300
++++ 36-mesa.mod/src/gallium/drivers/llvmpipe/lp_scene.c	2024-03-04 21:49:41.062091000 -0300
+@@ -38,6 +38,7 @@
+ #include "lp_state_fs.h"
+ #include "lp_setup_context.h"
+ 
++void *reallocarray(void *ptr, size_t nelem, size_t elsize);
+ 
+ #define RESOURCE_REF_SZ 32
+ /** List of resource references */
+diff -uNr 36-mesa/src/util/detect_os.h 36-mesa.mod/src/util/detect_os.h
+--- 36-mesa/src/util/detect_os.h	2024-03-04 15:11:16.000000000 -0300
++++ 36-mesa.mod/src/util/detect_os.h	2024-03-04 21:49:41.062124000 -0300
+@@ -24,9 +24,9 @@
+  * Android defines __linux__, so DETECT_OS_LINUX and DETECT_OS_UNIX will
+  * also be defined.
+  */
+-#if defined(__ANDROID__)
+-#define DETECT_OS_ANDROID 1
+-#endif
++//#if defined(__ANDROID__)
++//#define DETECT_OS_ANDROID 1
++//#endif
+ 
+ #if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+ #define DETECT_OS_FREEBSD 1
+diff -uNr 36-mesa/src/virtio/vtest/vtest_protocol.h 36-mesa.mod/src/virtio/vtest/vtest_protocol.h
+--- 36-mesa/src/virtio/vtest/vtest_protocol.h	2024-03-04 15:11:16.000000000 -0300
++++ 36-mesa.mod/src/virtio/vtest/vtest_protocol.h	2024-03-04 21:49:41.062158000 -0300
+@@ -25,7 +25,7 @@
+ #ifndef VTEST_PROTOCOL
+ #define VTEST_PROTOCOL
+ 
+-#define VTEST_DEFAULT_SOCKET_NAME "/tmp/.virgl_test"
++#define VTEST_DEFAULT_SOCKET_NAME "/data/data/com.micewine.emu/files/usr/tmp/.virgl_test"
+ 
+ #ifdef VIRGL_RENDERER_UNSTABLE_APIS
+ #define VTEST_PROTOCOL_VERSION 3
+diff -uNr 36-mesa/src/vulkan/wsi/wsi_common_display.c 36-mesa.mod/src/vulkan/wsi/wsi_common_display.c
+--- 36-mesa/src/vulkan/wsi/wsi_common_display.c	2024-03-04 15:11:16.000000000 -0300
++++ 36-mesa.mod/src/vulkan/wsi/wsi_common_display.c	2024-03-04 21:49:41.062253000 -0300
+@@ -175,6 +175,12 @@
+ 
+ static uint64_t fence_sequence;
+ 
++#ifdef __ANDROID__
++static void thread_signal_handler (int signum) {
++   pthread_exit (0);
++}
++#endif
++
+ ICD_DEFINE_NONDISP_HANDLE_CASTS(wsi_display_mode, VkDisplayModeKHR)
+ ICD_DEFINE_NONDISP_HANDLE_CASTS(wsi_display_connector, VkDisplayKHR)
+ 
+@@ -1340,7 +1346,9 @@
+       .events = POLLIN
+    };
+ 
++#ifndef __ANDROID__
+    pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
++#endif
+    for (;;) {
+       int ret = poll(&pollfd, 1, -1);
+       if (ret > 0) {
+@@ -1368,9 +1376,22 @@
+ static void
+ wsi_display_stop_wait_thread(struct wsi_display *wsi)
+ {
++#ifdef __ANDROID__
++   struct sigaction actions;
++   memset (&actions, 0, sizeof (actions));
++   sigemptyset (&actions.sa_mask);
++   actions.sa_flags = 0;
++   actions.sa_handler = thread_signal_handler;
++   sigaction (SIGUSR2, &actions, NULL);
++#endif
++
+    pthread_mutex_lock(&wsi->wait_mutex);
+    if (wsi->wait_thread) {
++#ifndef __ANDROID__
+       pthread_cancel(wsi->wait_thread);
++#else
++      pthread_kill(wsi->wait_thread, SIGUSR2);
++#endif
+       pthread_join(wsi->wait_thread, NULL);
+       wsi->wait_thread = 0;
+    }
+@@ -2214,7 +2235,9 @@
+ 
+    int udev_fd = udev_monitor_get_fd(mon);
+ 
++#ifndef __ANDROID__
+    pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
++#endif
+ 
+    for (;;) {
+       nfds_t nfds = 1;
+@@ -2337,6 +2360,15 @@
+    struct wsi_display *wsi =
+       (struct wsi_display *) wsi_device->wsi[VK_ICD_WSI_PLATFORM_DISPLAY];
+ 
++#ifdef __ANDROID__
++   struct sigaction actions;
++   memset (&actions, 0, sizeof (actions));
++   sigemptyset (&actions.sa_mask);
++   actions.sa_flags = 0;
++   actions.sa_handler = thread_signal_handler;
++   sigaction (SIGUSR2, &actions, NULL);
++#endif
++
+    if (wsi) {
+       wsi_for_each_connector(connector, wsi) {
+          wsi_for_each_display_mode(mode, connector) {
+@@ -2348,7 +2380,11 @@
+       wsi_display_stop_wait_thread(wsi);
+ 
+       if (wsi->hotplug_thread) {
++#ifndef __ANDROID__
+          pthread_cancel(wsi->hotplug_thread);
++#else
++         pthread_kill(wsi->hotplug_thread, SIGUSR2);
++#endif
+          pthread_join(wsi->hotplug_thread, NULL);
+       }
+ 
+diff -uNr 36-mesa/src/vulkan/wsi/wsi_common_x11.c 36-mesa.mod/src/vulkan/wsi/wsi_common_x11.c
+--- 36-mesa/src/vulkan/wsi/wsi_common_x11.c	2024-03-04 15:11:16.000000000 -0300
++++ 36-mesa.mod/src/vulkan/wsi/wsi_common_x11.c	2024-03-04 21:49:41.062308000 -0300
+@@ -439,7 +439,7 @@
+ 
+ static const VkFormat formats[] = {
+    VK_FORMAT_R5G6B5_UNORM_PACK16,
+-   VK_FORMAT_B8G8R8A8_SRGB,
++   // VK_FORMAT_B8G8R8A8_SRGB,
+    VK_FORMAT_B8G8R8A8_UNORM,
+    VK_FORMAT_A2R10G10B10_UNORM_PACK32,
+ };
+@@ -1360,7 +1360,7 @@
+       options |= XCB_PRESENT_OPTION_SUBOPTIMAL;
+ #endif
+ 
+-   xshmfence_reset(image->shm_fence);
++   // xshmfence_reset(image->shm_fence);
+ 
+    ++chain->sent_image_count;
+    assert(chain->sent_image_count <= chain->base.image_count);
+@@ -2038,14 +2038,23 @@
+          return VK_ERROR_OUT_OF_HOST_MEMORY;
+ 
+       cookie =
+-         xcb_dri3_pixmap_from_buffer_checked(chain->conn,
++         xcb_dri3_pixmap_from_buffers_checked(chain->conn,
+                                              image->pixmap,
+                                              chain->window,
+-                                             image->base.sizes[0],
++                                             image->base.num_planes,
+                                              pCreateInfo->imageExtent.width,
+                                              pCreateInfo->imageExtent.height,
+                                              image->base.row_pitches[0],
+-                                             chain->depth, bpp, fd);
++                                             image->base.offsets[0],
++                                             0,
++                                             0,
++                                             0,
++                                             0,
++                                             0,
++                                             0,
++                                             chain->depth, bpp,
++                                             1274,
++                                             &fd);
+    }
+ 
+    error = xcb_request_check(chain->conn, cookie);
+@@ -2054,6 +2063,9 @@
+       goto fail_image;
+    }
+ 
++   image->sync_fence = 0;
++   return VK_SUCCESS;
++
+ out_fence:
+    fence_fd = xshmfence_alloc_shm();
+    if (fence_fd < 0)
+@@ -2095,9 +2107,9 @@
+    xcb_void_cookie_t cookie;
+ 
+    if (!chain->base.wsi->sw || chain->has_mit_shm) {
+-      cookie = xcb_sync_destroy_fence(chain->conn, image->sync_fence);
+-      xcb_discard_reply(chain->conn, cookie.sequence);
+-      xshmfence_unmap_shm(image->shm_fence);
++      // cookie = xcb_sync_destroy_fence(chain->conn, image->sync_fence);
++      // xcb_discard_reply(chain->conn, cookie.sequence);
++      // xshmfence_unmap_shm(image->shm_fence);
+ 
+       cookie = xcb_free_pixmap(chain->conn, image->pixmap);
+       xcb_discard_reply(chain->conn, cookie.sequence);
