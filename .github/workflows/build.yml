@@ -17,7 +17,7 @@ jobs:
       run: |
         sudo apt update
         sudo apt install -y python3 python3-pip cmake wget git p7zip build-essential pkg-config xmlto fop xsltproc llvm autoconf libxml-parser-perl bison flex
-        pip3 install mako meson
+        pip3 install mako meson ninja
         sudo ln -sf ~/.local/bin/meson /usr/bin/meson
         wget https://dl.google.com/android/repository/android-ndk-r26b-linux.zip
         wget https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
