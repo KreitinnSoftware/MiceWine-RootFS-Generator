@@ -37,8 +37,8 @@ jobs:
     - name: "Upload Artifact"
       uses: actions/upload-artifact@v4
       with:
-          name: MiceWine-RootFS.zip
-          path: /data/data/com.micewine.emu/files/usr
+          name: MiceWine-RootFS
+          path: /data/data/com.micewine.emu/files
           compression-level: 2
     
     - name: "Create Zip File Stripped"
@@ -48,12 +48,12 @@ jobs:
     - name: "Upload Artifact Stripped"
       uses: actions/upload-artifact@v4
       with:
-          name: MiceWine-RootFS-Stripped.zip
-          path: /data/data/com.micewine.emu/files/usr
+          name: MiceWine-RootFS-Stripped
+          path: /data/data/com.micewine.emu/files
           compression-level: 2
           
     - name: "Upload Logs"
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
           name: MiceWine-Logs
           path: logs
