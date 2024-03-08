@@ -1,17 +1,26 @@
 #!/bin/bash
 
-symlink2hardlink() {
-  cd $1
+symlink2sh() {
+  rm -f $1/generateSymlinks.sh
 
-  for i in $(ls); do
-    link=$(readlink $i)
-    if [ "$link" != "" ]; then
-      rm $i
-      ln -f $link $i
-    fi 
+  for folder in $(find $1); do
+    if [ -d "$folder" ]; then
+      for file in $(find $folder); do
+        symlink=$(readlink $file)
+
+        if [ "$symlink" != "" ]; then
+          rm "$file"
+          
+          case $symlink in "/"*)
+            echo "ln -sf $symlink $file" >> $1/generateSymlinks.sh
+            ;;
+            *)
+            echo "ln -sf $folder/$symlink $file" >> $1/generateSymlinks.sh
+          esac
+        fi
+      done
+    fi
   done
-
-  cd $OLDPWD
 }
 
 export PREFIX=/data/data/com.micewine.emu/files/usr
@@ -21,11 +30,8 @@ if [ ! -e "$PREFIX" ]; then
   exit
 fi
 
-symlink2hardlink $PREFIX/lib
-
-symlink2hardlink $PREFIX/virglrenderer/lib
-
-cd $PREFIX/..
+# Convert symlinks to a .sh file that need to be executed after zip extract
+symlink2sh $PREFIX
 
 case $* in *"--clean-all"*)
   echo "Removing Static Libraries..."
@@ -47,10 +53,12 @@ esac
 case $* in *"--no-save-zip"*)
   ;;
   *"--strip-all"*|*"--clean-all"*)
+  cd $PREFIX
   7z a ~/MiceWine-RootFS-Stripped.zip
+  echo "RootFS Saved on $HOME."
   ;;
   *)
+  cd $PREFIX
   7z a ~/MiceWine-RootFS.zip
+  echo "RootFS Saved on $HOME."
 esac
-
-echo "RootFS Saved on $HOME."
