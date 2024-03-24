@@ -5,20 +5,19 @@ symlink2sh() {
 
   for folder in $(find $1); do
     if [ -d "$folder" ]; then
-      for file in $(find $folder); do
-        symlink=$(readlink $file)
+      cd "$folder"
 
-        if [ "$symlink" != "" ]; then
+      for file in $(find $PWD); do
+        target=$(readlink $file)
+
+        if [ "$target" != "" ]; then
           rm "$file"
-          
-          case $symlink in "/"*)
-            echo "ln -sf $symlink $file" >> $1/generateSymlinks.sh
-            ;;
-            *)
-            echo "ln -sf $folder/$symlink $file" >> $1/generateSymlinks.sh
-          esac
+
+          echo "ln -sf $target $file" >> $1/generateSymlinks.sh
         fi
       done
+
+      cd $OLDPWD
     fi
   done
 }

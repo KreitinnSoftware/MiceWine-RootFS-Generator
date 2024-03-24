@@ -1,0 +1,36 @@
+diff -uNr 31-libsndfile/CMakeLists.txt 31-libsndfile.mod/CMakeLists.txt
+--- 31-libsndfile/CMakeLists.txt	2023-08-13 05:53:51.000000000 -0300
++++ 31-libsndfile.mod/CMakeLists.txt	2024-03-09 22:17:44.945328163 -0300
+@@ -83,6 +83,8 @@
+ option (ENABLE_PACKAGE_CONFIG "Generate and install package config file" ON)
+ option (INSTALL_PKGCONFIG_MODULE "Generate and install pkg-config module" ON)
+ 
++option (ANDROID "Android Build" OFF)
++
+ list (APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+ if (CMAKE_VERSION VERSION_LESS 3.14)
+ 	list (APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/sqlite")
+@@ -126,6 +128,11 @@
+ 
+ set (HAVE_EXTERNAL_XIPH_LIBS ${ENABLE_EXTERNAL_LIBS})
+ set (HAVE_SQLITE3 ${BUILD_REGTEST})
++
++if (ANDROID)
++	set (ALSA_FOUND 0)
++endif()
++
+ set (HAVE_ALSA_ASOUNDLIB_H ${ALSA_FOUND})
+ set (HAVE_SNDIO_H ${SNDIO_FOUND})
+ 
+diff -uNr 31-libsndfile/src/common.c 31-libsndfile.mod/src/common.c
+--- 31-libsndfile/src/common.c	2023-08-13 05:53:51.000000000 -0300
++++ 31-libsndfile.mod/src/common.c	2024-03-09 22:16:14.488661282 -0300
+@@ -1827,7 +1827,7 @@
+ 		tmpdir = getenv ("TEMP") ;
+ 	else
+ 	{	tmpdir = getenv ("TMPDIR") ;
+-		tmpdir = tmpdir == NULL ? "/tmp" : tmpdir ;
++		tmpdir = tmpdir == NULL ? "/data/data/com.micewine.emu/files/usr/tmp" : tmpdir ;
+ 		} ;
+ 
+ 	if (tmpdir && access (tmpdir, R_OK | W_OK | X_OK) == 0)

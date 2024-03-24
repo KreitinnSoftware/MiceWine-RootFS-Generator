@@ -1,0 +1,14 @@
+diff -uNr 37-Vulkan-Loader/CMakeLists.txt 37-Vulkan-Loader.mod/CMakeLists.txt
+--- 37-Vulkan-Loader/CMakeLists.txt	2024-03-16 23:47:45.918186172 -0300
++++ 37-Vulkan-Loader.mod/CMakeLists.txt	2024-03-16 23:52:09.421513293 -0300
+@@ -109,6 +109,10 @@
+ 
+     find_package(PkgConfig REQUIRED QUIET) # Use PkgConfig to find Linux system libraries
+ 
++    if(ANDROID)
++        target_compile_definitions(platform_wsi INTERFACE VK_USE_PLATFORM_ANDROID_KHR)
++    endif()
++
+     if(BUILD_WSI_XCB_SUPPORT)
+         pkg_check_modules(XCB REQUIRED QUIET IMPORTED_TARGET xcb)
+         target_compile_definitions(platform_wsi INTERFACE VK_USE_PLATFORM_XCB_KHR)
