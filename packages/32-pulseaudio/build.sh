@@ -1,5 +1,5 @@
-SRC_URL=https://github.com/pulseaudio/pulseaudio/archive/refs/tags/v17.0.zip
-MESON_ARGS="--cross-file=../../../meson-cross-file-$ARCHITECTURE -Dsoxr=disabled -Dorc=disabled -Davahi=disabled -Ddbus=disabled -Dgstreamer=disabled -Dglib=disabled -Dgsettings=disabled -Dbashcompletiondir=/data/data/com.micewine.emu/files/usr/share/bash-completion -Dalsa=disabled -Dx11=disabled -Dgtk=disabled -Dopenssl=disabled -Dgsettings=disabled -Ddoxygen=false -Ddatabase=simple -Dtests=false -Dsystemd=disabled -Dbluez5=disabled -Dasyncns=disabled"
+GIT_URL=https://gitlab.freedesktop.org/pulseaudio/pulseaudio.git
+MESON_ARGS="--cross-file=../../../meson-cross-file-$ARCHITECTURE -Dalsa=disabled -Dx11=disabled -Dgtk=disabled -Dopenssl=disabled -Dgsettings=disabled -Ddoxygen=false -Ddatabase=simple -Dtests=false"
 USE_NDK_VERSION=25b
 RUN_POST_APPLY_PATCH="cp include/libintl.h $PREFIX/include"
 CFLAGS="-I$PREFIX/include"

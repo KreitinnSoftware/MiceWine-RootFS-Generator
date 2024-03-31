@@ -1,17 +1,17 @@
-diff -uNr libevent-release-2.1.8-stable/evdns.c libevent-release-2.1.8-stable.mod/evdns.c
---- libevent-release-2.1.8-stable/evdns.c	2017-01-26 01:37:15.000000000 +0200
-+++ libevent-release-2.1.8-stable.mod/evdns.c	2017-09-12 12:58:45.352988051 +0300
+diff -uNr 49-libevent/evdns.c 49-libevent.mod/evdns.c
+--- 49-libevent/evdns.c	2020-07-05 09:02:46.000000000 -0300
++++ 49-libevent.mod/evdns.c	2024-03-25 20:14:08.375999228 -0300
 @@ -52,6 +52,9 @@
  #include "evconfig-private.h"
  
  #include <sys/types.h>
 +#ifdef __ANDROID__
-+# include <sys/system_properties.h>
++#include <sys/system_properties.h>
 +#endif
  
  #ifndef _FORTIFY_SOURCE
  #define _FORTIFY_SOURCE 3
-@@ -3602,7 +3605,7 @@
+@@ -3655,7 +3658,7 @@
  	evutil_snprintf(path_out, len_out, "%s%s", path, hostfile);
  	return path_out;
  #else
@@ -20,8 +20,8 @@ diff -uNr libevent-release-2.1.8-stable/evdns.c libevent-release-2.1.8-stable.mo
  #endif
  }
  
-@@ -3959,6 +3962,21 @@
- 		int r;
+@@ -4032,6 +4035,21 @@
+ 
  #ifdef _WIN32
  		r = evdns_base_config_windows_nameservers(base);
 +#elif defined(__ANDROID__)
@@ -40,5 +40,16 @@ diff -uNr libevent-release-2.1.8-stable/evdns.c libevent-release-2.1.8-stable.mo
 +		}
 +		if (add_servers == 0) evdns_base_nameserver_ip_add(base, "8.8.8.8");
  #else
- 		r = evdns_base_resolv_conf_parse(base, DNS_OPTIONS_ALL, "/etc/resolv.conf");
+ 		r = evdns_base_resolv_conf_parse(base, opts, "/etc/resolv.conf");
  #endif
+diff -uNr 49-libevent/evutil.c 49-libevent.mod/evutil.c
+--- 49-libevent/evutil.c	2020-07-05 09:02:46.000000000 -0300
++++ 49-libevent.mod/evutil.c	2024-03-25 20:08:52.615984829 -0300
+@@ -49,6 +49,7 @@
+ #include <sys/socket.h>
+ #endif
+ #ifdef EVENT__HAVE_UNISTD_H
++#define __USE_GNU 1 /* For pipe2(). */
+ #include <unistd.h>
+ #endif
+ #ifdef EVENT__HAVE_FCNTL_H

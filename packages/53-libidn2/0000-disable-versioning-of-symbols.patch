@@ -1,0 +1,11 @@
+--- configure	2024-03-26 19:57:45.298723256 -0300
++++ configure_mod	2024-03-26 19:58:12.058723097 -0300
+@@ -32898,8 +32898,6 @@
+ if ac_fn_c_try_compile "$LINENO"
+ then :
+ 
+-printf "%s\n" "#define HAVE_SYMVER_ALIAS_SUPPORT 1" >>confdefs.h
+-
+ fi
+ rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+ 
