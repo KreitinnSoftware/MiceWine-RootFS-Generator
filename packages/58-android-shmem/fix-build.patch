@@ -1,0 +1,16 @@
+diff -uNr 58-android-shmem/shmem.c 58-android-shmem.mod/shmem.c
+--- 58-android-shmem/shmem.c	2022-03-27 13:15:50.000000000 -0300
++++ 58-android-shmem.mod/shmem.c	2024-04-13 19:22:22.244764249 -0300
+@@ -16,8 +16,12 @@
+ 
+ #include "shm.h"
+ 
++#include <fcntl.h>
++#include <string.h>
++
+ #define DBG(...) __android_log_print(ANDROID_LOG_INFO, "shmem", __VA_ARGS__)
+ #define ASHV_KEY_SYMLINK_PATH _PATH_TMP "ashv_key_%d"
++#define _PATH_TMP "/data/data/com.micewine.emu/files/usr/tmp"
+ #define ANDROID_SHMEM_SOCKNAME "/dev/shm/%08x"
+ #define ROUND_UP(N, S) ((((N) + (S) - 1) / (S)) * (S))
+ 

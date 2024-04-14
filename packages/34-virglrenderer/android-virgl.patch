@@ -1,24 +1,27 @@
-diff -uNr 34-virglrenderer/config.h.meson 34-virglrenderer.mod/config.h.meson
---- 34-virglrenderer/config.h.meson	2023-01-02 16:12:17.000000000 +0000
-+++ 34-virglrenderer.mod/config.h.meson	2024-03-04 22:42:34.440772000 +0000
+diff -uNr 34-virglrenderer/config.h.meson 34-virglrenderer-mod/config.h.meson
+--- 34-virglrenderer/config.h.meson	2023-01-02 13:12:17.000000000 -0300
++++ 34-virglrenderer-mod/config.h.meson	2024-04-14 15:31:56.710800675 -0300
 @@ -55,3 +55,5 @@
  #mesondefine PIPE_ARCH_S390
  #mesondefine PIPE_ARCH_ARM
  #mesondefine PIPE_ARCH_AARCH64
 +#mesondefine EGL_WITHOUT_GBM
 +#mesondefine HAVE_LIBDRM
-diff -uNr 34-virglrenderer/meson.build 34-virglrenderer.mod/meson.build
---- 34-virglrenderer/meson.build	2023-01-02 16:12:17.000000000 +0000
-+++ 34-virglrenderer.mod/meson.build	2024-03-04 22:42:34.440809000 +0000
-@@ -66,7 +66,7 @@
+diff -uNr 34-virglrenderer/meson.build 34-virglrenderer-mod/meson.build
+--- 34-virglrenderer/meson.build	2023-01-02 13:12:17.000000000 -0300
++++ 34-virglrenderer-mod/meson.build	2024-04-14 17:10:56.102294977 -0300
+@@ -66,9 +66,9 @@
  
  prog_python = import('python').find_installation('python3')
  
 -libdrm_dep = dependency('libdrm', version : '>=2.4.50')
 +libdrm_dep = dependency('libdrm', version : '>=2.4.50', required : false)
  thread_dep = dependency('threads')
- epoxy_dep = dependency('epoxy', version: '>= 1.5.4')
+-epoxy_dep = dependency('epoxy', version: '>= 1.5.4')
++epoxy_dep = dependency('epoxy', version: '>= 1.5.4', static: true)
  m_dep = cc.find_library('m', required : false)
+ 
+ conf_data = configuration_data()
 @@ -183,6 +183,10 @@
     add_global_arguments('-DDEBUG=1', language : 'c')
  endif
@@ -70,9 +73,9 @@ diff -uNr 34-virglrenderer/meson.build 34-virglrenderer.mod/meson.build
          'glx': have_glx,
          'minigbm_alloc': with_minigbm_allocation,
          'venus': with_venus,
-diff -uNr 34-virglrenderer/meson_options.txt 34-virglrenderer.mod/meson_options.txt
---- 34-virglrenderer/meson_options.txt	2023-01-02 16:12:17.000000000 +0000
-+++ 34-virglrenderer.mod/meson_options.txt	2024-03-04 22:42:34.440837000 +0000
+diff -uNr 34-virglrenderer/meson_options.txt 34-virglrenderer-mod/meson_options.txt
+--- 34-virglrenderer/meson_options.txt	2023-01-02 13:12:17.000000000 -0300
++++ 34-virglrenderer-mod/meson_options.txt	2024-04-14 15:31:56.710800675 -0300
 @@ -32,6 +32,13 @@
  )
  
@@ -87,9 +90,9 @@ diff -uNr 34-virglrenderer/meson_options.txt 34-virglrenderer.mod/meson_options.
    'minigbm_allocation',
    type : 'boolean',
    value : 'false',
-diff -uNr 34-virglrenderer/src/gl4es-decompress.c 34-virglrenderer.mod/src/gl4es-decompress.c
---- 34-virglrenderer/src/gl4es-decompress.c	1970-01-01 00:00:00.000000000 +0000
-+++ 34-virglrenderer.mod/src/gl4es-decompress.c	2024-03-04 22:44:08.569791000 +0000
+diff -uNr 34-virglrenderer/src/gl4es-decompress.c 34-virglrenderer-mod/src/gl4es-decompress.c
+--- 34-virglrenderer/src/gl4es-decompress.c	1969-12-31 21:00:00.000000000 -0300
++++ 34-virglrenderer-mod/src/gl4es-decompress.c	2024-04-14 15:31:56.710800675 -0300
 @@ -0,0 +1,477 @@
 +// Origin: https://github.com/alexvorxx/VirGL-Overlay-Rebuild/commit/d3052d9ee353d43867fa2fcf15ef072fcdaae2c4
 +
@@ -568,9 +571,9 @@ diff -uNr 34-virglrenderer/src/gl4es-decompress.c 34-virglrenderer.mod/src/gl4es
 +    }
 +    return pixels;
 +}
-diff -uNr 34-virglrenderer/src/gl4es-decompress.h 34-virglrenderer.mod/src/gl4es-decompress.h
---- 34-virglrenderer/src/gl4es-decompress.h	1970-01-01 00:00:00.000000000 +0000
-+++ 34-virglrenderer.mod/src/gl4es-decompress.h	2024-03-04 22:44:08.569830000 +0000
+diff -uNr 34-virglrenderer/src/gl4es-decompress.h 34-virglrenderer-mod/src/gl4es-decompress.h
+--- 34-virglrenderer/src/gl4es-decompress.h	1969-12-31 21:00:00.000000000 -0300
++++ 34-virglrenderer-mod/src/gl4es-decompress.h	2024-04-14 15:31:56.710800675 -0300
 @@ -0,0 +1,29 @@
 +#ifndef _GL4ES_DECOMPRESS_H_
 +#define _GL4ES_DECOMPRESS_H_
@@ -601,9 +604,9 @@ diff -uNr 34-virglrenderer/src/gl4es-decompress.h 34-virglrenderer.mod/src/gl4es
 +                       int transparent0, int* simpleAlpha, int* complexAlpha, const GLvoid *data);
 +
 +#endif // _GL4ES_DECOMPRESS_H_
-diff -uNr 34-virglrenderer/src/meson.build 34-virglrenderer.mod/src/meson.build
---- 34-virglrenderer/src/meson.build	2023-01-02 16:12:17.000000000 +0000
-+++ 34-virglrenderer.mod/src/meson.build	2024-03-04 22:44:08.569861000 +0000
+diff -uNr 34-virglrenderer/src/meson.build 34-virglrenderer-mod/src/meson.build
+--- 34-virglrenderer/src/meson.build	2023-01-02 13:12:17.000000000 -0300
++++ 34-virglrenderer-mod/src/meson.build	2024-04-14 17:12:05.095526755 -0300
 @@ -55,6 +55,7 @@
     'vrend_tweaks.h',
     'vrend_winsys.c',
@@ -632,9 +635,25 @@ diff -uNr 34-virglrenderer/src/meson.build 34-virglrenderer.mod/src/meson.build
  vrend_winsys_glx_sources = [
     'vrend_winsys_glx.c',
     'vrend_winsys_glx.h',
-diff -uNr 34-virglrenderer/src/vrend_formats.c 34-virglrenderer.mod/src/vrend_formats.c
---- 34-virglrenderer/src/vrend_formats.c	2023-01-02 16:12:17.000000000 +0000
-+++ 34-virglrenderer.mod/src/vrend_formats.c	2024-03-04 22:44:08.569894000 +0000
+@@ -237,14 +243,11 @@
+    include_directories: libvirgl_inc
+ )
+ 
+-libvirglrenderer = library(
++libvirglrenderer = static_library(
+    'virglrenderer',
+    virglrenderer_sources,
+    include_directories: [inc_gallium, inc_configuration],
+    dependencies : [virgl_depends, libvirgl_dep],
+-   version : binary_age.to_string() + '.'
+-             + interface_age.to_string() + '.'
+-             + revision.to_string(),
+    install : true
+ )
+ 
+diff -uNr 34-virglrenderer/src/vrend_formats.c 34-virglrenderer-mod/src/vrend_formats.c
+--- 34-virglrenderer/src/vrend_formats.c	2023-01-02 13:12:17.000000000 -0300
++++ 34-virglrenderer-mod/src/vrend_formats.c	2024-04-14 15:31:56.710800675 -0300
 @@ -534,6 +534,8 @@
  #define add_formats(x) vrend_add_formats((x), ARRAY_SIZE((x)))
  #define add_compressed_formats(x) vrend_add_compressed_formats((x), ARRAY_SIZE((x)))
@@ -653,9 +672,9 @@ diff -uNr 34-virglrenderer/src/vrend_formats.c 34-virglrenderer.mod/src/vrend_fo
       add_compressed_formats(dxtn_formats);
       add_compressed_formats(dxtn_srgb_formats);
    }
-diff -uNr 34-virglrenderer/src/vrend_renderer.c 34-virglrenderer.mod/src/vrend_renderer.c
---- 34-virglrenderer/src/vrend_renderer.c	2023-01-02 16:12:17.000000000 +0000
-+++ 34-virglrenderer.mod/src/vrend_renderer.c	2024-03-04 22:44:08.569972000 +0000
+diff -uNr 34-virglrenderer/src/vrend_renderer.c 34-virglrenderer-mod/src/vrend_renderer.c
+--- 34-virglrenderer/src/vrend_renderer.c	2023-01-02 13:12:17.000000000 -0300
++++ 34-virglrenderer-mod/src/vrend_renderer.c	2024-04-14 15:31:56.710800675 -0300
 @@ -68,6 +68,17 @@
  #include <vrend_video.h>
  #endif
@@ -844,9 +863,9 @@ diff -uNr 34-virglrenderer/src/vrend_renderer.c 34-virglrenderer.mod/src/vrend_r
        const struct vrend_renderer_resource_create_args create_args = {
           .target = PIPE_TEXTURE_2D,
           .format = args->format,
-diff -uNr 34-virglrenderer/src/vrend_renderer.h 34-virglrenderer.mod/src/vrend_renderer.h
---- 34-virglrenderer/src/vrend_renderer.h	2023-01-02 16:12:17.000000000 +0000
-+++ 34-virglrenderer.mod/src/vrend_renderer.h	2024-03-04 22:42:49.569159000 +0000
+diff -uNr 34-virglrenderer/src/vrend_renderer.h 34-virglrenderer-mod/src/vrend_renderer.h
+--- 34-virglrenderer/src/vrend_renderer.h	2023-01-02 13:12:17.000000000 -0300
++++ 34-virglrenderer-mod/src/vrend_renderer.h	2024-04-14 15:31:56.710800675 -0300
 @@ -32,7 +32,12 @@
  #include "vrend_debug.h"
  #include "vrend_tweaks.h"
@@ -860,9 +879,9 @@ diff -uNr 34-virglrenderer/src/vrend_renderer.h 34-virglrenderer.mod/src/vrend_r
  #include "virgl_hw.h"
  #include <epoxy/gl.h>
  
-diff -uNr 34-virglrenderer/src/vrend_winsys.c 34-virglrenderer.mod/src/vrend_winsys.c
---- 34-virglrenderer/src/vrend_winsys.c	2023-01-02 16:12:17.000000000 +0000
-+++ 34-virglrenderer.mod/src/vrend_winsys.c	2024-03-04 22:42:49.569191000 +0000
+diff -uNr 34-virglrenderer/src/vrend_winsys.c 34-virglrenderer-mod/src/vrend_winsys.c
+--- 34-virglrenderer/src/vrend_winsys.c	2023-01-02 13:12:17.000000000 -0300
++++ 34-virglrenderer-mod/src/vrend_winsys.c	2024-04-14 15:31:56.710800675 -0300
 @@ -52,6 +52,7 @@
  {
     if (flags & VIRGL_RENDERER_USE_EGL) {
@@ -930,22 +949,9 @@ diff -uNr 34-virglrenderer/src/vrend_winsys.c 34-virglrenderer.mod/src/vrend_win
     if (!egl)
        return -1;
  
-diff -uNr 34-virglrenderer/src/vrend_winsys.h 34-virglrenderer.mod/src/vrend_winsys.h
---- 34-virglrenderer/src/vrend_winsys.h	2023-01-02 16:12:17.000000000 +0000
-+++ 34-virglrenderer.mod/src/vrend_winsys.h	2024-03-04 22:42:49.569220000 +0000
-@@ -28,7 +28,9 @@
- #include "config.h"
- 
- #ifdef HAVE_EPOXY_EGL_H
-+#ifndef EGL_WITHOUT_GBM
- #include "vrend_winsys_gbm.h"
-+#endif
- #include "vrend_winsys_egl.h"
- #endif
- 
-diff -uNr 34-virglrenderer/src/vrend_winsys_egl.c 34-virglrenderer.mod/src/vrend_winsys_egl.c
---- 34-virglrenderer/src/vrend_winsys_egl.c	2023-01-02 16:12:17.000000000 +0000
-+++ 34-virglrenderer.mod/src/vrend_winsys_egl.c	2024-03-04 22:43:19.443007000 +0000
+diff -uNr 34-virglrenderer/src/vrend_winsys_egl.c 34-virglrenderer-mod/src/vrend_winsys_egl.c
+--- 34-virglrenderer/src/vrend_winsys_egl.c	2023-01-02 13:12:17.000000000 -0300
++++ 34-virglrenderer-mod/src/vrend_winsys_egl.c	2024-04-14 15:31:56.710800675 -0300
 @@ -36,7 +36,9 @@
  #include <poll.h>
  #include <stdbool.h>
@@ -1065,9 +1071,22 @@ diff -uNr 34-virglrenderer/src/vrend_winsys_egl.c 34-virglrenderer.mod/src/vrend
  bool virgl_has_egl_khr_gl_colorspace(struct virgl_egl *egl)
  {
     return has_bit(egl->extension_bits, EGL_KHR_GL_COLORSPACE);
-diff -uNr 34-virglrenderer/vtest/vtest_protocol.h 34-virglrenderer.mod/vtest/vtest_protocol.h
---- 34-virglrenderer/vtest/vtest_protocol.h	2023-01-02 16:12:17.000000000 +0000
-+++ 34-virglrenderer.mod/vtest/vtest_protocol.h	2024-03-04 22:44:39.434181000 +0000
+diff -uNr 34-virglrenderer/src/vrend_winsys.h 34-virglrenderer-mod/src/vrend_winsys.h
+--- 34-virglrenderer/src/vrend_winsys.h	2023-01-02 13:12:17.000000000 -0300
++++ 34-virglrenderer-mod/src/vrend_winsys.h	2024-04-14 15:31:56.710800675 -0300
+@@ -28,7 +28,9 @@
+ #include "config.h"
+ 
+ #ifdef HAVE_EPOXY_EGL_H
++#ifndef EGL_WITHOUT_GBM
+ #include "vrend_winsys_gbm.h"
++#endif
+ #include "vrend_winsys_egl.h"
+ #endif
+ 
+diff -uNr 34-virglrenderer/vtest/vtest_protocol.h 34-virglrenderer-mod/vtest/vtest_protocol.h
+--- 34-virglrenderer/vtest/vtest_protocol.h	2023-01-02 13:12:17.000000000 -0300
++++ 34-virglrenderer-mod/vtest/vtest_protocol.h	2024-04-14 15:31:56.710800675 -0300
 @@ -25,7 +25,7 @@
  #ifndef VTEST_PROTOCOL
  #define VTEST_PROTOCOL
@@ -1077,9 +1096,9 @@ diff -uNr 34-virglrenderer/vtest/vtest_protocol.h 34-virglrenderer.mod/vtest/vte
  
  #ifdef VIRGL_RENDERER_UNSTABLE_APIS
  #define VTEST_PROTOCOL_VERSION 3
-diff -uNr 34-virglrenderer/vtest/vtest_server.c 34-virglrenderer.mod/vtest/vtest_server.c
---- 34-virglrenderer/vtest/vtest_server.c	2023-01-02 16:12:17.000000000 +0000
-+++ 34-virglrenderer.mod/vtest/vtest_server.c	2024-03-04 22:43:26.766069000 +0000
+diff -uNr 34-virglrenderer/vtest/vtest_server.c 34-virglrenderer-mod/vtest/vtest_server.c
+--- 34-virglrenderer/vtest/vtest_server.c	2023-01-02 13:12:17.000000000 -0300
++++ 34-virglrenderer-mod/vtest/vtest_server.c	2024-04-14 15:31:56.710800675 -0300
 @@ -254,6 +254,13 @@
        server.multi_clients = false;
     }
@@ -1112,9 +1131,9 @@ diff -uNr 34-virglrenderer/vtest/vtest_server.c 34-virglrenderer.mod/vtest/vtest
  
     unlink(un.sun_path);
  
-diff -uNr 34-virglrenderer/vtest/vtest_shm.c 34-virglrenderer.mod/vtest/vtest_shm.c
---- 34-virglrenderer/vtest/vtest_shm.c	2023-01-02 16:12:17.000000000 +0000
-+++ 34-virglrenderer.mod/vtest/vtest_shm.c	2024-03-04 22:43:16.169626000 +0000
+diff -uNr 34-virglrenderer/vtest/vtest_shm.c 34-virglrenderer-mod/vtest/vtest_shm.c
+--- 34-virglrenderer/vtest/vtest_shm.c	2023-01-02 13:12:17.000000000 -0300
++++ 34-virglrenderer-mod/vtest/vtest_shm.c	2024-04-14 15:31:56.710800675 -0300
 @@ -44,6 +44,30 @@
  #endif
  }
