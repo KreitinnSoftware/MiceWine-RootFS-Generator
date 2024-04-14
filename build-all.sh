@@ -137,15 +137,7 @@ setupPackages()
 
 			applyPatches $package
 
-			if [ -e "build/meson/meson.build" ]; then # zstd
-				NON_CONVENTIONAL_BUILD_PATH=/build/meson
-			fi
-
-			if [ -e "llvm/CMakeLists.txt" ]; then # llvm
-				NON_CONVENTIONAL_BUILD_PATH=/llvm
-			fi
-
-			echo "export CFLAGS=$CFLAGS LIBS=$LIBS CPPFLAGS=$CPPFLAGS LDFLAGS=$LDFLAGS" > build.sh
+			echo "export CFLAGS=\"$CFLAGS\" LIBS=\"$LIBS\" CPPFLAGS=\"$CPPFLAGS\" LDFLAGS=\"$LDFLAGS\"" > build.sh
 
 			if [ "$OVERRIDE_PREFIX" != "" ]; then
 				PREFIX_DIR=$OVERRIDE_PREFIX
@@ -159,7 +151,7 @@ setupPackages()
 				echo "export PKG_CONFIG_PATH=$PKG_CONFIG_PATH" >> build.sh
 			fi
 
-			if [ -e "configure" ]; then
+			if [ -e "./configure" ]; then
 				echo "../configure --prefix=$PREFIX_DIR $CONFIGURE_ARGS" >> build.sh
 				echo "$RUN_POST_CONFIGURE" >> build.sh
 				if [ -e "$INIT_DIR/packages/$package/post-configure.sh" ]; then
@@ -194,6 +186,8 @@ setupPackages()
 				fi
 				echo "make -j $(nproc)" >> build.sh
 				echo "make -j $(nproc) install" >> build.sh
+			elif [ -e "Makefile" ]; then
+				echo "cd ..; make -j $(nproc) install; cd build_dir" >> build.sh
 			else
 				echo "Unsupported build system. Stopping..."
 				exit 1
@@ -346,12 +340,4 @@ if [ "$*" != "--download-only" ]; then
 			patchelf --set-rpath $PREFIX/lib $PREFIX/lib/$i
 		fi
 	done
-
-	for i in $(ls $PREFIX/virglrenderer/lib); do
-		if [ "$i" == *".so"* ]; then
-			patchelf --set-rpath $PREFIX/virglrenderer/lib $PREFIX/virglrenderer/lib/$i
-		fi
-	done
-
-	patchelf --set-rpath $PREFIX/virglrenderer/lib $PREFIX/virglrenderer/bin/virgl_test_server
 fi
