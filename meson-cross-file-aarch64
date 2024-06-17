@@ -1,5 +1,5 @@
 [binaries]
-pkg-config = ['/usr/bin/pkg-config', '--env-only']
+pkg-config = '/usr/bin/pkg-config'
 cmake = '/usr/bin/cmake'
 
 [host_machine]
