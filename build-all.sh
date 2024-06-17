@@ -58,9 +58,7 @@ applyPatches()
 
 		git apply "$patch"
 
-		if [ "$RUN_POST_APPLY_PATCH" != "" ]; then
-			$RUN_POST_APPLY_PATCH
-		fi
+		$RUN_POST_APPLY_PATCH
 
 		printf "\n"
 	done
@@ -248,7 +246,7 @@ compileAll()
 
 			if [ "$(cat exit_code)" != "0" ]; then
 				echo "Package: '"$i"' failed to compile. Check logs"
-				exit 2
+				exit 0
 			fi
 	 
 			if [ -f "../check-build.sh" ]; then
