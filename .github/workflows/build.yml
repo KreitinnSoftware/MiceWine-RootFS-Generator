@@ -34,26 +34,36 @@ jobs:
       run: |
         ./build-all.sh aarch64
 
-    - name: "Upload Artifact"
+    - name: "Upload Artifact (aarch64)"
       uses: actions/upload-artifact@v4
       with:
           name: MiceWine-RootFS
           path: /data/data/com.micewine.emu/files
           compression-level: 2
-    
-    - name: "Create Zip File Stripped"
-      run: |
-        ./create-rootfs.sh --clean-all --strip-all --no-save-zip
 
-    - name: "Upload Artifact Stripped"
+    - name: "Upload Logs (aarch64)"
+      uses: actions/upload-artifact@v4
+      with:
+          name: MiceWine-Logs-aarch64
+          path: logs
+
+    - name: "Clean AArch64 RootFS"
+      run: |
+        rm -rf /data
+    
+    - name: "Start Building (x86_64)"
+      run: |
+        ./build-all.sh x86_64 --clean-workdir
+        
+    - name: "Upload Artifact (x86_64)"
       uses: actions/upload-artifact@v4
       with:
           name: MiceWine-RootFS-Stripped
           path: /data/data/com.micewine.emu/files
           compression-level: 2
           
-    - name: "Upload Logs"
+    - name: "Upload Logs (x86_64)"
       uses: actions/upload-artifact@v4
       with:
-          name: MiceWine-Logs
+          name: MiceWine-Logs-x86_64
           path: logs
