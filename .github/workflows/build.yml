@@ -58,7 +58,7 @@ jobs:
     - name: "Upload Artifact (x86_64)"
       uses: actions/upload-artifact@v4
       with:
-          name: MiceWine-RootFS-Stripped
+          name: MiceWine-RootFS-x86_64
           path: /data/data/com.micewine.emu/files
           compression-level: 2
           
