@@ -49,7 +49,7 @@ jobs:
 
     - name: "Clean AArch64 RootFS"
       run: |
-        rm -rf /data
+        sudo rm -rf /data/data/
     
     - name: "Start Building (x86_64)"
       run: |
