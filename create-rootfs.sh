@@ -1,14 +1,14 @@
 #!/bin/bash
 
 symlink2sh() {
-  for folder in $(find $1); do
+  for folder in $(find $1 -type d); do
     if [ -d "$folder" ]; then
       cd "$folder"
 
-      for file in $(find $PWD); do
+      for file in $(find $PWD -type l); do
         target=$(readlink $file)
 
-        if [ "$target" != "" ]; then
+        if [ "$target" != "nul" ]; then
           rm "$file"
 
           echo "ln -sf $target $file" >> $1/generateSymlinks.sh
@@ -28,10 +28,21 @@ if [ ! -e "$PREFIX" ]; then
   exit
 fi
 
+if [ $# == 1 ]; then
+  if [ $1 == "--clean-all" ]; then
+    export ARGS="$1"
+  else
+    export ZIPFILE_APPEND="-$1"
+  fi
+elif [ $# == 2 ]; then
+  export ZIPFILE_APPEND="-$2"
+  export ARGS="$1"
+fi
+
 # Convert symlinks to a .sh file that need to be executed after zip extract
 symlink2sh $PREFIX
 
-case $* in *"--clean-all"*)
+case $ARGS in *"--clean-all"*)
   echo "Removing Static Libraries..."
   rm -f $PREFIX/lib/*.la
   rm -f $PREFIX/lib/*.a
@@ -42,21 +53,11 @@ case $* in *"--clean-all"*)
   rm -rf $PREFIX/local
 esac
 
-case $* in *"--strip-all"*)
-  echo "Stripping Libraries..."
-  
-  llvm-strip $PREFIX/lib/*.so*
-esac
-
-case $* in *"--strip-all"*|*"--clean-all"*)
-  export ROOTFS_PACKAGE="MiceWine-RootFS-Stripped"
+case $ARGS in *"--clean-all"*)
+  export ROOTFS_PACKAGE="MiceWine-RootFS-Minimal$ZIPFILE_APPEND"
   ;;
   *)
-  export ROOTFS_PACKAGE="MiceWine-RootFS"
+  export ROOTFS_PACKAGE="MiceWine-RootFS$ZIPFILE_APPEND"
 esac
 
-case $* in *"--no-zip"*)
-  ;;
-  *)
-  7z a ~/$ROOTFS_PACKAGE.zip $PREFIX/..
-esac
+7z a ~/$ROOTFS_PACKAGE.zip $PREFIX/..

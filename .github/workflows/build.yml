@@ -34,18 +34,9 @@ jobs:
       run: |
         ./build-all.sh aarch64
 
-    - name: "Upload Artifact (aarch64)"
-      uses: actions/upload-artifact@v4
-      with:
-          name: MiceWine-RootFS
-          path: /data/data/com.micewine.emu/files
-          compression-level: 2
-
-    - name: "Upload Logs (aarch64)"
-      uses: actions/upload-artifact@v4
-      with:
-          name: MiceWine-Logs-aarch64
-          path: logs
+    - name: "Create RootFS File (aarch64)"
+      run: |
+        ./create-rootfs.sh aarch64
 
     - name: "Clean AArch64 RootFS"
       run: |
@@ -55,15 +46,15 @@ jobs:
       run: |
         ./build-all.sh x86_64 --clean-workdir
         
-    - name: "Upload Artifact (x86_64)"
-      uses: actions/upload-artifact@v4
-      with:
-          name: MiceWine-RootFS-x86_64
-          path: /data/data/com.micewine.emu/files
-          compression-level: 2
+    - name: "Create RootFS File (x86_64)"
+      run: |
+        ./create-rootfs.sh x86_64
           
-    - name: "Upload Logs (x86_64)"
-      uses: actions/upload-artifact@v4
+    - name: "Create Release"
+      uses: softprops/action-gh-release@v2
       with:
-          name: MiceWine-Logs-x86_64
-          path: logs
+        name: "MiceWine RootFS ${{ github.sha }}"
+        tag_name: rootfs
+        files: |
+            /home/runner/MiceWine-RootFS-aarch64.zip
+            /home/runner/MiceWine-RootFS-x86_64.zip

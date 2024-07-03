@@ -104,17 +104,27 @@ gitDownload()
 	URL=$1
 	PACKAGE=$2
 
-	git clone $URL $PACKAGE
+	if [ -d "$INIT_DIR/cache/$PACKAGE" ]; then
+		echo "Package '$package' already downloaded."
+
+		git clone "$INIT_DIR/cache/$PACKAGE"
+	else
+		git clone --no-checkout $URL "$INIT_DIR/cache/$PACKAGE"
+
+		git clone "$INIT_DIR/cache/$PACKAGE"
+	fi
+
+	cd $PACKAGE
 
 	if [ "$GIT_COMMIT" != "" ]; then
-		cd $PACKAGE
-
-		rm -rf *
-
 		git checkout $GIT_COMMIT .
-
-		cd ..
+	else
+		git checkout HEAD .
 	fi
+
+	git submodule update --init --recursive
+
+	cd ..
 
 	ARCHIVE_BASE_FOLDER=$package
 }
