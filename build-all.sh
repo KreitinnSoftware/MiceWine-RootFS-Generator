@@ -139,97 +139,101 @@ setupPackages()
 		if [ -e "$INIT_DIR/workdir/$package/build.sh" ]; then
 			echo "Package '$package' already configured."
 		else
-			unset NON_CONVENTIONAL_BUILD_PATH GIT_URL SRC_URL CONFIGURE_ARGS MESON_ARGS CMAKE_ARGS USE_NDK_VERSION RUN_POST_APPLY_PATCH RUN_POST_BUILD RUN_POST_CONFIGURE CFLAGS CPPFLAGS LDFLAGS LIBS OVERRIDE_PREFIX OVERRIDE_PKG_CONFIG_PATH OVERRIDE_FILENAME CHECK_FOLDERS CHECK_FILES GIT_COMMIT
+			unset NON_CONVENTIONAL_BUILD_PATH GIT_URL SRC_URL CONFIGURE_ARGS MESON_ARGS CMAKE_ARGS USE_NDK_VERSION RUN_POST_APPLY_PATCH RUN_POST_BUILD RUN_POST_CONFIGURE CFLAGS CPPFLAGS LDFLAGS LIBS OVERRIDE_PREFIX OVERRIDE_PKG_CONFIG_PATH OVERRIDE_FILENAME CHECK_FOLDERS CHECK_FILES GIT_COMMIT BLACKLIST_ARCHITECTURE
 
 			. $INIT_DIR/packages/$package/build.sh
 
-			if [ "$SRC_URL" != "" ]; then
-				downloadAndExtractPackage $SRC_URL $OVERRIDE_FILENAME
-			elif [ "$GIT_URL" != "" ]; then
-				gitDownload $GIT_URL $package
-			fi
-
-			cd $package
-
-			printf "\n"
-
-			applyPatches $package
-
-			echo "export CFLAGS=\"$CFLAGS\" LIBS=\"$LIBS\" CPPFLAGS=\"$CPPFLAGS\" LDFLAGS=\"$LDFLAGS\"" > build.sh
-
-			if [ "$OVERRIDE_PREFIX" != "" ]; then
-				PREFIX_DIR=$OVERRIDE_PREFIX
+			if [ "$BLACKLIST_ARCHITECTURE" == "$ARCHITECTURE" ]; then
+				echo "Warning: '$package' will not be built."
 			else
-				PREFIX_DIR=$PREFIX
-			fi
-
-			if [ "$OVERRIDE_PKG_CONFIG_PATH" != "" ]; then
-				echo "export PKG_CONFIG_PATH=$OVERRIDE_PKG_CONFIG_PATH" >> build.sh
-			else
-				echo "export PKG_CONFIG_PATH=$PKG_CONFIG_PATH" >> build.sh
-			fi
-
-			if [ -e "./configure" ]; then
-				echo "../configure --prefix=$PREFIX_DIR $CONFIGURE_ARGS" >> build.sh
-				echo "$RUN_POST_CONFIGURE" >> build.sh
-				if [ -e "$INIT_DIR/packages/$package/post-configure.sh" ]; then
-					echo "$INIT_DIR/packages/$package/post-configure.sh" >> build.sh
+				if [ "$SRC_URL" != "" ]; then
+					downloadAndExtractPackage $SRC_URL $OVERRIDE_FILENAME
+				elif [ "$GIT_URL" != "" ]; then
+					gitDownload $GIT_URL $package
 				fi
-				echo "make -j $(nproc)" >> build.sh
-				echo "make -j $(nproc) install" >> build.sh
-			elif [ -e "autogen.sh" ]; then
-				echo "cd ..; ./autogen.sh; cd build_dir" >> build.sh
-				echo "../configure --prefix=$PREFIX_DIR $CONFIGURE_ARGS" >> build.sh
-				echo "$RUN_POST_CONFIGURE" >> build.sh
-				if [ -e "$INIT_DIR/packages/$package/post-configure.sh" ]; then
-					echo "$INIT_DIR/packages/$package/post-configure.sh" >> build.sh
+
+				cd $package
+
+				printf "\n"
+
+				applyPatches $package
+
+				echo "export CFLAGS=\"$CFLAGS\" LIBS=\"$LIBS\" CPPFLAGS=\"$CPPFLAGS\" LDFLAGS=\"$LDFLAGS\"" > build.sh
+
+				if [ "$OVERRIDE_PREFIX" != "" ]; then
+					PREFIX_DIR=$OVERRIDE_PREFIX
+				else
+					PREFIX_DIR=$PREFIX
 				fi
-				echo "make -j $(nproc)" >> build.sh
-				echo "make -j $(nproc) install" >> build.sh
-			elif [ -e ".$NON_CONVENTIONAL_BUILD_PATH/CMakeLists.txt" ]; then
-				echo "cmake -DCMAKE_INSTALL_PREFIX=$PREFIX_DIR -DCMAKE_INSTALL_LIBDIR=$PREFIX_DIR/lib $CMAKE_ARGS ..$NON_CONVENTIONAL_BUILD_PATH" >> build.sh
-				echo "make -j $(nproc)" >> build.sh
-				echo "make -j $(nproc) install" >> build.sh
-			elif [ -e ".$NON_CONVENTIONAL_BUILD_PATH/meson.build" ]; then
-				echo "meson setup -Dprefix=$PREFIX_DIR $MESON_ARGS ..$NON_CONVENTIONAL_BUILD_PATH" >> build.sh
-				if [ -e "$INIT_DIR/packages/$package/post-configure.sh" ]; then
-					echo "$INIT_DIR/packages/$package/post-configure.sh" >> build.sh
+
+				if [ "$OVERRIDE_PKG_CONFIG_PATH" != "" ]; then
+					echo "export PKG_CONFIG_PATH=$OVERRIDE_PKG_CONFIG_PATH" >> build.sh
+				else
+					echo "export PKG_CONFIG_PATH=$PKG_CONFIG_PATH" >> build.sh
 				fi
-				echo "ninja -j $(nproc)" >> build.sh
-				echo "ninja -j $(nproc) install" >> build.sh
-			elif [ -e "Configure" ]; then
-				echo "../Configure --prefix=$PREFIX_DIR $OPENSSL_FLAGS" >> build.sh
-				if [ -e "$INIT_DIR/packages/$package/post-configure.sh" ]; then
-					echo "$INIT_DIR/packages/$package/post-configure.sh" >> build.sh
+
+				if [ -e "./configure" ]; then
+					echo "../configure --prefix=$PREFIX_DIR $CONFIGURE_ARGS" >> build.sh
+					echo "$RUN_POST_CONFIGURE" >> build.sh
+					if [ -e "$INIT_DIR/packages/$package/post-configure.sh" ]; then
+						echo "$INIT_DIR/packages/$package/post-configure.sh" >> build.sh
+					fi
+					echo "make -j $(nproc)" >> build.sh
+					echo "make -j $(nproc) install" >> build.sh
+				elif [ -e "autogen.sh" ]; then
+					echo "cd ..; ./autogen.sh; cd build_dir" >> build.sh
+					echo "../configure --prefix=$PREFIX_DIR $CONFIGURE_ARGS" >> build.sh
+					echo "$RUN_POST_CONFIGURE" >> build.sh
+					if [ -e "$INIT_DIR/packages/$package/post-configure.sh" ]; then
+						echo "$INIT_DIR/packages/$package/post-configure.sh" >> build.sh
+					fi
+					echo "make -j $(nproc)" >> build.sh
+					echo "make -j $(nproc) install" >> build.sh
+				elif [ -e ".$NON_CONVENTIONAL_BUILD_PATH/CMakeLists.txt" ]; then
+					echo "cmake -DCMAKE_INSTALL_PREFIX=$PREFIX_DIR -DCMAKE_INSTALL_LIBDIR=$PREFIX_DIR/lib $CMAKE_ARGS ..$NON_CONVENTIONAL_BUILD_PATH" >> build.sh
+					echo "make -j $(nproc)" >> build.sh
+					echo "make -j $(nproc) install" >> build.sh
+				elif [ -e ".$NON_CONVENTIONAL_BUILD_PATH/meson.build" ]; then
+					echo "meson setup -Dprefix=$PREFIX_DIR $MESON_ARGS ..$NON_CONVENTIONAL_BUILD_PATH" >> build.sh
+					if [ -e "$INIT_DIR/packages/$package/post-configure.sh" ]; then
+						echo "$INIT_DIR/packages/$package/post-configure.sh" >> build.sh
+					fi
+					echo "ninja -j $(nproc)" >> build.sh
+					echo "ninja -j $(nproc) install" >> build.sh
+				elif [ -e "Configure" ]; then
+					echo "../Configure --prefix=$PREFIX_DIR $OPENSSL_FLAGS" >> build.sh
+					if [ -e "$INIT_DIR/packages/$package/post-configure.sh" ]; then
+						echo "$INIT_DIR/packages/$package/post-configure.sh" >> build.sh
+					fi
+					echo "make -j $(nproc)" >> build.sh
+					echo "make -j $(nproc) install" >> build.sh
+				elif [ -e "Makefile" ]; then
+					echo "cd ..; make -j $(nproc) install; cd build_dir" >> build.sh
+				else
+					echo "Unsupported build system. Stopping..."
+					exit 1
 				fi
-				echo "make -j $(nproc)" >> build.sh
-				echo "make -j $(nproc) install" >> build.sh
-			elif [ -e "Makefile" ]; then
-				echo "cd ..; make -j $(nproc) install; cd build_dir" >> build.sh
-			else
-				echo "Unsupported build system. Stopping..."
-				exit 1
+
+				if [ -e "$INIT_DIR/packages/$package/post-install.sh" ]; then
+					echo "$INIT_DIR/packages/$package/post-install.sh" >> build.sh
+				fi
+
+				echo "setupBuildEnv $USE_NDK_VERSION 32 $ARCHITECTURE --silent" > setup-ndk.sh
+
+				for i in $CHECK_FOLDERS; do
+					echo -e "if [ ! -d "$i" ]; then echo Package: "'$i'" failed to compile. Check logs; exit 1; fi" >> check-build.sh
+				done
+
+				for i in $CHECK_FILES; do
+					echo -e "if [ ! -f "$i" ]; then echo Package: "'$i'" failed to compile. Check logs; exit 1; fi" >> check-build.sh
+				done
+
+				echo 'echo $? > exit_code' >> build.sh
+
+				chmod +x build.sh
+
+				cd ..
 			fi
-
-			if [ -e "$INIT_DIR/packages/$package/post-install.sh" ]; then
-				echo "$INIT_DIR/packages/$package/post-install.sh" >> build.sh
-			fi
-
-			echo "setupBuildEnv $USE_NDK_VERSION 32 $ARCHITECTURE --silent" > setup-ndk.sh
-
-			for i in $CHECK_FOLDERS; do
-				echo -e "if [ ! -d "$i" ]; then echo Package: "'$i'" failed to compile. Check logs; exit 1; fi" >> check-build.sh
-			done
-
-			for i in $CHECK_FILES; do
-				echo -e "if [ ! -f "$i" ]; then echo Package: "'$i'" failed to compile. Check logs; exit 1; fi" >> check-build.sh
-			done
-
-			echo 'echo $? > exit_code' >> build.sh
-
-			chmod +x build.sh
-
-			cd ..
 		fi
 	done
 }
@@ -347,15 +351,7 @@ if [ "$*" != "--download-only" ]; then
 	cp $NDK_ROOT/26.1.10909125/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/$ARCHITECTURE-linux-android/libc++_shared.so $PREFIX/lib
 
 	# Set RPath for not need set env LD_LIBRARY_PATH
-	for i in $(ls $PREFIX/bin); do
-		if [ ! -f "$i" ]; then
-			patchelf --set-rpath $PREFIX/lib $PREFIX/bin/$i
-		fi
-	done
-
-	for i in $(ls $PREFIX/lib); do
-		if [ "$i" == *".so"* ]; then
-			patchelf --set-rpath $PREFIX/lib $PREFIX/lib/$i
-		fi
+	for i in $(find $PREFIX/bin $PREFIX/lib -exec file {} \; | grep -i elf | cut -d ":" -f 1); do
+		patchelf --set-rpath $PREFIX/lib $PREFIX/bin/$i
 	done
 fi
