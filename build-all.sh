@@ -352,6 +352,6 @@ if [ "$*" != "--download-only" ]; then
 
 	# Set RPath for not need set env LD_LIBRARY_PATH
 	for i in $(find $PREFIX/bin $PREFIX/lib -exec file {} \; | grep -i elf | cut -d ":" -f 1); do
-		patchelf --set-rpath $PREFIX/lib $PREFIX/bin/$i
+		patchelf --set-rpath $PREFIX/lib $i
 	done
 fi
