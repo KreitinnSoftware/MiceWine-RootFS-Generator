@@ -7,3 +7,6 @@ system = 'linux'
 cpu_family = 'aarch64'
 cpu = 'aarch64'
 endian = 'little'
+
+[properties]
+skip_sanity_check = true

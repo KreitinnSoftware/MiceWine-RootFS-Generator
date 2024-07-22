@@ -8,6 +8,6 @@ getVulkanDrivers() {
 	fi
 }
 
-MESON_ARGS="--cross-file=../../../meson-cross-file-$ARCHITECTURE -Dgallium-drivers=swrast,zink,virgl $(getVulkanDrivers) -Dglvnd=enabled -Dglx=dri -Ddri3=enabled -Dplatforms=x11 -Dcpp_rtti=false -Dxmlconfig=disabled -Dllvm=disabled -Dopengl=true -Degl=enabled -Dshared-llvm=disabled -Dzstd=enabled"
+MESON_ARGS="--cross-file=../../../meson-cross-file-$ARCHITECTURE -Dgallium-drivers=zink,virgl $(getVulkanDrivers) -Dglvnd=enabled -Dglx=dri -Ddri3=enabled -Dplatforms=x11 -Dxmlconfig=disabled -Dllvm=disabled -Dopengl=true -Degl=enabled -Dzstd=enabled -Dbuildtype=release"
 USE_NDK_VERSION=26b
 LDFLAGS="-L$PREFIX/lib -landroid-shmem"

@@ -131,6 +131,8 @@ gitDownload()
 
 setupPackages()
 {
+	cd workdir
+
 	mkdir -p "$PREFIX/include"
 
 	mkdir -p "$INIT_DIR/cache"
@@ -175,38 +177,66 @@ setupPackages()
 				if [ -e "./configure" ]; then
 					echo "../configure --prefix=$PREFIX_DIR $CONFIGURE_ARGS" >> build.sh
 					echo "$RUN_POST_CONFIGURE" >> build.sh
+
 					if [ -e "$INIT_DIR/packages/$package/post-configure.sh" ]; then
 						echo "$INIT_DIR/packages/$package/post-configure.sh" >> build.sh
 					fi
+
 					echo "make -j $(nproc)" >> build.sh
-					echo "make -j $(nproc) install" >> build.sh
+
+					if [ -e "$INIT_DIR/packages/$package/custom-make-install.sh" ]; then
+						echo "$INIT_DIR/packages/$package/custom-make-install.sh" >> build.sh
+					else
+						echo "make -j $(nproc) install" >> build.sh
+					fi
 				elif [ -e "autogen.sh" ]; then
 					echo "cd ..; ./autogen.sh; cd build_dir" >> build.sh
 					echo "../configure --prefix=$PREFIX_DIR $CONFIGURE_ARGS" >> build.sh
 					echo "$RUN_POST_CONFIGURE" >> build.sh
+
 					if [ -e "$INIT_DIR/packages/$package/post-configure.sh" ]; then
 						echo "$INIT_DIR/packages/$package/post-configure.sh" >> build.sh
 					fi
+
 					echo "make -j $(nproc)" >> build.sh
-					echo "make -j $(nproc) install" >> build.sh
+
+					if [ -e "$INIT_DIR/packages/$package/custom-make-install.sh" ]; then
+						echo "$INIT_DIR/packages/$package/custom-make-install.sh" >> build.sh
+					else
+						echo "make -j $(nproc) install" >> build.sh
+					fi
 				elif [ -e ".$NON_CONVENTIONAL_BUILD_PATH/CMakeLists.txt" ]; then
 					echo "cmake -DCMAKE_INSTALL_PREFIX=$PREFIX_DIR -DCMAKE_INSTALL_LIBDIR=$PREFIX_DIR/lib $CMAKE_ARGS ..$NON_CONVENTIONAL_BUILD_PATH" >> build.sh
 					echo "make -j $(nproc)" >> build.sh
-					echo "make -j $(nproc) install" >> build.sh
+
+					if [ -e "$INIT_DIR/packages/$package/custom-make-install.sh" ]; then
+						echo "$INIT_DIR/packages/$package/custom-make-install.sh" >> build.sh
+					else
+						echo "make -j $(nproc) install" >> build.sh
+					fi
 				elif [ -e ".$NON_CONVENTIONAL_BUILD_PATH/meson.build" ]; then
 					echo "meson setup -Dprefix=$PREFIX_DIR $MESON_ARGS ..$NON_CONVENTIONAL_BUILD_PATH" >> build.sh
+
 					if [ -e "$INIT_DIR/packages/$package/post-configure.sh" ]; then
 						echo "$INIT_DIR/packages/$package/post-configure.sh" >> build.sh
 					fi
+
 					echo "ninja -j $(nproc)" >> build.sh
-					echo "ninja -j $(nproc) install" >> build.sh
+
+					if [ -e "$INIT_DIR/packages/$package/custom-make-install.sh" ]; then
+						echo "$INIT_DIR/packages/$package/custom-make-install.sh" >> build.sh
+					else
+						echo "ninja -j $(nproc) install" >> build.sh
+					fi
 				elif [ -e "Configure" ]; then
 					echo "../Configure --prefix=$PREFIX_DIR $OPENSSL_FLAGS" >> build.sh
+
 					if [ -e "$INIT_DIR/packages/$package/post-configure.sh" ]; then
 						echo "$INIT_DIR/packages/$package/post-configure.sh" >> build.sh
 					fi
+
 					echo "make -j $(nproc)" >> build.sh
-					echo "make -j $(nproc) install" >> build.sh
+					echo "make -j $(nproc) install_sw" >> build.sh
 				elif [ -e "Makefile" ]; then
 					echo "cd ..; make -j $(nproc) install; cd build_dir" >> build.sh
 				else
@@ -272,26 +302,44 @@ compileAll()
 	done
 }
 
+showHelp()
+{
+	echo "Usage: $0 ARCHITECTURE [OPTIONS]"
+	echo ""
+	echo "Options:"
+	echo "	--help: Show this message and exit."
+	echo "	--clean-prefix: Clean generated rootfs."
+	echo "	--clean-workdir: Clean workdir (for a clean compiling)."
+	echo "	--clean-cache: Clean cache of downloaded packages."
+	echo ""
+	echo "Available Architectures:"
+	echo "	x86_64"
+	echo "	aarch64"
+}
+
 export PREFIX=/data/data/com.micewine.emu/files/usr
 
-case $1 in "aarch64"|"x86_64")
-	export ARCHITECTURE=$1
-	;;
-	"")
-	echo "Error: No Architecture Specified."
-	echo "Usage: $0 {Architecture}"
-	echo "Available Architectures: 'x86_64', 'aarch64'"
+if [ -n "$1" ]; then
+	case $1 in "aarch64"|"x86_64")
+		export ARCHITECTURE=$1
+		;;
+		"--help")
+		showHelp
+		exit
+		;;
+		*)
+		echo "Error: Invalid Architecture Specified."
+		echo ""
+		showHelp
+		exit
+	esac
+else
+	showHelp
 	exit 1
-	;;
-	*)
-	echo "Error: Invalid Architecture Specified."
-	echo "Usage: $0 {Architecture}"
-	echo "Available Architectures: 'x86_64', 'aarch64'"
-	exit
-esac
+fi
 
-if [ "$NDK_ROOT" == "" ] && [ "$*" != "--download-only" ]; then
-	echo "Please Provide a Valid Folder with NDK 25b and 26b on 'NDK_ROOT' environment variable."
+if [ ! -n "$NDK_ROOT" ]; then
+	echo "Provide a Valid Folder with NDK 25b and 26b on 'NDK_ROOT' environment variable."
 	exit
 fi
 
@@ -311,37 +359,23 @@ else
 	echo "This script will download packages only."
 fi
 
-case $* in *"--clean-cache"*)
-	echo "Cleaning Cache..."
-
+case $* in "--clean-cache")
 	rm -rf cache
 esac
 
-case $* in *"--clean-workdir"*)
-	echo "Cleaning Workdir..."
-
+case $* in "--clean-workdir")
 	rm -rf workdir
 esac
 
-if [ -e "logs" ] && [ "$*" != "--download-only" ]; then
-	echo "Cleaning logs..."
-	rm -rf logs
-fi
+rm -rf logs
 
 export PACKAGES=$(ls packages)
-
 export INIT_DIR=$PWD
-
 export INIT_PATH=$PATH
 
+mkdir -p $INIT_DIR/{workdir,logs}
+
 setupBuildEnv 26b 32 $ARCHITECTURE --silent
-
-mkdir -p logs
-
-mkdir -p workdir
-
-cd workdir
-
 setupPackages
 
 if [ "$*" != "--download-only" ]; then
