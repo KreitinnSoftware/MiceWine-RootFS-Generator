@@ -23,11 +23,11 @@ jobs:
     - name: "Start Building (aarch64)"
       run: |
         ./build-all.sh aarch64
+        mv logs /data/data/com.micewine.emu/files/usr
 
     - name: "Create RootFS File (aarch64)"
       run: |
         ./create-rootfs.sh aarch64
-        mv logs $PREFIX/usr/
 
     - name: "Clean AArch64 RootFS"
       run: |
@@ -36,11 +36,11 @@ jobs:
     - name: "Start Building (x86_64)"
       run: |
         ./build-all.sh x86_64
+        mv logs /data/data/com.micewine.emu/files/usr
         
     - name: "Create RootFS File (x86_64)"
       run: |
         ./create-rootfs.sh x86_64
-        mv logs $PREFIX/usr/
           
     - name: "Create Release"
       uses: softprops/action-gh-release@v2
