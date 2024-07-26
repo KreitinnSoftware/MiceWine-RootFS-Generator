@@ -1,3 +1,2 @@
 SRC_URL=https://github.com/libevent/libevent/archive/release-2.1.12-stable.tar.gz
-USE_NDK_VERSION=26b
-CONFIGURE_ARGS="--host=$TOOLCHAIN_TRIPLE host_alias=$TOOLCHAIN_TRIPLE"
+CMAKE_ARGS="-DEVENT__DISABLE_THREAD_SUPPORT=1 -DEVENT__DISABLE_TESTS=1"

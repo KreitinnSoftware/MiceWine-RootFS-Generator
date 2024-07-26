@@ -5,19 +5,23 @@ setupBuildEnv()
 		INIT_PATH=$PATH
 	fi
 
-	if [ "$1" == "25b" ]; then
-		export PATH=$INIT_PATH:$NDK_ROOT/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin
-	elif [ "$1" == "26b" ]; then
-	  	export PATH=$INIT_PATH:$NDK_ROOT/26.1.10909125/toolchains/llvm/prebuilt/linux-x86_64/bin
-	else
-	  	exit
+	if [ ! -d "$INIT_DIR/cache/android-ndk-r26b" ]; then
+		echo "Downloading NDK R26b..."
+
+		curl --output "$INIT_DIR/cache/android-ndk-r26b.zip" -# -L https://dl.google.com/android/repository/android-ndk-r26b-linux.zip
+
+		echo "Unpacking NDK R26b..."
+
+		7z x "$INIT_DIR/cache/android-ndk-r26b.zip" -o"$INIT_DIR/cache" &> /dev/null
+
+		rm -f "$INIT_DIR/cache/android-ndk-r26b.zip"
+
+		printf "\n"
 	fi
 
-	export NDK_VERSION="$1"
-
-	export ANDROID_SDK="$2"
-
-	export ARCH="$3"
+	export PATH=$INIT_PATH:$INIT_DIR/cache/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin
+	export ANDROID_SDK="$1"
+	export ARCH="$2"
 
 	if [ "$ARCH" == "i686" ]; then
 		export CC=i686-linux-android$ANDROID_SDK-clang
@@ -43,10 +47,6 @@ setupBuildEnv()
 
 	export PKG_CONFIG_PATH=$PREFIX/share/pkgconfig:$PREFIX/lib/pkgconfig
 	export PKG_CONFIG_LIBDIR=""
-
-	if [ "$4" != "--silent" ]; then
-		echo -e "NDK Version: $NDK_VERSION\nAndroid API: $ANDROID_SDK\nArchitecture: $ARCH"
-	fi
 }
 
 applyPatches()
@@ -68,31 +68,25 @@ downloadAndExtractPackage()
 {
 	URL=$1
 
-	if [ "$2" == "" ]; then
-		FILENAME=$(basename $SRC_URL)
-	else
-		FILENAME=$2
-	fi
-
-	if [ -e "$INIT_DIR/cache/$(basename $FILENAME)" ]; then 
+	if [ -e "$INIT_DIR/cache/$package" ]; then
 		echo "Package '$package' already downloaded."
 	else
 		echo "Downloading '$package'..."
-		curl --output "$INIT_DIR/cache/$FILENAME" -# -L -O $SRC_URL
+		curl --output "$INIT_DIR/cache/$package" -# -L $SRC_URL
 	fi
 
-	case "$(basename $FILENAME)" in *".tar"*)
-		ARCHIVE_BASE_FOLDER=$(tar -tf "$INIT_DIR/cache/$(basename $FILENAME)" | cut -d "/" -f 1 | head -n 1)
+	case "$(file -b --mime-type $INIT_DIR/cache/$package)" in "application/x-xz"|"application/gzip"|"application/x-bzip2")
+		ARCHIVE_BASE_FOLDER=$(tar -tf "$INIT_DIR/cache/$package" | cut -d "/" -f 1 | head -n 1)
 
 		if [ ! -f "$ARCHIVE_BASE_FOLDER" ]; then
-			tar -xf "$INIT_DIR/cache/$(basename $FILENAME)"
+			tar -xf "$INIT_DIR/cache/$package"
 		fi
 		;;
-		*".zip"*)
-		ARCHIVE_BASE_FOLDER=$(unzip -Z1 "$INIT_DIR/cache/$(basename $FILENAME)" | cut -d "/" -f 1 | head -n 1)
+		*)
+		ARCHIVE_BASE_FOLDER=$(unzip -Z1 "$INIT_DIR/cache/$package" | cut -d "/" -f 1 | head -n 1)
 
 		if [ ! -f "$ARCHIVE_BASE_FOLDER" ]; then
-			unzip -o "$INIT_DIR/cache/$(basename $FILENAME)" 1> /dev/null
+			unzip -o "$INIT_DIR/cache/$package" 1> /dev/null
 		fi
 	esac
 
@@ -134,14 +128,12 @@ setupPackages()
 	cd workdir
 
 	mkdir -p "$PREFIX/include"
-
-	mkdir -p "$INIT_DIR/cache"
 	
 	for package in $PACKAGES; do 
 		if [ -e "$INIT_DIR/workdir/$package/build.sh" ]; then
 			echo "Package '$package' already configured."
 		else
-			unset NON_CONVENTIONAL_BUILD_PATH GIT_URL SRC_URL CONFIGURE_ARGS MESON_ARGS CMAKE_ARGS USE_NDK_VERSION RUN_POST_APPLY_PATCH RUN_POST_BUILD RUN_POST_CONFIGURE CFLAGS CPPFLAGS LDFLAGS LIBS OVERRIDE_PREFIX OVERRIDE_PKG_CONFIG_PATH OVERRIDE_FILENAME CHECK_FOLDERS CHECK_FILES GIT_COMMIT BLACKLIST_ARCHITECTURE
+			unset NON_CONVENTIONAL_BUILD_PATH GIT_URL SRC_URL CONFIGURE_ARGS MESON_ARGS CMAKE_ARGS RUN_POST_APPLY_PATCH RUN_POST_BUILD RUN_POST_CONFIGURE CFLAGS CPPFLAGS LDFLAGS LIBS OVERRIDE_PREFIX OVERRIDE_PKG_CONFIG_PATH GIT_COMMIT BLACKLIST_ARCHITECTURE
 
 			. $INIT_DIR/packages/$package/build.sh
 
@@ -174,7 +166,7 @@ setupPackages()
 					echo "export PKG_CONFIG_PATH=$PKG_CONFIG_PATH" >> build.sh
 				fi
 
-				if [ -e "./configure" ]; then
+				if [ -e "./configure" ] && [ -n "$CONFIGURE_ARGS" ]; then
 					echo "../configure --prefix=$PREFIX_DIR $CONFIGURE_ARGS" >> build.sh
 					echo "$RUN_POST_CONFIGURE" >> build.sh
 
@@ -189,7 +181,7 @@ setupPackages()
 					else
 						echo "make -j $(nproc) install" >> build.sh
 					fi
-				elif [ -e "autogen.sh" ]; then
+				elif [ -e "autogen.sh" ] && [ -n "$CONFIGURE_ARGS" ]; then
 					echo "cd ..; ./autogen.sh; cd build_dir" >> build.sh
 					echo "../configure --prefix=$PREFIX_DIR $CONFIGURE_ARGS" >> build.sh
 					echo "$RUN_POST_CONFIGURE" >> build.sh
@@ -205,7 +197,7 @@ setupPackages()
 					else
 						echo "make -j $(nproc) install" >> build.sh
 					fi
-				elif [ -e ".$NON_CONVENTIONAL_BUILD_PATH/CMakeLists.txt" ]; then
+				elif [ -e ".$NON_CONVENTIONAL_BUILD_PATH/CMakeLists.txt" ] && [ -n "$CMAKE_ARGS" ]; then
 					echo "cmake -DCMAKE_INSTALL_PREFIX=$PREFIX_DIR -DCMAKE_INSTALL_LIBDIR=$PREFIX_DIR/lib $CMAKE_ARGS ..$NON_CONVENTIONAL_BUILD_PATH" >> build.sh
 					echo "make -j $(nproc)" >> build.sh
 
@@ -214,7 +206,7 @@ setupPackages()
 					else
 						echo "make -j $(nproc) install" >> build.sh
 					fi
-				elif [ -e ".$NON_CONVENTIONAL_BUILD_PATH/meson.build" ]; then
+				elif [ -e ".$NON_CONVENTIONAL_BUILD_PATH/meson.build" ] && [ -n "$MESON_ARGS" ]; then
 					echo "meson setup -Dprefix=$PREFIX_DIR $MESON_ARGS ..$NON_CONVENTIONAL_BUILD_PATH" >> build.sh
 
 					if [ -e "$INIT_DIR/packages/$package/post-configure.sh" ]; then
@@ -228,7 +220,7 @@ setupPackages()
 					else
 						echo "ninja -j $(nproc) install" >> build.sh
 					fi
-				elif [ -e "Configure" ]; then
+				elif [ -e "Configure" ] && [ -n "$OPENSSL_FLAGS" ]; then
 					echo "../Configure --prefix=$PREFIX_DIR $OPENSSL_FLAGS" >> build.sh
 
 					if [ -e "$INIT_DIR/packages/$package/post-configure.sh" ]; then
@@ -247,16 +239,6 @@ setupPackages()
 				if [ -e "$INIT_DIR/packages/$package/post-install.sh" ]; then
 					echo "$INIT_DIR/packages/$package/post-install.sh" >> build.sh
 				fi
-
-				echo "setupBuildEnv $USE_NDK_VERSION 32 $ARCHITECTURE --silent" > setup-ndk.sh
-
-				for i in $CHECK_FOLDERS; do
-					echo -e "if [ ! -d "$i" ]; then echo Package: "'$i'" failed to compile. Check logs; exit 1; fi" >> check-build.sh
-				done
-
-				for i in $CHECK_FILES; do
-					echo -e "if [ ! -f "$i" ]; then echo Package: "'$i'" failed to compile. Check logs; exit 1; fi" >> check-build.sh
-				done
 
 				echo 'echo $? > exit_code' >> build.sh
 
@@ -284,17 +266,11 @@ compileAll()
 		else
 			echo "Compiling Package '$i'..."
 
-			. ../setup-ndk.sh
-
 			../build.sh 1> "$INIT_DIR/logs/$i-log.txt" 2> "$INIT_DIR/logs/$i-error_log.txt"
 
 			if [ "$(cat exit_code)" != "0" ]; then
 				echo "Package: '"$i"' failed to compile. Check logs"
 				exit 0
-			fi
-	 
-			if [ -f "../check-build.sh" ]; then
-				. ../check-build.sh
 			fi
 		fi
 
@@ -338,11 +314,6 @@ else
 	exit 1
 fi
 
-if [ ! -n "$NDK_ROOT" ]; then
-	echo "Provide a Valid Folder with NDK 25b and 26b on 'NDK_ROOT' environment variable."
-	exit
-fi
-
 if [ "$*" != "--download-only" ]; then
 	if [ ! -e "$PREFIX" ]; then
 		sudo mkdir -p "$PREFIX"
@@ -373,16 +344,16 @@ export PACKAGES=$(ls packages)
 export INIT_DIR=$PWD
 export INIT_PATH=$PATH
 
-mkdir -p $INIT_DIR/{workdir,logs}
+mkdir -p $INIT_DIR/{workdir,logs,cache}
 
-setupBuildEnv 26b 32 $ARCHITECTURE --silent
+setupBuildEnv 32 $ARCHITECTURE
 setupPackages
 
 if [ "$*" != "--download-only" ]; then
 	compileAll
 
 	# Copy libc++_shared.so from NDK
-	cp $NDK_ROOT/26.1.10909125/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/$ARCHITECTURE-linux-android/libc++_shared.so $PREFIX/lib
+	cp $INIT_DIR/cache/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/$ARCHITECTURE-linux-android/libc++_shared.so $PREFIX/lib
 
 	# Set RPath for not need set env LD_LIBRARY_PATH
 	for i in $(find $PREFIX/bin $PREFIX/lib -exec file {} \; | grep -i elf | cut -d ":" -f 1); do

@@ -1,4 +1,5 @@
 GIT_URL=https://gitlab.freedesktop.org/mesa/mesa
+LDFLAGS="-L$PREFIX/lib -landroid-shmem"
 
 getVulkanDrivers() {
 	if [ "$ARCHITECTURE" == "aarch64" ]; then
@@ -9,5 +10,3 @@ getVulkanDrivers() {
 }
 
 MESON_ARGS="--cross-file=../../../meson-cross-file-$ARCHITECTURE -Dgallium-drivers=zink,virgl $(getVulkanDrivers) -Dglvnd=enabled -Dglx=dri -Ddri3=enabled -Dplatforms=x11 -Dxmlconfig=disabled -Dllvm=disabled -Dopengl=true -Degl=enabled -Dzstd=enabled -Dbuildtype=release"
-USE_NDK_VERSION=26b
-LDFLAGS="-L$PREFIX/lib -landroid-shmem"

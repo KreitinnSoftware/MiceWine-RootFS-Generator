@@ -1,5 +1,4 @@
-SRC_URL=https://www.openssl.org/source/openssl-3.2.1.tar.gz
-USE_NDK_VERSION=26b
+SRC_URL=https://github.com/openssl/openssl/releases/download/openssl-3.2.2/openssl-3.2.2.tar.gz
 CFLAGS="-DNO_SYSLOG"
 
 getOpenSSLArch()
