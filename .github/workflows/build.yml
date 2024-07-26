@@ -19,16 +19,6 @@ jobs:
         sudo apt install -y python3 python3-pip cmake wget git p7zip build-essential pkg-config xmlto fop xsltproc llvm autoconf libxml-parser-perl bison flex
         pip3 install mako meson ninja
         sudo ln -sf ~/.local/bin/meson /usr/bin/meson
-        wget https://dl.google.com/android/repository/android-ndk-r26b-linux.zip
-        wget https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
-        mkdir -p $HOME/.android/sdk/ndk
-        unzip android-ndk-r26b-linux.zip
-        unzip android-ndk-r25b-linux.zip
-        mv android-ndk-r26b $HOME/.android/sdk/ndk/26.1.10909125
-        mv android-ndk-r25b $HOME/.android/sdk/ndk/25.2.9519653
-        echo "PREFIX=/data/data/com.micewine.emu/files/usr" >> $GITHUB_ENV
-        echo "PKG_CONFIG_PATH=/data/data/com.micewine.emu/files/usr/share/pkgconfig:/data/data/com.micewine.emu/files/usr/lib/pkgconfig" >> $GITHUB_ENV
-        echo "NDK_ROOT=$HOME/.android/sdk/ndk" >> $GITHUB_ENV
         
     - name: "Start Building (aarch64)"
       run: |
