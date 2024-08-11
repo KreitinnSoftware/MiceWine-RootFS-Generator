@@ -167,7 +167,7 @@ setupPackages()
 				fi
 
 				if [ -e "./configure" ] && [ -n "$CONFIGURE_ARGS" ]; then
-					echo "../configure --prefix=$PREFIX_DIR $CONFIGURE_ARGS" >> build.sh
+					echo "../configure --libdir=$PREFIX_DIR/lib --prefix=$PREFIX_DIR $CONFIGURE_ARGS" >> build.sh
 					echo "$RUN_POST_CONFIGURE" >> build.sh
 
 					if [ -e "$INIT_DIR/packages/$package/post-configure.sh" ]; then
@@ -183,7 +183,7 @@ setupPackages()
 					fi
 				elif [ -e "autogen.sh" ] && [ -n "$CONFIGURE_ARGS" ]; then
 					echo "cd ..; ./autogen.sh; cd build_dir" >> build.sh
-					echo "../configure --prefix=$PREFIX_DIR $CONFIGURE_ARGS" >> build.sh
+					echo "../configure --libdir=$PREFIX_DIR/lib --prefix=$PREFIX_DIR $CONFIGURE_ARGS" >> build.sh
 					echo "$RUN_POST_CONFIGURE" >> build.sh
 
 					if [ -e "$INIT_DIR/packages/$package/post-configure.sh" ]; then
@@ -207,7 +207,7 @@ setupPackages()
 						echo "make -j $(nproc) install" >> build.sh
 					fi
 				elif [ -e ".$NON_CONVENTIONAL_BUILD_PATH/meson.build" ] && [ -n "$MESON_ARGS" ]; then
-					echo "meson setup -Dprefix=$PREFIX_DIR $MESON_ARGS ..$NON_CONVENTIONAL_BUILD_PATH" >> build.sh
+					echo "meson setup -Dbuildtype=release -Dprefix=$PREFIX_DIR $MESON_ARGS ..$NON_CONVENTIONAL_BUILD_PATH" >> build.sh
 
 					if [ -e "$INIT_DIR/packages/$package/post-configure.sh" ]; then
 						echo "$INIT_DIR/packages/$package/post-configure.sh" >> build.sh
@@ -230,7 +230,9 @@ setupPackages()
 					echo "make -j $(nproc)" >> build.sh
 					echo "make -j $(nproc) install_sw" >> build.sh
 				elif [ -e "Makefile" ]; then
-					echo "cd ..; make -j $(nproc) install; cd build_dir" >> build.sh
+					echo "cd .." >> build.sh
+					echo "make -j $(nproc) install" >> build.sh
+					echo "cd build_dir" >> build.sh
 				else
 					echo "Unsupported build system. Stopping..."
 					exit 1
