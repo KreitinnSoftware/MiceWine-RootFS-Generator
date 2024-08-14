@@ -295,7 +295,7 @@ compileAll()
 		else
 			echo "Compiling Package '$i'..."
 
-			../build.sh #1> "$INIT_DIR/logs/$i-log.txt" 2> "$INIT_DIR/logs/$i-error_log.txt"
+			../build.sh 1> "$INIT_DIR/logs/$i-log.txt" 2> "$INIT_DIR/logs/$i-error_log.txt"
 
 			if [ "$(cat exit_code)" != "0" ]; then
 				echo "Package: '"$i"' failed to compile. Check logs"
