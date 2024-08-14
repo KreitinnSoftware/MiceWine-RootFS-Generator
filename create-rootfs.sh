@@ -21,7 +21,7 @@ symlink2sh() {
 }
 
 export PREFIX=/data/data/com.micewine.emu/files/usr
-export INITIAL_DIR=$PWD
+export INIT_DIR=$PWD
 
 if [ ! -e "$PREFIX" ]; then
   echo "$PREFIX: Don't Exist. Run 'build-all.sh' for generate the needed libs for creating a rootfs for MiceWine."
@@ -40,12 +40,12 @@ elif [ $# == 2 ]; then
 fi
 
 # Convert symlinks to a .sh file that need to be executed after zip extract
-symlink2sh $PREFIX
+symlink2sh "$PREFIX"
 
 case $ARGS in *"--clean-all"*)
   echo "Removing Static Libraries..."
-  rm -f $PREFIX/lib/*.la
-  rm -f $PREFIX/lib/*.a
+  rm -f "$PREFIX/lib/"*".la"
+  rm -f "$PREFIX/lib/"*".a"
 
   echo "Removing Generated Folders..."
   rm -rf $PREFIX/lib/{python*,cmake,pkgconfig}
@@ -60,4 +60,10 @@ case $ARGS in *"--clean-all"*)
   export ROOTFS_PACKAGE="MiceWine-RootFS$ZIPFILE_APPEND"
 esac
 
-7z a ~/$ROOTFS_PACKAGE.zip $PREFIX/..
+./external-files-download-path.sh
+
+cp -rf "$PREFIX" "$INIT_DIR/rootfs/usr"
+
+mv "$INIT_DIR/rootfs/usr/wine" "$INIT_DIR/rootfs/wine"
+
+7z a ~"/$ROOTFS_PACKAGE.zip" "$INIT_DIR/rootfs"

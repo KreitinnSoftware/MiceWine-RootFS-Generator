@@ -19,7 +19,25 @@ setupBuildEnv()
 		printf "\n"
 	fi
 
-	export PATH=$INIT_PATH:$INIT_DIR/cache/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin
+	if [ ! -d "$INIT_DIR/cache/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64" ]; then
+		echo "Downloading llvm-mingw..."
+
+		curl --output "$INIT_DIR/cache/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64.tar.xz" -# -L https://github.com/mstorsjo/llvm-mingw/releases/download/20240619/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64.tar.xz
+
+		echo "Unpacking llvm-mingw..."
+
+		cd "$INIT_DIR/cache"
+
+		tar -xf "$INIT_DIR/cache/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64.tar.xz"
+
+		cd "$OLDPWD"
+
+		rm -f "$INIT_DIR/cache/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64.tar.xz"
+
+		printf "\n"
+	fi
+
+	export PATH=$INIT_PATH:$INIT_DIR/cache/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin:$INIT_DIR/cache/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64/bin
 	export ANDROID_SDK="$1"
 	export ARCH="$2"
 
@@ -133,7 +151,7 @@ setupPackages()
 		if [ -e "$INIT_DIR/workdir/$package/build.sh" ]; then
 			echo "Package '$package' already configured."
 		else
-			unset NON_CONVENTIONAL_BUILD_PATH GIT_URL SRC_URL CONFIGURE_ARGS MESON_ARGS CMAKE_ARGS RUN_POST_APPLY_PATCH RUN_POST_BUILD RUN_POST_CONFIGURE CFLAGS CPPFLAGS LDFLAGS LIBS OVERRIDE_PREFIX OVERRIDE_PKG_CONFIG_PATH GIT_COMMIT BLACKLIST_ARCHITECTURE
+			unset NON_CONVENTIONAL_BUILD_PATH GIT_URL SRC_URL HOST_BUILD_FOLDER HOST_BUILD_MAKE HOST_BUILD_CONFIGURE_ARGS HOST_BUILD_CFLAGS HOST_BUILD_CXXFLAGS HOST_BUILD_LDFLAGS CONFIGURE_ARGS MESON_ARGS CMAKE_ARGS RUN_POST_APPLY_PATCH RUN_POST_BUILD RUN_POST_CONFIGURE CFLAGS CPPFLAGS LDFLAGS LIBS OVERRIDE_PREFIX OVERRIDE_PKG_CONFIG_PATH GIT_COMMIT BLACKLIST_ARCHITECTURE
 
 			. $INIT_DIR/packages/$package/build.sh
 
@@ -167,6 +185,15 @@ setupPackages()
 				fi
 
 				if [ -e "./configure" ] && [ -n "$CONFIGURE_ARGS" ]; then
+					if [ -n "$HOST_BUILD_CONFIGURE_ARGS" ]; then
+						echo "mkdir -p $HOST_BUILD_FOLDER" >> build.sh
+						echo "cd $HOST_BUILD_FOLDER" >> build.sh
+						#echo "bash" >> build.sh
+						echo "CC= CXX= PKG_CONFIG_PATH= LDFLAGS=\"$HOST_BUILD_LDFLAGS\" CFLAGS=\"$HOST_BUILD_CFLAGS\" CXXFLAGS=\"$HOST_BUILD_CXXFLAGS\" env -i bash -l -c \"../configure $HOST_BUILD_CONFIGURE_ARGS\"" >> build.sh
+						echo "$HOST_BUILD_MAKE" >> build.sh
+						echo 'cd $OLDPWD' >> build.sh
+					fi
+
 					echo "../configure --libdir=$PREFIX_DIR/lib --prefix=$PREFIX_DIR $CONFIGURE_ARGS" >> build.sh
 					echo "$RUN_POST_CONFIGURE" >> build.sh
 
@@ -268,7 +295,7 @@ compileAll()
 		else
 			echo "Compiling Package '$i'..."
 
-			../build.sh 1> "$INIT_DIR/logs/$i-log.txt" 2> "$INIT_DIR/logs/$i-error_log.txt"
+			../build.sh #1> "$INIT_DIR/logs/$i-log.txt" 2> "$INIT_DIR/logs/$i-error_log.txt"
 
 			if [ "$(cat exit_code)" != "0" ]; then
 				echo "Package: '"$i"' failed to compile. Check logs"
