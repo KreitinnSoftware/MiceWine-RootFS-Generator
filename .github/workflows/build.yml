@@ -41,12 +41,15 @@ jobs:
     - name: "Create RootFS File (x86_64)"
       run: |
         ./create-rootfs.sh x86_64
+
+    - name: "Get Short SHA"
+      run: echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
           
     - name: "Create Release"
       uses: softprops/action-gh-release@v2
       with:
         name: "MiceWine RootFS ${{ github.sha }}"
-        tag_name: ${{ github.sha }}
+        tag_name: ${{ env.SHORT_SHA }}
         files: |
             /home/runner/MiceWine-RootFS-aarch64.zip
             /home/runner/MiceWine-RootFS-x86_64.zip
