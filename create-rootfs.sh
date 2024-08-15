@@ -66,4 +66,4 @@ cp -rf "$PREFIX" "$INIT_DIR/rootfs/usr"
 
 mv "$INIT_DIR/rootfs/usr/wine" "$INIT_DIR/rootfs/wine"
 
-7z a ~"/$ROOTFS_PACKAGE.zip" "$INIT_DIR/rootfs"
+7z a "$HOME/$ROOTFS_PACKAGE.zip" "$INIT_DIR/rootfs"
