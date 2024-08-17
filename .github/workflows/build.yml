@@ -38,7 +38,7 @@ jobs:
 
     - name: "Clean AArch64 RootFS"
       run: |
-        sudo rm -rf /data/data/ workdir
+        sudo rm -rf /data/data/ workdir rootfs/usr
     
     - name: "Start Building (x86_64)"
       run: |
