@@ -26,19 +26,6 @@ jobs:
         sudo cp -rf termux-docker/system/x86 /system
         sudo chown -R $(whoami):$(whoami) /system
         sudo chmod 755 -R /system
-        
-    - name: "Start Building (aarch64)"
-      run: |
-        ./build-all.sh aarch64
-        mv logs /data/data/com.micewine.emu/files/usr
-
-    - name: "Create RootFS File (aarch64)"
-      run: |
-        ./create-rootfs.sh aarch64
-
-    - name: "Clean AArch64 RootFS"
-      run: |
-        sudo rm -rf /data/data/ workdir rootfs/usr
     
     - name: "Start Building (x86_64)"
       run: |
@@ -48,6 +35,19 @@ jobs:
     - name: "Create RootFS File (x86_64)"
       run: |
         ./create-rootfs.sh x86_64
+
+    - name: "Clean x86_64 RootFS"
+      run: |
+        sudo rm -rf /data/data/ workdir rootfs/usr
+
+    - name: "Start Building (aarch64)"
+      run: |
+        ./build-all.sh aarch64
+        mv logs /data/data/com.micewine.emu/files/usr
+
+    - name: "Create RootFS File (aarch64)"
+      run: |
+        ./create-rootfs.sh aarch64
 
     - name: "Get Short SHA"
       run: echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV

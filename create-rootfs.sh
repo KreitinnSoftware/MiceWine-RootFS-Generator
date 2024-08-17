@@ -64,6 +64,8 @@ esac
 
 cp -rf "$PREFIX" "$INIT_DIR/rootfs/usr"
 
-mv "$INIT_DIR/rootfs/usr/wine" "$INIT_DIR/rootfs/wine"
+if [ -f "$PREFIX/../wine" ]; then
+  cp -rf "$PREFIX/../wine" "$INIT_DIR/rootfs/wine"
+fi
 
 7z a "$HOME/$ROOTFS_PACKAGE.zip" "$INIT_DIR/rootfs"
