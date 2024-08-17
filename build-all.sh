@@ -346,8 +346,8 @@ fi
 if [ "$*" != "--download-only" ]; then
 	if [ ! -e "$PREFIX" ]; then
 		sudo mkdir -p "$PREFIX"
-		sudo chown -R $(whoami):$(whoami) "$PREFIX"
-		sudo chmod 755 -R "$PREFIX"
+		sudo chown -R $(whoami):$(whoami) "$PREFIX/.."
+		sudo chmod 755 -R "$PREFIX/.."
 	else
 		case $* in *"--clean-prefix"*)
 			echo "Cleaning Prefix..."
