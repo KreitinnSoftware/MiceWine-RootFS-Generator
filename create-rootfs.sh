@@ -64,7 +64,7 @@ esac
 
 cp -rf "$PREFIX" "$INIT_DIR/rootfs/usr"
 
-if [ -f "$PREFIX/../wine" ]; then
+if [ -d "$PREFIX/../wine" ]; then
   cp -rf "$PREFIX/../wine" "$INIT_DIR/rootfs/wine"
 fi
 
