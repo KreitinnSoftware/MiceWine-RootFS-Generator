@@ -38,7 +38,7 @@ jobs:
 
     - name: "Clean x86_64 RootFS"
       run: |
-        sudo rm -rf /data/data/com.micewine.emu/files/usr workdir rootfs/usr
+        sudo rm -rf /data/data/com.micewine.emu/files/usr workdir rootfs
 
     - name: "Start Building (aarch64)"
       run: |
