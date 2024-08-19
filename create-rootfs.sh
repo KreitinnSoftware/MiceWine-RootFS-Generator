@@ -68,4 +68,8 @@ if [ -d "$PREFIX/../wine" ]; then
   cp -rf "$PREFIX/../wine" "$INIT_DIR/rootfs/wine"
 fi
 
-7z a "$HOME/$ROOTFS_PACKAGE.zip" "$INIT_DIR/rootfs"
+cd "$INIT_DIR/rootfs"
+
+7z a "$HOME/$ROOTFS_PACKAGE.zip"
+
+cd "$OLDPWD"
