@@ -1,4 +1,5 @@
 GIT_URL=https://gitlab.freedesktop.org/mesa/mesa
+LDFLAGS="-L$PREFIX/lib -landroid-shmem"
 
 getVulkanDrivers() {
 	if [ "$ARCHITECTURE" == "aarch64" ]; then
