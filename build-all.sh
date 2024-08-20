@@ -76,10 +76,10 @@ applyPatches()
 
 		git apply "$patch"
 
-		$RUN_POST_APPLY_PATCH
-
 		printf "\n"
 	done
+
+	$RUN_POST_APPLY_PATCH
 }
 
 downloadAndExtractPackage()
