@@ -19,7 +19,7 @@ CONFIGURE_ARGS="enable_wineandroid_drv=no \
 				--x-includes=$PREFIX/include \
 				--with-pulse --without-xshm \
 				--without-xxf86vm \
-				--without-gstreamer \
+				--with-gstreamer \
 				--with-opengl \
 				--without-osmesa \
 				--with-gnutls \
