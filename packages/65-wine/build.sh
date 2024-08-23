@@ -1,5 +1,5 @@
-GIT_URL=https://gitlab.winehq.org/wine/wine
-GIT_COMMIT=6a7bfbab10d653f6724e2917e0552515520e4fb3
+GIT_URL=https://github.com/ValveSoftware/wine
+GIT_COMMIT=e2b637c8dcd39f6174a36e0b7ab2632f4b88aae7
 BLACKLIST_ARCHITECTURE=aarch64
 HOST_BUILD_CONFIGURE_ARGS="--enable-win64 --without-x"
 HOST_BUILD_FOLDER="$INIT_DIR/workdir/$package/wine-tools"
