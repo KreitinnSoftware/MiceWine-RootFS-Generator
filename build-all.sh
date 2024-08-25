@@ -318,6 +318,8 @@ compileAll()
 
 			cp -rf "$INIT_DIR/workdir/$package/destdir-pkg/$PREFIX/"* "$PREFIX"
 
+   			find "$INIT_DIR/workdir/$package/destdir-pkg" > "$INIT_DIR/logs/$package-package-files.txt"
+
 			echo "-- Packaging Package '$package'..."
 
 			cd "$INIT_DIR/workdir/$package/destdir-pkg"
