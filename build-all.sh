@@ -200,7 +200,7 @@ setupPackages()
 						if [ -e "$INIT_DIR/packages/$package/custom-make-install.sh" ]; then
 							echo "$INIT_DIR/packages/$package/custom-make-install.sh" >> build.sh
 						else
-							echo "make -j $(nproc) DESTDIR=\"\$DESTDIR\" install" >> build.sh
+							echo "make -j $(nproc) install" >> build.sh
 						fi
 					elif [ -e "autogen.sh" ] && [ -n "$CONFIGURE_ARGS" ]; then
 						echo "cd .." >> build.sh
@@ -218,7 +218,7 @@ setupPackages()
 						if [ -e "$INIT_DIR/packages/$package/custom-make-install.sh" ]; then
 							echo "$INIT_DIR/packages/$package/custom-make-install.sh" >> build.sh
 						else
-							echo "make -j $(nproc) DESTDIR=\"\$DESTDIR\" install" >> build.sh
+							echo "make -j $(nproc) install" >> build.sh
 						fi
 					elif [ -e ".$NON_CONVENTIONAL_BUILD_PATH/CMakeLists.txt" ] && [ -n "$CMAKE_ARGS" ]; then
 						echo "cmake -DCMAKE_INSTALL_PREFIX=$PREFIX_DIR -DCMAKE_INSTALL_LIBDIR=$PREFIX_DIR/lib $CMAKE_ARGS ..$NON_CONVENTIONAL_BUILD_PATH" >> build.sh
@@ -227,7 +227,7 @@ setupPackages()
 						if [ -e "$INIT_DIR/packages/$package/custom-make-install.sh" ]; then
 							echo "$INIT_DIR/packages/$package/custom-make-install.sh" >> build.sh
 						else
-							echo "make -j $(nproc) DESTDIR=\"\$DESTDIR\" install" >> build.sh
+							echo "make -j $(nproc) install" >> build.sh
 						fi
 					elif [ -e ".$NON_CONVENTIONAL_BUILD_PATH/meson.build" ] && [ -n "$MESON_ARGS" ]; then
 						echo "meson setup -Dbuildtype=release -Dprefix=$PREFIX_DIR $MESON_ARGS ..$NON_CONVENTIONAL_BUILD_PATH" >> build.sh
@@ -241,7 +241,7 @@ setupPackages()
 						if [ -e "$INIT_DIR/packages/$package/custom-make-install.sh" ]; then
 							echo "$INIT_DIR/packages/$package/custom-make-install.sh" >> build.sh
 						else
-							echo "ninja -j $(nproc) DESTDIR=\"\$DESTDIR\" install" >> build.sh
+							echo "ninja -j $(nproc) install" >> build.sh
 						fi
 					elif [ -e "Configure" ] && [ -n "$OPENSSL_FLAGS" ]; then
 						echo "../Configure --prefix=$PREFIX_DIR $OPENSSL_FLAGS" >> build.sh
