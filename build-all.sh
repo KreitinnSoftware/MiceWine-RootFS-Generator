@@ -16,13 +16,13 @@ setupBuildEnv()
 
 		rm -f "$INIT_DIR/cache/android-ndk-r26b.zip"
 
-		printf "\n"
+		echo ""
 	fi
 
 	if [ ! -d "$INIT_DIR/cache/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64" ]; then
 		echo "Downloading llvm-mingw..."
 
-		curl --output "$INIT_DIR/cache/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64.tar.xz" -# -L https://github.com/mstorsjo/llvm-mingw/releases/download/20240619/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64.tar.xz
+		curl -O "$INIT_DIR/cache/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64.tar.xz" -# -L https://github.com/mstorsjo/llvm-mingw/releases/download/20240619/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64.tar.xz
 
 		echo "Unpacking llvm-mingw..."
 
@@ -34,7 +34,7 @@ setupBuildEnv()
 
 		rm -f "$INIT_DIR/cache/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64.tar.xz"
 
-		printf "\n"
+		echo ""
 	fi
 
 	export PATH=$INIT_PATH:$INIT_DIR/cache/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin:$INIT_DIR/cache/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64/bin
@@ -63,37 +63,35 @@ setupBuildEnv()
 		export TOOLCHAIN_TRIPLE="aarch64-linux-android"
 	fi
 
-	export PKG_CONFIG_PATH=$PREFIX/share/pkgconfig:$PREFIX/lib/pkgconfig
-	export PKG_CONFIG_LIBDIR=""
+	export PKG_CONFIG_PATH="$PREFIX/share/pkgconfig:$PREFIX/lib/pkgconfig"
+	export PKG_CONFIG_LIBDIR="$PREFIX/lib/pkgconfig"
 }
 
 applyPatches()
 {
-	PACKAGE=$1
+	for patch in $(find $INIT_DIR/packages/$package -name "*.patch"); do
+		echo "- Applying '$(basename $patch)' for '$package'..."
 
-	for patch in $(ls $INIT_DIR/packages/$PACKAGE/*.patch 2> /dev/null); do
-		echo "Applying '$(basename $patch)' for '$PACKAGE'..."
-
-		git apply "$patch"
-
-		printf "\n"
+		patch -p1 < "$patch" -ts
 	done
+
+	echo ""
 
 	$RUN_POST_APPLY_PATCH
 }
 
 downloadAndExtractPackage()
 {
-	URL=$1
-
 	if [ -e "$INIT_DIR/cache/$package" ]; then
-		echo "Package '$package' already downloaded."
+		echo "-- Package '$package' already downloaded."
 	else
-		echo "Downloading '$package'..."
+		echo "-- Downloading '$package'..."
 		curl --output "$INIT_DIR/cache/$package" -# -L $SRC_URL
 	fi
 
-	case "$(file -b --mime-type $INIT_DIR/cache/$package)" in "application/x-xz"|"application/gzip"|"application/x-bzip2")
+	local ARCHIVE_MIME_TYPE=$(file -b --mime-type $INIT_DIR/cache/$package)
+
+	case $ARCHIVE_MIME_TYPE in "application/x-xz"|"application/gzip"|"application/x-bzip2")
 		ARCHIVE_BASE_FOLDER=$(tar -tf "$INIT_DIR/cache/$package" | cut -d "/" -f 1 | head -n 1)
 
 		if [ ! -f "$ARCHIVE_BASE_FOLDER" ]; then
@@ -113,197 +111,219 @@ downloadAndExtractPackage()
 
 gitDownload()
 {
-	URL=$1
-	PACKAGE=$2
+	if [ -d "$INIT_DIR/cache/$package" ]; then
+		echo "-- Package '$package' already downloaded."
 
-	if [ -d "$INIT_DIR/cache/$PACKAGE" ]; then
-		echo "Package '$package' already downloaded."
-
-		git clone "$INIT_DIR/cache/$PACKAGE"
+		git clone "$INIT_DIR/cache/$package" &> /dev/zero
 	else
-		git clone --no-checkout $URL "$INIT_DIR/cache/$PACKAGE"
+		git clone --no-checkout $GIT_URL "$INIT_DIR/cache/$package" &> /dev/zero
 
-		git clone "$INIT_DIR/cache/$PACKAGE"
+		git clone "$INIT_DIR/cache/$package" &> /dev/zero
 	fi
 
-	cd $PACKAGE
+	cd $package
 
-	if [ "$GIT_COMMIT" != "" ]; then
-		git checkout $GIT_COMMIT .
-	else
-		git checkout HEAD .
+	if [ -n "$GIT_COMMIT" ]; then
+		git checkout $GIT_COMMIT &> /dev/zero
 	fi
 
-	git submodule update --init --recursive
+	git checkout . &> /dev/zero
+
+	git submodule update --init --recursive &> /dev/zero
 
 	cd ..
-
-	ARCHIVE_BASE_FOLDER=$package
 }
 
 setupPackages()
 {
-	cd workdir
+	cd "$INIT_DIR/workdir"
 
 	mkdir -p "$PREFIX/include"
 	
-	for package in $PACKAGES; do 
-		if [ -e "$INIT_DIR/workdir/$package/build.sh" ]; then
-			echo "Package '$package' already configured."
+	for package in $PACKAGES; do
+		if [ -f "$INIT_DIR/built-pkgs/$package-$ARCHITECTURE.zip" ]; then
+			echo "-- Package '$package' already built, No configuring necessary."
 		else
-			unset NON_CONVENTIONAL_BUILD_PATH GIT_URL SRC_URL HOST_BUILD_FOLDER HOST_BUILD_MAKE HOST_BUILD_CONFIGURE_ARGS HOST_BUILD_CFLAGS HOST_BUILD_CXXFLAGS HOST_BUILD_LDFLAGS CONFIGURE_ARGS MESON_ARGS CMAKE_ARGS RUN_POST_APPLY_PATCH RUN_POST_BUILD RUN_POST_CONFIGURE CFLAGS CPPFLAGS LDFLAGS LIBS OVERRIDE_PREFIX OVERRIDE_PKG_CONFIG_PATH GIT_COMMIT BLACKLIST_ARCHITECTURE
-
-			. $INIT_DIR/packages/$package/build.sh
-
-			if [ "$BLACKLIST_ARCHITECTURE" == "$ARCHITECTURE" ]; then
-				echo "Warning: '$package' will not be built."
+			if [ -e "$INIT_DIR/workdir/$package/build.sh" ]; then
+				echo "-- Package '$package' already configured."
 			else
-				if [ "$SRC_URL" != "" ]; then
-					downloadAndExtractPackage $SRC_URL $OVERRIDE_FILENAME
-				elif [ "$GIT_URL" != "" ]; then
-					gitDownload $GIT_URL $package
-				fi
+				unset NON_CONVENTIONAL_BUILD_PATH GIT_URL SRC_URL HOST_BUILD_FOLDER HOST_BUILD_MAKE HOST_BUILD_CONFIGURE_ARGS HOST_BUILD_CFLAGS HOST_BUILD_CXXFLAGS HOST_BUILD_LDFLAGS CONFIGURE_ARGS MESON_ARGS CMAKE_ARGS RUN_POST_APPLY_PATCH RUN_POST_BUILD RUN_POST_CONFIGURE CFLAGS CPPFLAGS LDFLAGS LIBS OVERRIDE_PREFIX OVERRIDE_PKG_CONFIG_PATH GIT_COMMIT BLACKLIST_ARCHITECTURE
 
-				cd $package
+				. "$INIT_DIR/packages/$package/build.sh"
 
-				printf "\n"
-
-				applyPatches $package
-
-				echo "export CFLAGS=\"$CFLAGS\" LIBS=\"$LIBS\" CPPFLAGS=\"$CPPFLAGS\" LDFLAGS=\"$LDFLAGS\"" > build.sh
-
-				if [ "$OVERRIDE_PREFIX" != "" ]; then
-					PREFIX_DIR=$OVERRIDE_PREFIX
+				if [ "$BLACKLIST_ARCHITECTURE" == "$ARCHITECTURE" ]; then
+					echo "-- Warning: '$package' will not be built."
 				else
-					PREFIX_DIR=$PREFIX
-				fi
-
-				if [ "$OVERRIDE_PKG_CONFIG_PATH" != "" ]; then
-					echo "export PKG_CONFIG_PATH=$OVERRIDE_PKG_CONFIG_PATH" >> build.sh
-				else
-					echo "export PKG_CONFIG_PATH=$PKG_CONFIG_PATH" >> build.sh
-				fi
-
-				if [ -e "./configure" ] && [ -n "$CONFIGURE_ARGS" ]; then
-					if [ -n "$HOST_BUILD_CONFIGURE_ARGS" ]; then
-						echo "mkdir -p $HOST_BUILD_FOLDER" >> build.sh
-						echo "cd $HOST_BUILD_FOLDER" >> build.sh
-						#echo "bash" >> build.sh
-						echo "CC= CXX= PKG_CONFIG_PATH= LDFLAGS=\"$HOST_BUILD_LDFLAGS\" CFLAGS=\"$HOST_BUILD_CFLAGS\" CXXFLAGS=\"$HOST_BUILD_CXXFLAGS\" env -i bash -l -c \"../configure $HOST_BUILD_CONFIGURE_ARGS\"" >> build.sh
-						echo "$HOST_BUILD_MAKE" >> build.sh
-						echo 'cd $OLDPWD' >> build.sh
+					if [ -n "$SRC_URL" ]; then
+						downloadAndExtractPackage
+					elif [ -n "$GIT_URL" ]; then
+						gitDownload
 					fi
 
-					echo "../configure --libdir=$PREFIX_DIR/lib --prefix=$PREFIX_DIR $CONFIGURE_ARGS" >> build.sh
-					echo "$RUN_POST_CONFIGURE" >> build.sh
+					cd $package
 
-					if [ -e "$INIT_DIR/packages/$package/post-configure.sh" ]; then
-						echo "$INIT_DIR/packages/$package/post-configure.sh" >> build.sh
-					fi
+					applyPatches
 
-					echo "make -j $(nproc)" >> build.sh
+					echo "export CFLAGS=\"$CFLAGS\" LIBS=\"$LIBS\" CPPFLAGS=\"$CPPFLAGS\" LDFLAGS=\"$LDFLAGS\"" > build.sh
+					echo "export DESTDIR=\"$INIT_DIR/workdir/$package/destdir-pkg\"" >> build.sh
 
-					if [ -e "$INIT_DIR/packages/$package/custom-make-install.sh" ]; then
-						echo "$INIT_DIR/packages/$package/custom-make-install.sh" >> build.sh
+					if [ -n "$OVERRIDE_PREFIX" ]; then
+						PREFIX_DIR=$OVERRIDE_PREFIX
 					else
+						PREFIX_DIR=$PREFIX
+					fi
+
+					if [ "$OVERRIDE_PKG_CONFIG_PATH" != "" ]; then
+						echo "export PKG_CONFIG_PATH=$OVERRIDE_PKG_CONFIG_PATH" >> build.sh
+					else
+						echo "export PKG_CONFIG_PATH=$PKG_CONFIG_PATH" >> build.sh
+					fi
+
+					if [ -e "./configure" ] && [ -n "$CONFIGURE_ARGS" ]; then
+						if [ -n "$HOST_BUILD_CONFIGURE_ARGS" ]; then
+							echo "mkdir -p $HOST_BUILD_FOLDER" >> build.sh
+							echo "cd $HOST_BUILD_FOLDER" >> build.sh
+							echo "env -i bash -l -c \"../configure $HOST_BUILD_CONFIGURE_ARGS\"" >> build.sh
+							echo "$HOST_BUILD_MAKE" >> build.sh
+							echo 'cd $OLDPWD' >> build.sh
+						fi
+
+						echo "../configure --libdir=$PREFIX_DIR/lib --prefix=$PREFIX_DIR $CONFIGURE_ARGS" >> build.sh
+						echo "$RUN_POST_CONFIGURE" >> build.sh
+
+						if [ -e "$INIT_DIR/packages/$package/post-configure.sh" ]; then
+							echo "$INIT_DIR/packages/$package/post-configure.sh" >> build.sh
+						fi
+
+						echo "make -j $(nproc)" >> build.sh
+
+						if [ -e "$INIT_DIR/packages/$package/custom-make-install.sh" ]; then
+							echo "$INIT_DIR/packages/$package/custom-make-install.sh" >> build.sh
+						else
+							echo "make -j $(nproc) DESTDIR=\"\$DESTDIR\" install" >> build.sh
+						fi
+					elif [ -e "autogen.sh" ] && [ -n "$CONFIGURE_ARGS" ]; then
+						echo "cd .." >> build.sh
+						echo "./autogen.sh" >> build.sh
+						echo "cd build_dir" >> build.sh
+						echo "../configure --libdir=$PREFIX_DIR/lib --prefix=$PREFIX_DIR $CONFIGURE_ARGS" >> build.sh
+						echo "$RUN_POST_CONFIGURE" >> build.sh
+
+						if [ -e "$INIT_DIR/packages/$package/post-configure.sh" ]; then
+							echo "$INIT_DIR/packages/$package/post-configure.sh" >> build.sh
+						fi
+
+						echo "make -j $(nproc)" >> build.sh
+
+						if [ -e "$INIT_DIR/packages/$package/custom-make-install.sh" ]; then
+							echo "$INIT_DIR/packages/$package/custom-make-install.sh" >> build.sh
+						else
+							echo "make -j $(nproc) DESTDIR=\"\$DESTDIR\" install" >> build.sh
+						fi
+					elif [ -e ".$NON_CONVENTIONAL_BUILD_PATH/CMakeLists.txt" ] && [ -n "$CMAKE_ARGS" ]; then
+						echo "cmake -DCMAKE_INSTALL_PREFIX=$PREFIX_DIR -DCMAKE_INSTALL_LIBDIR=$PREFIX_DIR/lib $CMAKE_ARGS ..$NON_CONVENTIONAL_BUILD_PATH" >> build.sh
+						echo "make -j $(nproc)" >> build.sh
+
+						if [ -e "$INIT_DIR/packages/$package/custom-make-install.sh" ]; then
+							echo "$INIT_DIR/packages/$package/custom-make-install.sh" >> build.sh
+						else
+							echo "make -j $(nproc) DESTDIR=\"\$DESTDIR\" install" >> build.sh
+						fi
+					elif [ -e ".$NON_CONVENTIONAL_BUILD_PATH/meson.build" ] && [ -n "$MESON_ARGS" ]; then
+						echo "meson setup -Dbuildtype=release -Dprefix=$PREFIX_DIR $MESON_ARGS ..$NON_CONVENTIONAL_BUILD_PATH" >> build.sh
+
+						if [ -e "$INIT_DIR/packages/$package/post-configure.sh" ]; then
+							echo "$INIT_DIR/packages/$package/post-configure.sh" >> build.sh
+						fi
+
+						echo "ninja -j $(nproc)" >> build.sh
+
+						if [ -e "$INIT_DIR/packages/$package/custom-make-install.sh" ]; then
+							echo "$INIT_DIR/packages/$package/custom-make-install.sh" >> build.sh
+						else
+							echo "ninja -j $(nproc) DESTDIR=\"\$DESTDIR\" install" >> build.sh
+						fi
+					elif [ -e "Configure" ] && [ -n "$OPENSSL_FLAGS" ]; then
+						echo "../Configure --prefix=$PREFIX_DIR $OPENSSL_FLAGS" >> build.sh
+
+						if [ -e "$INIT_DIR/packages/$package/post-configure.sh" ]; then
+							echo "$INIT_DIR/packages/$package/post-configure.sh" >> build.sh
+						fi
+
+						echo "make -j $(nproc)" >> build.sh
+						echo "make -j $(nproc) DESTDIR=\"\$DESTDIR\" install" >> build.sh
+					elif [ -e "Makefile" ]; then
+						echo "cd .." >> build.sh
 						echo "make -j $(nproc) install" >> build.sh
-					fi
-				elif [ -e "autogen.sh" ] && [ -n "$CONFIGURE_ARGS" ]; then
-					echo "cd ..; ./autogen.sh; cd build_dir" >> build.sh
-					echo "../configure --libdir=$PREFIX_DIR/lib --prefix=$PREFIX_DIR $CONFIGURE_ARGS" >> build.sh
-					echo "$RUN_POST_CONFIGURE" >> build.sh
-
-					if [ -e "$INIT_DIR/packages/$package/post-configure.sh" ]; then
-						echo "$INIT_DIR/packages/$package/post-configure.sh" >> build.sh
-					fi
-
-					echo "make -j $(nproc)" >> build.sh
-
-					if [ -e "$INIT_DIR/packages/$package/custom-make-install.sh" ]; then
-						echo "$INIT_DIR/packages/$package/custom-make-install.sh" >> build.sh
+						echo "cd build_dir" >> build.sh
 					else
-						echo "make -j $(nproc) install" >> build.sh
-					fi
-				elif [ -e ".$NON_CONVENTIONAL_BUILD_PATH/CMakeLists.txt" ] && [ -n "$CMAKE_ARGS" ]; then
-					echo "cmake -DCMAKE_INSTALL_PREFIX=$PREFIX_DIR -DCMAKE_INSTALL_LIBDIR=$PREFIX_DIR/lib $CMAKE_ARGS ..$NON_CONVENTIONAL_BUILD_PATH" >> build.sh
-					echo "make -j $(nproc)" >> build.sh
-
-					if [ -e "$INIT_DIR/packages/$package/custom-make-install.sh" ]; then
-						echo "$INIT_DIR/packages/$package/custom-make-install.sh" >> build.sh
-					else
-						echo "make -j $(nproc) install" >> build.sh
-					fi
-				elif [ -e ".$NON_CONVENTIONAL_BUILD_PATH/meson.build" ] && [ -n "$MESON_ARGS" ]; then
-					echo "meson setup -Dbuildtype=release -Dprefix=$PREFIX_DIR $MESON_ARGS ..$NON_CONVENTIONAL_BUILD_PATH" >> build.sh
-
-					if [ -e "$INIT_DIR/packages/$package/post-configure.sh" ]; then
-						echo "$INIT_DIR/packages/$package/post-configure.sh" >> build.sh
+						echo "Unsupported build system. Stopping..."
+						exit 1
 					fi
 
-					echo "ninja -j $(nproc)" >> build.sh
-
-					if [ -e "$INIT_DIR/packages/$package/custom-make-install.sh" ]; then
-						echo "$INIT_DIR/packages/$package/custom-make-install.sh" >> build.sh
-					else
-						echo "ninja -j $(nproc) install" >> build.sh
-					fi
-				elif [ -e "Configure" ] && [ -n "$OPENSSL_FLAGS" ]; then
-					echo "../Configure --prefix=$PREFIX_DIR $OPENSSL_FLAGS" >> build.sh
-
-					if [ -e "$INIT_DIR/packages/$package/post-configure.sh" ]; then
-						echo "$INIT_DIR/packages/$package/post-configure.sh" >> build.sh
+					if [ -e "$INIT_DIR/packages/$package/post-install.sh" ]; then
+						echo "$INIT_DIR/packages/$package/post-install.sh" >> build.sh
 					fi
 
-					echo "make -j $(nproc)" >> build.sh
-					echo "make -j $(nproc) install_sw" >> build.sh
-				elif [ -e "Makefile" ]; then
-					echo "cd .." >> build.sh
-					echo "make -j $(nproc) install" >> build.sh
-					echo "cd build_dir" >> build.sh
-				else
-					echo "Unsupported build system. Stopping..."
-					exit 1
+					echo 'echo $? > exit_code' >> build.sh
+
+					chmod +x build.sh
+
+					cd ..
 				fi
-
-				if [ -e "$INIT_DIR/packages/$package/post-install.sh" ]; then
-					echo "$INIT_DIR/packages/$package/post-install.sh" >> build.sh
-				fi
-
-				echo 'echo $? > exit_code' >> build.sh
-
-				chmod +x build.sh
-
-				cd ..
 			fi
 		fi
 	done
 }
 
+installBuiltPackagesOnEnv()
+{
+	echo ""
+	echo "-- Installing All Built Packages on Environment --"
+	echo ""
+
+	for package in $(find "$INIT_DIR/built-pkgs" -name "*$ARCHITECTURE*"); do
+		echo "-- Installing '$(basename $package)'"
+		unzip -o "$package" -d / &> /dev/zero
+	done
+
+	echo "-- Done"
+}
+
 compileAll()
 {
-	echo -e "\n-- Starting Building --\n"
+	echo ""
+	echo "-- Starting Building --"
 
-	for i in $(ls); do
-		mkdir -p "$i/build_dir"
+	for package in $(ls "$INIT_DIR/workdir"); do
+		mkdir -p "$INIT_DIR/workdir/$package/build_dir"
+		mkdir -p "$INIT_DIR/workdir/$package/destdir-pkg"
 
-		cd "$i/build_dir"
+		cd "$INIT_DIR/workdir/$package/build_dir"
 
 		touch exit_code
 
-		if [ "$(cat exit_code)" == "0" ]; then
-			echo "Package '$i' already compiled."
+		if [ -f "$INIT_DIR/built-pkgs/$package-$ARCHITECTURE.zip" ]; then
+			echo "-- Package '$package' already built."
 		else
-			echo "Compiling Package '$i'..."
+			echo ""
+			echo "-- Compiling Package '$package'..."
 
-			../build.sh 1> "$INIT_DIR/logs/$i-log.txt" 2> "$INIT_DIR/logs/$i-error_log.txt"
+			../build.sh 1> "$INIT_DIR/logs/$package-log.txt" 2> "$INIT_DIR/logs/$package-error_log.txt"
 
 			if [ "$(cat exit_code)" != "0" ]; then
-				echo "Package: '"$i"' failed to compile. Check logs"
+				echo "- Package: '"$package"' failed to compile. Check logs"
 				exit 0
 			fi
-		fi
 
-		cd ../..
+			cp -rf "$INIT_DIR/workdir/$package/destdir-pkg/$PREFIX/"* "$PREFIX"
+
+			echo "-- Packaging Package '$package'..."
+
+			cd "$INIT_DIR/workdir/$package/destdir-pkg"
+
+			7z a "$INIT_DIR/built-pkgs/$package-$ARCHITECTURE.zip" &> /dev/zero
+		fi
 	done
 }
 
@@ -343,20 +363,16 @@ else
 	exit 1
 fi
 
-if [ "$*" != "--download-only" ]; then
-	if [ ! -e "$PREFIX" ]; then
-		sudo mkdir -p "$PREFIX"
-		sudo chown -R $(whoami):$(whoami) "$PREFIX/.."
-		sudo chmod 755 -R "$PREFIX/.."
-	else
-		case $* in *"--clean-prefix"*)
-			echo "Cleaning Prefix..."
-
-			rm -rf $PREFIX/*
-		esac
-	fi
+if [ ! -e "$PREFIX" ]; then
+	sudo mkdir -p "$PREFIX"
+	sudo chown -R $(whoami):$(whoami) "$PREFIX/.."
+	sudo chmod 755 -R "$PREFIX/.."
 else
-	echo "This script will download packages only."
+	case $* in *"--clean-prefix"*)
+		echo "Cleaning Prefix..."
+
+		rm -rf $PREFIX/*
+	esac
 fi
 
 case $* in "--clean-cache")
@@ -369,23 +385,16 @@ esac
 
 rm -rf logs
 
-export PACKAGES=$(ls packages)
-export INIT_DIR=$PWD
-export INIT_PATH=$PATH
+export PACKAGES="$(ls packages)"
+export INIT_DIR="$PWD"
+export INIT_PATH="$PATH"
 
-mkdir -p $INIT_DIR/{workdir,logs,cache}
+mkdir -p $INIT_DIR/{workdir,logs,cache,built-pkgs}
 
+installBuiltPackagesOnEnv
 setupBuildEnv 32 $ARCHITECTURE
 setupPackages
 
-if [ "$*" != "--download-only" ]; then
-	compileAll
+compileAll
 
-	# Copy libc++_shared.so from NDK
-	cp $INIT_DIR/cache/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/$ARCHITECTURE-linux-android/libc++_shared.so $PREFIX/lib
-
-	# Set RPath for not need set env LD_LIBRARY_PATH
-	for i in $(find $PREFIX/bin $PREFIX/lib -exec file {} \; | grep -i elf | cut -d ":" -f 1); do
-		patchelf --set-rpath $PREFIX/lib $i
-	done
-fi
+cp $INIT_DIR/cache/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/$ARCHITECTURE-linux-android/libc++_shared.so $PREFIX/lib

@@ -2,3 +2,4 @@ workdir
 logs
 cache
 rootfs
+built-pkgs

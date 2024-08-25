@@ -10,4 +10,4 @@ getOpenSSLArch()
 	fi
 }
 
-OPENSSL_FLAGS="android-$(getOpenSSLArch) --openssldir=$PREFIX_DIR/etc/tls shared zlib-dynamic no-ssl no-hw no-srp no-tests enable-tls1_3"
+OPENSSL_FLAGS="android-$(getOpenSSLArch) --openssldir=$PREFIX/etc/tls shared zlib-dynamic no-ssl no-hw no-srp no-tests enable-tls1_3"

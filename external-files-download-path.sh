@@ -20,6 +20,50 @@ dxvkDownload() {
 	fi
 }
 
+dxvkAsyncDownload() {
+	if [ -e "DXVK/DXVK-$1-async" ]; then
+		echo "DXVK-$1-async already downloaded."
+	else
+		echo "Downloading DXVK-$1-async..."
+
+		cd "DXVK"
+
+		curl -# -L -O "https://github.com/Sporif/dxvk-async/releases/download/$1/dxvk-async-$1.tar.gz"
+
+		mkdir -p "DXVK-$1-async"
+
+		tar -xf "dxvk-async-$1.tar.gz"
+
+		mv "dxvk"*"/x32" "dxvk"*"/x64" "DXVK-$1-async"
+
+		rm -rf "dxvk"*
+
+		cd "$OLDPWD"
+	fi
+}
+
+dxvkGplAsyncDownload() {
+	if [ -e "DXVK/DXVK-$1-gplasync" ]; then
+		echo "DXVK-$1-gplasync already downloaded."
+	else
+		echo "Downloading DXVK-$1-gplasync..."
+
+		cd "DXVK"
+
+		curl -# -L -O "https://gitlab.com/Ph42oN/dxvk-gplasync/-/raw/main/releases/dxvk-gplasync-v$1.tar.gz?ref_type=heads&inline=false"
+
+		mkdir -p "DXVK-$1-gplasync"
+
+		tar -xf "dxvk-gplasync-v$1.tar.gz"
+
+		mv "dxvk"*"/x32" "dxvk"*"/x64" "DXVK-$1-gplasync"
+
+		rm -rf "dxvk"*
+
+		cd "$OLDPWD"
+	fi
+}
+
 wined3dDownload() {
 	if [ -e "WineD3D/WineD3D-($1)" ]; then
 		echo "WineD3D-$1 already downloaded."
@@ -86,6 +130,14 @@ mkdir -p "home" "wine-utils"
 cd "wine-utils"
 
 mkdir -p "DXVK" "WineD3D" "VKD3D"
+
+for i in "2.4-1" "2.3.1-1" "2.3-1" "2.2-4" "2.1-4"; do
+	dxvkGplAsyncDownload "$i"
+done
+
+for i in "2.0" "1.10.3" "1.10.2" "1.10.1" "1.10" "1.9.4" "1.9.3" "1.9.2" "1.9.1" "1.9"; do
+	dxvkAsyncDownload "$i"
+done
 
 for i in "2.4" "2.3.1" "2.3" "2.2" "2.1" "2.0" "1.10.3" "1.10.2" "1.10.1" "1.10" "1.9.4" "1.9.3" "1.9.2" "1.9.1" "1.9"; do
 	dxvkDownload "$i"
