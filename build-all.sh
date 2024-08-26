@@ -316,7 +316,7 @@ compileAll()
 				exit 0
 			fi
 
-			cp -rf "$INIT_DIR/workdir/$package/destdir-pkg/$PREFIX/../../"* "$PREFIX/../../"
+			cp -rf "$(realpath $INIT_DIR/workdir/$package/destdir-pkg/$PREFIX/../..)"/* "$(realpath $PREFIX/../..)"
 
    			find "$INIT_DIR/workdir/$package/destdir-pkg" > "$INIT_DIR/logs/$package-package-files.txt"
 
