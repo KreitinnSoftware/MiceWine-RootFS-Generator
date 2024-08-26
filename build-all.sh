@@ -316,7 +316,7 @@ compileAll()
 				exit 0
 			fi
 
-			cp -rf "$(realpath $INIT_DIR/workdir/$package/destdir-pkg/$PREFIX/../..)"/* "$(realpath $PREFIX/../..)"
+			cp -rf "$INIT_DIR/workdir/$package/destdir-pkg/data/data/com.micewine.emu/"* "/data/data/com.micewine.emu"
 
    			find "$INIT_DIR/workdir/$package/destdir-pkg" > "$INIT_DIR/logs/$package-package-files.txt"
 
