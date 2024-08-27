@@ -118,12 +118,38 @@ vkd3dDownload() {
 	fi
 }
 
+wineMonoGeckoDownload() {
+	mkdir -p "$WORKDIR/home/.cache/wine"
+
+	cd "$WORKDIR/home/.cache/wine"
+
+	if [ -e "wine-mono-$1-x86.msi" ]; then
+		echo "Wine Mono $1 already downloaded"
+	else
+		echo "Downloading Wine Mono $1..."
+
+		curl -# -L -O "https://dl.winehq.org/wine/wine-mono/$1/wine-mono-$1-x86.msi"
+	fi
+
+	if [ -e "wine-gecko-$2-x86_64.msi" ]; then
+		echo "Wine Gecko $2 already downloaded"
+	else
+		echo "Downloading Wine Gecko $2..."
+
+		curl -# -L -O "https://dl.winehq.org/wine/wine-gecko/$2/wine-gecko-$2-x86_64.msi"
+	fi
+
+	cd "$WORKDIR"
+}
+
 export INIT_DIR="$PWD"
 export WORKDIR="$PWD/rootfs"
 
 mkdir -p "$WORKDIR"
 
 cd "$WORKDIR"
+
+wineMonoGeckoDownload 9.2.0 2.47.4
 
 mkdir -p "home" "wine-utils"
 
