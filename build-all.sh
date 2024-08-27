@@ -316,7 +316,7 @@ compileAll()
 				exit 0
 			fi
 
-			cp -rf "$INIT_DIR/workdir/$package/destdir-pkg/$PREFIX/"* "$PREFIX"
+			cp -rf "$INIT_DIR/workdir/$package/destdir-pkg/data/data/com.micewine.emu/"* "/data/data/com.micewine.emu"
 
    			find "$INIT_DIR/workdir/$package/destdir-pkg" > "$INIT_DIR/logs/$package-package-files.txt"
 
@@ -367,8 +367,8 @@ fi
 
 if [ ! -e "$PREFIX" ]; then
 	sudo mkdir -p "$PREFIX"
-	sudo chown -R $(whoami):$(whoami) "$PREFIX/.."
-	sudo chmod 755 -R "$PREFIX/.."
+	sudo chown -R $(whoami):$(whoami) "$PREFIX/../.."
+	sudo chmod 755 -R "$PREFIX/../.."
 else
 	case $* in *"--clean-prefix"*)
 		echo "Cleaning Prefix..."
