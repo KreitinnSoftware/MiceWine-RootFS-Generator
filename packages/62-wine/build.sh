@@ -1,5 +1,5 @@
 GIT_URL=https://gitlab.winehq.org/wine/wine
-GIT_COMMIT=65124f15acc5705eb159d5d920877f0ac4835d27
+GIT_COMMIT=wine-9.3
 BLACKLIST_ARCHITECTURE=aarch64
 HOST_BUILD_CONFIGURE_ARGS="--enable-win64 --without-x"
 HOST_BUILD_FOLDER="$INIT_DIR/workdir/$package/wine-tools"
@@ -17,7 +17,8 @@ CONFIGURE_ARGS="--enable-archs=i386,x86_64 \
 				--with-x \
 				--x-libraries=$PREFIX/lib \
 				--x-includes=$PREFIX/include \
-				--with-pulse --without-xshm \
+				--with-pulse \
+				--without-xshm \
 				--without-xxf86vm \
 				--with-gstreamer \
 				--with-opengl \
