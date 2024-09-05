@@ -1,0 +1,3 @@
+GIT_URL=https://github.com/KreitinnSoftware/vulkan-wsi-layer
+LDFLAGS="-L$PREFIX/lib"
+CMAKE_ARGS="-DBUILD_WSI_X11=1 -DBUILD_WSI_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN=1"
