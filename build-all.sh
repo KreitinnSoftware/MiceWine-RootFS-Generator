@@ -251,7 +251,7 @@ setupPackages()
 						fi
 
 						echo "make -j $(nproc)" >> build.sh
-						echo "make -j $(nproc) DESTDIR=\"\$DESTDIR\" install" >> build.sh
+						echo "make -j $(nproc) DESTDIR=\"\$DESTDIR\" install_sw" >> build.sh
 					elif [ -e "Makefile" ]; then
 						echo "cd .." >> build.sh
 						echo "make -j $(nproc) install" >> build.sh
