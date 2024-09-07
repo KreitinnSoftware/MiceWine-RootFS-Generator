@@ -39,9 +39,6 @@ elif [ $# == 2 ]; then
   export ARGS="$1"
 fi
 
-# Convert symlinks to a .sh file that need to be executed after zip extract
-symlink2sh "$PREFIX"
-
 case $ARGS in *"--clean-all"*)
   echo "Removing Static Libraries..."
   rm -f "$PREFIX/lib/"*".la"
@@ -52,6 +49,9 @@ case $ARGS in *"--clean-all"*)
   rm -rf $PREFIX/share/{cmake,aclocal,bash-completion,doc,info,man,util-macros,zsh}
   rm -rf $PREFIX/local
 esac
+
+# Convert symlinks to a .sh file that need to be executed after zip extract
+symlink2sh "$PREFIX"
 
 case $ARGS in *"--clean-all"*)
   export ROOTFS_PACKAGE="MiceWine-RootFS-Minimal$ZIPFILE_APPEND"
