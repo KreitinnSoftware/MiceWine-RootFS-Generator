@@ -1,11 +1,9 @@
-GIT_URL=https://gitlab.winehq.org/wine/wine
-GIT_COMMIT=wine-9.3
+GIT_URL=https://github.com/KreitinnSoftware/wine
 BLACKLIST_ARCHITECTURE=aarch64
 HOST_BUILD_CONFIGURE_ARGS="--enable-win64 --without-x"
 HOST_BUILD_FOLDER="$INIT_DIR/workdir/$package/wine-tools"
 HOST_BUILD_MAKE="make -j $(nproc) __tooldeps__ nls/all"
 OVERRIDE_PREFIX="$(realpath $PREFIX/../wine)"
-RUN_POST_APPLY_PATCH="autoreconf -ifv"
 CONFIGURE_ARGS="--enable-archs=i386,x86_64 \
 				--host=$TOOLCHAIN_TRIPLE \
 				--with-wine-tools=$INIT_DIR/workdir/$package/wine-tools \
