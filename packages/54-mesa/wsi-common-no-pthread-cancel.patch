@@ -1,5 +1,5 @@
 diff --git a/src/vulkan/wsi/wsi_common_display.c b/src/vulkan/wsi/wsi_common_display.c
-index c91633e9bc4..3687a2b2cf4 100644
+index ff57a259046..4703500f374 100644
 --- a/src/vulkan/wsi/wsi_common_display.c
 +++ b/src/vulkan/wsi/wsi_common_display.c
 @@ -176,6 +176,12 @@ struct wsi_display_sync {
@@ -15,12 +15,10 @@ index c91633e9bc4..3687a2b2cf4 100644
  ICD_DEFINE_NONDISP_HANDLE_CASTS(wsi_display_mode, VkDisplayModeKHR)
  ICD_DEFINE_NONDISP_HANDLE_CASTS(wsi_display_connector, VkDisplayKHR)
  
-@@ -1340,8 +1346,10 @@ wsi_display_wait_thread(void *data)
-       .fd = wsi->fd,
+@@ -1341,7 +1347,9 @@ wsi_display_wait_thread(void *data)
        .events = POLLIN
     };
--
-+   
+ 
 +#ifndef __ANDROID__
     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 +#endif
