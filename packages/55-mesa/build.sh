@@ -6,7 +6,7 @@ getVulkanDrivers() {
 	if [ "$ARCHITECTURE" == "aarch64" ]; then
 		echo "-Dvulkan-drivers=freedreno -Dfreedreno-kmds=kgsl,msm"
 	elif [ "$ARCHITECTURE" == "x86_64" ]; then
-		echo "-Dvulkan-drivers=intel_hasvk"
+		echo "-Dvulkan-drivers=amd"
 	fi
 }
 

@@ -73,6 +73,12 @@ applyPatches()
 		echo "- Applying '$(basename $patch)' for '$package'..."
 
 		patch -p1 < "$patch" -ts
+
+		if [ $? != 0 ]; then
+			echo "- Error on Applying Patch '$(basename $patch)' on '$package'"
+
+			exit
+		fi
 	done
 
 	echo ""
@@ -116,6 +122,8 @@ gitDownload()
 
 		git clone "$INIT_DIR/cache/$package" &> /dev/zero
 	else
+		echo "-- Git Cloning '$package'..."
+
 		git clone --no-checkout $GIT_URL "$INIT_DIR/cache/$package" &> /dev/zero
 
 		git clone "$INIT_DIR/cache/$package" &> /dev/zero
@@ -230,7 +238,7 @@ setupPackages()
 							echo "make -j $(nproc) install" >> build.sh
 						fi
 					elif [ -e ".$NON_CONVENTIONAL_BUILD_PATH/meson.build" ] && [ -n "$MESON_ARGS" ]; then
-						echo "meson setup -Dbuildtype=release -Dprefix=$PREFIX_DIR $MESON_ARGS ..$NON_CONVENTIONAL_BUILD_PATH" >> build.sh
+						echo "meson setup -Dbuildtype=debug -Dprefix=$PREFIX_DIR $MESON_ARGS ..$NON_CONVENTIONAL_BUILD_PATH" >> build.sh
 
 						if [ -e "$INIT_DIR/packages/$package/post-configure.sh" ]; then
 							echo "$INIT_DIR/packages/$package/post-configure.sh" >> build.sh
@@ -278,16 +286,18 @@ setupPackages()
 
 installBuiltPackagesOnEnv()
 {
-	echo ""
-	echo "-- Installing All Built Packages on Environment --"
-	echo ""
+	if [ -n "$(ls "$INIT_DIR/built-pkgs")" ]; then
+		echo ""
+		echo "-- Installing All Built Packages on Environment --"
+		echo ""
 
-	for package in $(find "$INIT_DIR/built-pkgs" -name "*$ARCHITECTURE*"); do
-		echo "-- Installing '$(basename $package)'"
-		unzip -o "$package" -d / &> /dev/zero
-	done
+		for package in $(find "$INIT_DIR/built-pkgs" -name "*$ARCHITECTURE*"); do
+			echo "-- Installing '$(basename $package .zip)'"
+			unzip -o "$package" -d / &> /dev/zero
+		done
 
-	echo "-- Done"
+		echo "-- Done"
+	fi
 }
 
 compileAll()
