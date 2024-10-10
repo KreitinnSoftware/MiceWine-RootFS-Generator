@@ -16,7 +16,7 @@ jobs:
     - name: "Environment Preparation"
       run: |
         sudo apt update
-        sudo apt install -y python3 python3-pip cmake wget git p7zip build-essential pkg-config xmlto fop xsltproc llvm autoconf libxml-parser-perl bison flex
+        sudo apt install -y python3 python3-pip cmake wget git p7zip build-essential pkg-config xmlto fop xsltproc llvm autoconf libxml-parser-perl bison flex glslang-tools
         pip3 install mako meson ninja docutils
         sudo ln -sf ~/.local/bin/meson /usr/bin/meson
 
