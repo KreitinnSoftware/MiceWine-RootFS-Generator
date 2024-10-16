@@ -1,4 +1,5 @@
-SRC_URL=https://github.com/openssl/openssl/releases/download/openssl-3.2.2/openssl-3.2.2.tar.gz
+PKG_VER=3.2.2
+SRC_URL=https://github.com/openssl/openssl/releases/download/openssl-$PKG_VER/openssl-$PKG_VER.tar.gz
 CFLAGS="-DNO_SYSLOG"
 
 getOpenSSLArch()

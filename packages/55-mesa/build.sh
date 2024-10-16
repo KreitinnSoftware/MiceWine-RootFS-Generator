@@ -1,3 +1,4 @@
+PKG_VER=[gss]
 GIT_URL=https://gitlab.freedesktop.org/mesa/mesa
 GIT_COMMIT=ed64ecc
 LDFLAGS="-L$PREFIX/lib -landroid-shmem"

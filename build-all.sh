@@ -125,7 +125,6 @@ gitDownload()
 		echo "-- Git Cloning '$package'..."
 
 		git clone --no-checkout $GIT_URL "$INIT_DIR/cache/$package" &> /dev/zero
-
 		git clone "$INIT_DIR/cache/$package" &> /dev/zero
 	fi
 
@@ -136,8 +135,11 @@ gitDownload()
 	fi
 
 	git checkout . &> /dev/zero
-
 	git submodule update --init --recursive &> /dev/zero
+
+	if [ "$PKG_VER" == "[gss]" ]; then
+		PKG_VER=$(git rev-parse --short HEAD)
+	fi
 
 	cd ..
 }
@@ -149,16 +151,22 @@ setupPackages()
 	mkdir -p "$PREFIX/include"
 	
 	for package in $PACKAGES; do
-		if [ -f "$INIT_DIR/built-pkgs/$package-$ARCHITECTURE.zip" ]; then
+		unset NON_CONVENTIONAL_BUILD_PATH PKG_VER GIT_URL SRC_URL HOST_BUILD_FOLDER HOST_BUILD_MAKE HOST_BUILD_CONFIGURE_ARGS HOST_BUILD_CFLAGS HOST_BUILD_CXXFLAGS HOST_BUILD_LDFLAGS CONFIGURE_ARGS MESON_ARGS CMAKE_ARGS RUN_POST_APPLY_PATCH RUN_POST_BUILD RUN_POST_CONFIGURE CFLAGS CPPFLAGS LDFLAGS LIBS OVERRIDE_PREFIX OVERRIDE_PKG_CONFIG_PATH GIT_COMMIT BLACKLIST_ARCHITECTURE
+
+		. "$INIT_DIR/packages/$package/build.sh"
+
+		if [ "$PKG_VER" == "[gss]" ]; then
+			if [ -n "$GIT_COMMIT" ]; then
+				PKG_VER="$(echo $GIT_COMMIT | cut -c1-7)"
+			fi
+		fi
+
+		if [ -f "$INIT_DIR/built-pkgs/$package-$PKG_VER-$ARCHITECTURE.zip" ]; then
 			echo "-- Package '$package' already built, No configuring necessary."
 		else
 			if [ -e "$INIT_DIR/workdir/$package/build.sh" ]; then
 				echo "-- Package '$package' already configured."
 			else
-				unset NON_CONVENTIONAL_BUILD_PATH GIT_URL SRC_URL HOST_BUILD_FOLDER HOST_BUILD_MAKE HOST_BUILD_CONFIGURE_ARGS HOST_BUILD_CFLAGS HOST_BUILD_CXXFLAGS HOST_BUILD_LDFLAGS CONFIGURE_ARGS MESON_ARGS CMAKE_ARGS RUN_POST_APPLY_PATCH RUN_POST_BUILD RUN_POST_CONFIGURE CFLAGS CPPFLAGS LDFLAGS LIBS OVERRIDE_PREFIX OVERRIDE_PKG_CONFIG_PATH GIT_COMMIT BLACKLIST_ARCHITECTURE
-
-				. "$INIT_DIR/packages/$package/build.sh"
-
 				if [ "$BLACKLIST_ARCHITECTURE" == "$ARCHITECTURE" ]; then
 					echo "-- Warning: '$package' will not be built."
 				else
@@ -171,6 +179,10 @@ setupPackages()
 					cd $package
 
 					applyPatches
+
+					if [ $EXPERIMENTAL_16KB_PAGESIZE -eq 1 ]; then
+						LDFLAGS+=" -Wl,-z,max-page-size=16384"
+					fi
 
 					echo "export CFLAGS=\"$CFLAGS\" LIBS=\"$LIBS\" CPPFLAGS=\"$CPPFLAGS\" LDFLAGS=\"$LDFLAGS\"" > build.sh
 					echo "export DESTDIR=\"$INIT_DIR/workdir/$package/destdir-pkg\"" >> build.sh
@@ -274,6 +286,7 @@ setupPackages()
 					fi
 
 					echo 'echo $? > exit_code' >> build.sh
+					echo $PKG_VER >> pkg-ver
 
 					chmod +x build.sh
 
@@ -313,7 +326,9 @@ compileAll()
 
 		touch exit_code
 
-		if [ -f "$INIT_DIR/built-pkgs/$package-$ARCHITECTURE.zip" ]; then
+		pkgVersion="$(cat ../pkg-ver)"
+
+		if [ -f "$INIT_DIR/built-pkgs/$package-$pkgVersion-$ARCHITECTURE.zip" ]; then
 			echo "-- Package '$package' already built."
 		else
 			echo ""
@@ -321,7 +336,12 @@ compileAll()
 
 			../build.sh 1> "$INIT_DIR/logs/$package-log.txt" 2> "$INIT_DIR/logs/$package-error_log.txt"
 
-			if [ "$(cat exit_code)" != "0" ]; then
+			if [ "$?" != "0" ]; then
+				echo "- Package: '"$package"' failed to compile. Check logs"
+				exit 0
+			fi
+
+			if [ ! -d "$INIT_DIR/workdir/$package/destdir-pkg/data/data/com.micewine.emu" ]; then
 				echo "- Package: '"$package"' failed to compile. Check logs"
 				exit 0
 			fi
@@ -334,7 +354,7 @@ compileAll()
 
 			cd "$INIT_DIR/workdir/$package/destdir-pkg"
 
-			7z a "$INIT_DIR/built-pkgs/$package-$ARCHITECTURE.zip" &> /dev/zero
+			7z a "$INIT_DIR/built-pkgs/$package-$pkgVersion-$ARCHITECTURE.zip" &> /dev/zero
 		fi
 	done
 }
@@ -348,6 +368,7 @@ showHelp()
 	echo "	--clean-prefix: Clean generated rootfs."
 	echo "	--clean-workdir: Clean workdir (for a clean compiling)."
 	echo "	--clean-cache: Clean cache of downloaded packages."
+	echo "  --16kb: Compile with experimental support for Android 15 with 16kb pagesizes"
 	echo ""
 	echo "Available Architectures:"
 	echo "	x86_64"
@@ -393,6 +414,13 @@ esac
 
 case $* in "--clean-workdir")
 	rm -rf workdir
+esac
+
+case $* in "--16kb")
+	echo "Warning: Compiling MiceWine RootFS with experimental support to 16kb pagesizes, Work is not garanted"
+	echo ""
+
+	export EXPERIMENTAL_16KB_PAGESIZE=1
 esac
 
 rm -rf logs

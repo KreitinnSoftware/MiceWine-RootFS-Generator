@@ -1,3 +1,4 @@
+PKG_VER=9.17-esync
 GIT_URL=https://github.com/KreitinnSoftware/wine
 BLACKLIST_ARCHITECTURE=aarch64
 HOST_BUILD_CONFIGURE_ARGS="--enable-win64 --without-x"
