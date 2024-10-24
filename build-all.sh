@@ -416,11 +416,13 @@ case $* in "--clean-workdir")
 	rm -rf workdir
 esac
 
+export EXPERIMENTAL_16KB_PAGESIZE=0
+
 case $* in "--16kb")
 	echo "Warning: Compiling MiceWine RootFS with experimental support to 16kb pagesizes, Work is not garanted"
 	echo ""
 
-	export EXPERIMENTAL_16KB_PAGESIZE=1
+	EXPERIMENTAL_16KB_PAGESIZE=1
 esac
 
 rm -rf logs
