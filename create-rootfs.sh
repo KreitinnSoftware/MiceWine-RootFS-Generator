@@ -9,14 +9,15 @@ if [ "$1" != "aarch64" ] && [ "$1" != "x86_64" ]; then
   exit 0
 fi
 
+export PREFIX=/data/data/com.micewine.emu/files/usr
+export INIT_DIR=$PWD
+export GIT_SHORT_SHA=$(git rev-parse --short HEAD)
+
 if [ ! -d "$INIT_DIR/built-pkgs" ]; then
   echo "built-pkgs: Don't Exist. Run 'build-all.sh' for generate the needed libs for creating a rootfs for MiceWine."
   exit 0
 fi
 
-export PREFIX=/data/data/com.micewine.emu/files/usr
-export INIT_DIR=$PWD
-export GIT_SHORT_SHA=$(git rev-parse --short HEAD)
 export ROOTFS_PKGS=$(ls "$INIT_DIR/built-pkgs/"*"$1"*)
 export WINE_PKG=$(find "$INIT_DIR/built-pkgs" | grep "wine")
 
