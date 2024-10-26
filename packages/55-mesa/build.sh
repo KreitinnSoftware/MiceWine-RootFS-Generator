@@ -11,4 +11,4 @@ getVulkanDrivers() {
 	fi
 }
 
-MESON_ARGS="--cross-file=../../../meson-cross-file-$ARCHITECTURE -Dgallium-drivers=zink $(getVulkanDrivers) -Dglvnd=enabled -Dglx=dri -Dplatforms=x11 -Dxmlconfig=disabled -Dllvm=disabled -Dopengl=true -Degl=enabled -Dzstd=enabled"
+MESON_ARGS="-Dgallium-drivers=zink $(getVulkanDrivers) -Dglvnd=enabled -Dglx=dri -Dplatforms=x11 -Dxmlconfig=disabled -Dllvm=disabled -Dopengl=true -Degl=enabled -Dzstd=enabled"

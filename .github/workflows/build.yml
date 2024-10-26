@@ -30,11 +30,14 @@ jobs:
     - name: "Start Building (x86_64)"
       run: |
         ./build-all.sh x86_64
-        mv logs /data/data/com.micewine.emu/files/usr
+        cd logs
+        7z a /home/runner/MiceWine-RootFS-x86_64-Logs.zip
+        cd ..
         
     - name: "Create RootFS File (x86_64)"
       run: |
         ./create-rootfs.sh x86_64
+        mv MiceWine-RootFS-($(git rev-parse --short HEAD))-($(git rev-parse --short HEAD))-x86_64.rat /home/runner
 
     - name: "Clean x86_64 RootFS"
       run: |
@@ -43,11 +46,14 @@ jobs:
     - name: "Start Building (aarch64)"
       run: |
         ./build-all.sh aarch64
-        mv logs /data/data/com.micewine.emu/files/usr
+        cd logs
+        7z a /home/runner/MiceWine-RootFS-($(git rev-parse --short HEAD))-aarch64-Logs.zip
+        cd ..
 
     - name: "Create RootFS File (aarch64)"
       run: |
         ./create-rootfs.sh aarch64
+        mv MiceWine-RootFS-($(git rev-parse --short HEAD))-($(git rev-parse --short HEAD))-aarch64.rat /home/runner
 
     - name: "Get Short SHA"
       run: echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
@@ -58,5 +64,7 @@ jobs:
         name: "MiceWine RootFS ${{ github.sha }}"
         tag_name: ${{ env.SHORT_SHA }}
         files: |
-            /home/runner/MiceWine-RootFS-aarch64.zip
-            /home/runner/MiceWine-RootFS-x86_64.zip
+            /home/runner/MiceWine-RootFS-($(git rev-parse --short HEAD))-aarch64.rat
+            /home/runner/MiceWine-RootFS-($(git rev-parse --short HEAD))-aarch64-Logs.zip
+            /home/runner/MiceWine-RootFS-($(git rev-parse --short HEAD))-x86_64.zip
+            /home/runner/MiceWine-RootFS-($(git rev-parse --short HEAD))-x86_64-Logs.zip

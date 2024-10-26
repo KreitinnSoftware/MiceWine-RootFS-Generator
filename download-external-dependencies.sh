@@ -143,7 +143,7 @@ wineMonoGeckoDownload() {
 }
 
 export INIT_DIR="$PWD"
-export WORKDIR="$PWD/rootfs"
+export WORKDIR="$PWD/rootfs/files"
 
 mkdir -p "$WORKDIR"
 
@@ -169,7 +169,7 @@ for i in "2.4.1" "2.4" "2.3.1" "2.3" "2.2" "2.1" "2.0" "1.10.3" "1.10.2" "1.10.1
 	dxvkDownload "$i"
 done
 
-for i in "9.16" "9.3" "9.1" "9.0" "8.15" "7.11" "3.17"; do
+for i in "9.20" "9.16" "9.3" "9.1" "9.0" "8.15" "7.11" "3.17"; do
 	wined3dDownload "$i"
 done
 

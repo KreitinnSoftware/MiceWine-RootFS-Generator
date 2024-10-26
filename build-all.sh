@@ -151,7 +151,7 @@ setupPackages()
 	mkdir -p "$PREFIX/include"
 	
 	for package in $PACKAGES; do
-		unset NON_CONVENTIONAL_BUILD_PATH PKG_VER GIT_URL SRC_URL HOST_BUILD_FOLDER HOST_BUILD_MAKE HOST_BUILD_CONFIGURE_ARGS HOST_BUILD_CFLAGS HOST_BUILD_CXXFLAGS HOST_BUILD_LDFLAGS CONFIGURE_ARGS MESON_ARGS CMAKE_ARGS RUN_POST_APPLY_PATCH RUN_POST_BUILD RUN_POST_CONFIGURE CFLAGS CPPFLAGS LDFLAGS LIBS OVERRIDE_PREFIX OVERRIDE_PKG_CONFIG_PATH GIT_COMMIT BLACKLIST_ARCHITECTURE
+		unset NON_CONVENTIONAL_BUILD_PATH CATEGORY PKG_VER GIT_URL SRC_URL HOST_BUILD_FOLDER HOST_BUILD_MAKE HOST_BUILD_CONFIGURE_ARGS HOST_BUILD_CFLAGS HOST_BUILD_CXXFLAGS HOST_BUILD_LDFLAGS CONFIGURE_ARGS MESON_ARGS CMAKE_ARGS RUN_POST_APPLY_PATCH RUN_POST_BUILD RUN_POST_CONFIGURE CFLAGS CPPFLAGS LDFLAGS LIBS OVERRIDE_PREFIX OVERRIDE_PKG_CONFIG_PATH GIT_COMMIT BLACKLIST_ARCHITECTURE
 
 		. "$INIT_DIR/packages/$package/build.sh"
 
@@ -161,7 +161,7 @@ setupPackages()
 			fi
 		fi
 
-		if [ -f "$INIT_DIR/built-pkgs/$package-$PKG_VER-$ARCHITECTURE.zip" ]; then
+		if [ -f "$INIT_DIR/built-pkgs/$package-$PKG_VER-$ARCHITECTURE.rat" ]; then
 			echo "-- Package '$package' already built, No configuring necessary."
 		else
 			if [ -e "$INIT_DIR/workdir/$package/build.sh" ]; then
@@ -184,13 +184,23 @@ setupPackages()
 						LDFLAGS+=" -Wl,-z,max-page-size=16384"
 					fi
 
+					if [ $DEBUG_BUILD -eq 1 ]; then
+						if [ -n "$MESON_ARGS" ]; then
+							MESON_ARGS+=" -Dbuildtype=debug"
+						fi
+					else
+						if [ -n "$MESON_ARGS" ]; then
+							MESON_ARGS+=" -Dbuildtype=release"
+						fi
+					fi
+
 					echo "export CFLAGS=\"$CFLAGS\" LIBS=\"$LIBS\" CPPFLAGS=\"$CPPFLAGS\" LDFLAGS=\"$LDFLAGS\"" > build.sh
 					echo "export DESTDIR=\"$INIT_DIR/workdir/$package/destdir-pkg\"" >> build.sh
 
+					PREFIX_DIR=$PREFIX
+
 					if [ -n "$OVERRIDE_PREFIX" ]; then
-						PREFIX_DIR=$OVERRIDE_PREFIX
-					else
-						PREFIX_DIR=$PREFIX
+						PREFIX_DIR=$OVERRIDE_PREFIX						
 					fi
 
 					if [ "$OVERRIDE_PKG_CONFIG_PATH" != "" ]; then
@@ -250,7 +260,7 @@ setupPackages()
 							echo "make -j $(nproc) install" >> build.sh
 						fi
 					elif [ -e ".$NON_CONVENTIONAL_BUILD_PATH/meson.build" ] && [ -n "$MESON_ARGS" ]; then
-						echo "meson setup -Dbuildtype=debug -Dprefix=$PREFIX_DIR $MESON_ARGS ..$NON_CONVENTIONAL_BUILD_PATH" >> build.sh
+						echo "meson setup --cross-file=$INIT_DIR/meson-cross-file-$ARCHITECTURE -Dprefix=$PREFIX_DIR $MESON_ARGS ..$NON_CONVENTIONAL_BUILD_PATH" >> build.sh
 
 						if [ -e "$INIT_DIR/packages/$package/post-configure.sh" ]; then
 							echo "$INIT_DIR/packages/$package/post-configure.sh" >> build.sh
@@ -286,7 +296,8 @@ setupPackages()
 					fi
 
 					echo 'echo $? > exit_code' >> build.sh
-					echo $PKG_VER >> pkg-ver
+					echo "$PKG_VER" >> pkg-ver
+					echo "$CATEGORY" >> category
 
 					chmod +x build.sh
 
@@ -305,7 +316,7 @@ installBuiltPackagesOnEnv()
 		echo ""
 
 		for package in $(find "$INIT_DIR/built-pkgs" -name "*$ARCHITECTURE*"); do
-			echo "-- Installing '$(basename $package .zip)'"
+			echo "-- Installing '$(basename $package .rat)'"
 			unzip -o "$package" -d / &> /dev/zero
 		done
 
@@ -327,8 +338,9 @@ compileAll()
 		touch exit_code
 
 		pkgVersion="$(cat ../pkg-ver)"
+		category="$(cat ../category)"
 
-		if [ -f "$INIT_DIR/built-pkgs/$package-$pkgVersion-$ARCHITECTURE.zip" ]; then
+		if [ -f "$INIT_DIR/built-pkgs/$package-$pkgVersion-$ARCHITECTURE.rat" ]; then
 			echo "-- Package '$package' already built."
 		else
 			echo ""
@@ -348,13 +360,9 @@ compileAll()
 
 			cp -rf "$INIT_DIR/workdir/$package/destdir-pkg/data/data/com.micewine.emu/"* "/data/data/com.micewine.emu"
 
-   			find "$INIT_DIR/workdir/$package/destdir-pkg" > "$INIT_DIR/logs/$package-package-files.txt"
+   			find "$INIT_DIR/workdir/$package/destdir-pkg" -type f > "$INIT_DIR/logs/$package-package-files.txt"
 
-			echo "-- Packaging Package '$package'..."
-
-			cd "$INIT_DIR/workdir/$package/destdir-pkg"
-
-			7z a "$INIT_DIR/built-pkgs/$package-$pkgVersion-$ARCHITECTURE.zip" &> /dev/zero
+			$INIT_DIR/create-rat-pkg.sh "$package" "$ARCHITECTURE" "$pkgVersion" "$CATEGORY" "$INIT_DIR/workdir/$package/destdir-pkg" "$INIT_DIR/built-pkgs"
 		fi
 	done
 }
@@ -368,6 +376,7 @@ showHelp()
 	echo "	--clean-prefix: Clean generated rootfs."
 	echo "	--clean-workdir: Clean workdir (for a clean compiling)."
 	echo "	--clean-cache: Clean cache of downloaded packages."
+	echo "  --debug-flags: Compile Projects with Debug Build Type"
 	echo "  --16kb: Compile with experimental support for Android 15 with 16kb pagesizes"
 	echo ""
 	echo "Available Architectures:"
@@ -377,8 +386,12 @@ showHelp()
 
 export PREFIX=/data/data/com.micewine.emu/files/usr
 
-if [ -n "$1" ]; then
-	case $1 in "aarch64"|"x86_64")
+if [ $# < 1 ]; then
+	showHelp
+	exit 0
+fi
+
+case $1 in "aarch64"|"x86_64")
 		export ARCHITECTURE=$1
 		;;
 		"--help")
@@ -391,10 +404,6 @@ if [ -n "$1" ]; then
 		showHelp
 		exit
 	esac
-else
-	showHelp
-	exit 1
-fi
 
 if [ ! -e "$PREFIX" ]; then
 	sudo mkdir -p "$PREFIX"
@@ -414,6 +423,12 @@ esac
 
 case $* in "--clean-workdir")
 	rm -rf workdir
+esac
+
+export DEBUG_BUILD=0
+
+case $* in "--debug-flags")
+	DEBUG_BUILD=1
 esac
 
 export EXPERIMENTAL_16KB_PAGESIZE=0
