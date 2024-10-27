@@ -37,7 +37,7 @@ jobs:
     - name: "Create RootFS File (x86_64)"
       run: |
         ./create-rootfs.sh x86_64
-        mv "MiceWine-RootFS-($(git rev-parse --short HEAD))-($(git rev-parse --short HEAD))-x86_64.rat" /home/runner/MiceWine-RootFS-x86_64.rat
+        mv "MiceWine-RootFS-($(git rev-parse --short HEAD))-x86_64.rat" /home/runner/MiceWine-RootFS-x86_64.rat
 
     - name: "Clean x86_64 RootFS"
       run: |
@@ -53,7 +53,7 @@ jobs:
     - name: "Create RootFS File (aarch64)"
       run: |
         ./create-rootfs.sh aarch64
-        mv "MiceWine-RootFS-($(git rev-parse --short HEAD))-($(git rev-parse --short HEAD))-aarch64.rat" /home/runner/MiceWine-RootFS-aarch64.rat
+        mv "MiceWine-RootFS-($(git rev-parse --short HEAD))-aarch64.rat" /home/runner/MiceWine-RootFS-aarch64.rat
 
     - name: "Get Short SHA"
       run: echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
