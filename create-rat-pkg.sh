@@ -37,6 +37,8 @@ if [ $# -lt 6 ]; then
 	exit 0
 fi
 
+echo "DestDir: $5, OutDir: $6"
+
 echo ""
 echo "Creating Package '$1-$3-$2.rat'..."
 
@@ -55,4 +57,6 @@ echo "architecture=$2" >> pkg-header
 
 symlink2sh "files/" 
 
-7z -tzip -mx=5 a "$6/$1-$3-$2.rat" &> /dev/zero
+echo "Passed Symlink Creation"
+
+7z -tzip -mx=5 a "$6/$1-$3-$2.rat" #&> /dev/zero
