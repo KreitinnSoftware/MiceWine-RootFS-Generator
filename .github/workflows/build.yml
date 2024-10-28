@@ -66,5 +66,5 @@ jobs:
         files: |
             /home/runner/MiceWine-RootFS-aarch64.rat
             /home/runner/MiceWine-RootFS-aarch64-Logs.zip
-            /home/runner/MiceWine-RootFS-x86_64.zip
+            /home/runner/MiceWine-RootFS-x86_64.rat
             /home/runner/MiceWine-RootFS-x86_64-Logs.zip
