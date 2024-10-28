@@ -47,7 +47,7 @@ jobs:
       run: |
         ./build-all.sh aarch64
         cd logs
-        7z a /home/runner/MiceWine-RootFS-($(git rev-parse --short HEAD))-aarch64-Logs.zip
+        7z a /home/runner/MiceWine-RootFS-aarch64-Logs.zip
         cd ..
 
     - name: "Create RootFS File (aarch64)"
