@@ -69,7 +69,7 @@ setupBuildEnv()
 
 applyPatches()
 {
-	for patch in $(find $INIT_DIR/packages/$package -name "*.patch"); do
+	for patch in $(find $INIT_DIR/packages/$package -name "*.patch" | sort); do
 		echo "- Applying '$(basename $patch)' for '$package'..."
 
 		patch -p1 < "$patch" -ts
@@ -386,7 +386,7 @@ showHelp()
 
 export PREFIX=/data/data/com.micewine.emu/files/usr
 
-if [ $# < 1 ]; then
+if [ $# -lt 1 ]; then
 	showHelp
 	exit 0
 fi

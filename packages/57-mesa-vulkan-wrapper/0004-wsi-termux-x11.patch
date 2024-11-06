@@ -1,0 +1,485 @@
+From a0c04f25e7cf6a4a6df6667a6946c572c053dfe9 Mon Sep 17 00:00:00 2001
+From: xMeM <haooy@outlook.com>
+Date: Thu, 31 Oct 2024 02:18:27 +0800
+Subject: [PATCH 2/3] termux-x11 support
+
+---
+ src/vulkan/wsi/wsi_common.c         | 167 ++++++++++++++++++++++++++++
+ src/vulkan/wsi/wsi_common.h         |   5 +
+ src/vulkan/wsi/wsi_common_private.h |   5 +
+ src/vulkan/wsi/wsi_common_x11.c     |  93 ++++++++--------
+ 4 files changed, 226 insertions(+), 44 deletions(-)
+
+diff --git a/src/vulkan/wsi/wsi_common.c b/src/vulkan/wsi/wsi_common.c
+index a11b6bd64bc..b07e2d8f356 100644
+--- a/src/vulkan/wsi/wsi_common.c
++++ b/src/vulkan/wsi/wsi_common.c
+@@ -47,6 +47,10 @@
+ #include <unistd.h>
+ #endif
+ 
++#ifdef __ANDROID__
++#include <android/hardware_buffer.h>
++#endif
++
+ uint64_t WSI_DEBUG;
+ 
+ static const struct debug_control debug_control[] = {
+@@ -55,6 +59,7 @@ static const struct debug_control debug_control[] = {
+    { "noshm",        WSI_DEBUG_NOSHM },
+    { "linear",       WSI_DEBUG_LINEAR },
+    { "dxgi",         WSI_DEBUG_DXGI },
++   { "noahb",        WSI_DEBUG_NOAHB },
+    { NULL, },
+ };
+ 
+@@ -210,6 +215,9 @@ wsi_device_init(struct wsi_device *wsi,
+    WSI_GET_CB(UnmapMemory);
+    if (wsi->khr_present_wait)
+       WSI_GET_CB(WaitSemaphores);
++#ifdef __ANDROID__
++   WSI_GET_CB(GetMemoryAndroidHardwareBufferANDROID);
++#endif
+ #undef WSI_GET_CB
+ 
+ #ifdef VK_USE_PLATFORM_XCB_KHR
+@@ -366,6 +374,11 @@ get_blit_type(const struct wsi_device *wsi,
+       return wsi_cpu_image_needs_buffer_blit(wsi, cpu_params) ?
+          WSI_SWAPCHAIN_BUFFER_BLIT : WSI_SWAPCHAIN_NO_BLIT;
+    }
++#ifdef __ANDROID__
++   case WSI_IMAGE_TYPE_AHB: {
++      return WSI_SWAPCHAIN_NO_BLIT;
++   }
++#endif
+ #ifdef HAVE_LIBDRM
+    case WSI_IMAGE_TYPE_DRM: {
+       const struct wsi_drm_image_params *drm_params =
+@@ -386,6 +399,14 @@ get_blit_type(const struct wsi_device *wsi,
+    }
+ }
+ 
++#ifdef __ANDROID__
++static VkResult
++wsi_configure_ahb_image(const struct wsi_swapchain *chain,
++                        const VkSwapchainCreateInfoKHR *pCreateInfo,
++                        const struct wsi_base_image_params *params,
++                        struct wsi_image_info *info);
++#endif
++
+ static VkResult
+ configure_image(const struct wsi_swapchain *chain,
+                 const VkSwapchainCreateInfoKHR *pCreateInfo,
+@@ -399,6 +420,11 @@ configure_image(const struct wsi_swapchain *chain,
+          container_of(params, const struct wsi_cpu_image_params, base);
+       return wsi_configure_cpu_image(chain, pCreateInfo, cpu_params, info);
+    }
++#ifdef __ANDROID__
++   case WSI_IMAGE_TYPE_AHB: {
++      return wsi_configure_ahb_image(chain, pCreateInfo, params, info);
++   }
++#endif
+ #ifdef HAVE_LIBDRM
+    case WSI_IMAGE_TYPE_DRM: {
+       const struct wsi_drm_image_params *drm_params =
+@@ -760,6 +786,11 @@ wsi_destroy_image(const struct wsi_swapchain *chain,
+ {
+    const struct wsi_device *wsi = chain->wsi;
+ 
++#ifdef __ANDROID__
++   if (chain->wsi->wants_ahardware_buffer && image->ahb)
++      AHardwareBuffer_release(image->ahb);
++#endif
++
+ #ifndef _WIN32
+    if (image->dma_buf_fd >= 0)
+       close(image->dma_buf_fd);
+@@ -2161,6 +2192,80 @@ wsi_create_cpu_linear_image_mem(const struct wsi_swapchain *chain,
+    return VK_SUCCESS;
+ }
+ 
++#ifdef __ANDROID__
++static VkResult
++wsi_init_image_ahb(const struct wsi_swapchain *chain, struct wsi_image *image,
++                   bool linear)
++{
++   const struct wsi_device *wsi = chain->wsi;
++   const VkMemoryGetAndroidHardwareBufferInfoANDROID memory_get_ahb_info = {
++      .sType = VK_STRUCTURE_TYPE_MEMORY_GET_FD_INFO_KHR,
++      .pNext = NULL,
++      .memory = linear ? image->blit.memory : image->memory,
++   };
++
++   return wsi->GetMemoryAndroidHardwareBufferANDROID(chain->device,
++                                                     &memory_get_ahb_info,
++                                                     &image->ahb);
++}
++#endif
++
++#ifdef __ANDROID__
++static VkResult
++wsi_create_ahb_image_mem(const struct wsi_swapchain *chain,
++                         const struct wsi_image_info *info,
++                         struct wsi_image *image)
++{
++   const struct wsi_device *wsi = chain->wsi;
++   VkResult result;
++
++   VkMemoryRequirements reqs;
++   wsi->GetImageMemoryRequirements(chain->device, image->image, &reqs);
++
++   VkSubresourceLayout layout;
++   wsi->GetImageSubresourceLayout(chain->device, image->image,
++                                  &(VkImageSubresource) {
++                                     .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
++                                     .mipLevel = 0,
++                                     .arrayLayer = 0,
++                                  }, &layout);
++
++   const VkMemoryDedicatedAllocateInfo memory_dedicated_info = {
++      .sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
++      .image = image->image,
++      .buffer = VK_NULL_HANDLE,
++   };
++   VkExportMemoryAllocateInfo export_memory_info = {
++      .sType = VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO,
++      .pNext = &memory_dedicated_info,
++      .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID,
++   };
++   VkMemoryAllocateInfo memory_info = {
++      .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
++      .pNext = &export_memory_info,
++      .allocationSize = 0,
++      .memoryTypeIndex =
++         wsi_select_device_memory_type(wsi, reqs.memoryTypeBits | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT),
++   };
++
++   result = wsi->AllocateMemory(chain->device, &memory_info,
++                                &chain->alloc, &image->memory);
++   if (result != VK_SUCCESS)
++      return result;
++
++   result = wsi_init_image_ahb(chain, image, false);
++   if (result != VK_SUCCESS)
++      return result;
++
++   image->num_planes = 1;
++   image->row_pitches[0] = layout.rowPitch;
++   image->offsets[0] = 0;
++   image->drm_modifier = 0;
++
++   return VK_SUCCESS;
++}
++#endif
++
+ static VkResult
+ wsi_create_cpu_buffer_image_mem(const struct wsi_swapchain *chain,
+                                 const struct wsi_image_info *info,
+@@ -2233,6 +2338,68 @@ wsi_configure_cpu_image(const struct wsi_swapchain *chain,
+    return VK_SUCCESS;
+ }
+ 
++#ifdef __ANDROID__
++static VkResult
++wsi_configure_ahb_image(const struct wsi_swapchain *chain,
++                        const VkSwapchainCreateInfoKHR *pCreateInfo,
++                        const struct wsi_base_image_params *params,
++                        struct wsi_image_info *info)
++{
++   assert(params->image_type == WSI_IMAGE_TYPE_AHB);
++   assert(chain->blit.type == WSI_SWAPCHAIN_NO_BLIT);
++
++   VkExternalMemoryHandleTypeFlags handle_types =
++      VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID;
++
++   VkResult result = wsi_configure_image(chain, pCreateInfo,
++                                         handle_types, info);
++   if (result != VK_SUCCESS)
++      return result;
++
++   if (info->format_list.pViewFormats) {
++      VkFormat *old_view_formats, *new_view_formats;
++      uint32_t idx = info->format_list.viewFormatCount++;
++
++      old_view_formats = (void *)info->format_list.pViewFormats;
++      new_view_formats = vk_alloc(&chain->alloc,
++         sizeof(VkFormat) * info->format_list.viewFormatCount, 8,
++            VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
++
++      if (!new_view_formats)
++         return VK_ERROR_OUT_OF_HOST_MEMORY;
++
++      memcpy(new_view_formats, old_view_formats, sizeof(VkFormat) * idx);
++      new_view_formats[idx] = VK_FORMAT_R8G8B8A8_UNORM;
++      info->format_list.pViewFormats = new_view_formats;
++      vk_free(&chain->alloc, old_view_formats);
++   }
++   else {
++      VkFormat *view_formats = vk_alloc(&chain->alloc, sizeof(VkFormat) * 2,
++         8, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
++      if (!view_formats)
++         return VK_ERROR_OUT_OF_HOST_MEMORY;
++
++      view_formats[0] = pCreateInfo->imageFormat;
++      view_formats[1] = VK_FORMAT_R8G8B8A8_UNORM;
++
++      info->create.flags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT |
++                            VK_IMAGE_CREATE_EXTENDED_USAGE_BIT;
++      info->format_list = (VkImageFormatListCreateInfo) {
++         .sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO,
++         .viewFormatCount = 2,
++         .pViewFormats = view_formats,
++      };
++      __vk_append_struct(&info->create, &info->format_list);
++   }
++
++   info->create.format = VK_FORMAT_R8G8B8A8_UNORM;
++
++   info->create_mem = wsi_create_ahb_image_mem;
++
++   return VK_SUCCESS;
++}
++#endif
++
+ VKAPI_ATTR VkResult VKAPI_CALL
+ wsi_WaitForPresentKHR(VkDevice device, VkSwapchainKHR _swapchain,
+                       uint64_t presentId, uint64_t timeout)
+diff --git a/src/vulkan/wsi/wsi_common.h b/src/vulkan/wsi/wsi_common.h
+index 2316d3156d0..8da90b8aeb5 100644
+--- a/src/vulkan/wsi/wsi_common.h
++++ b/src/vulkan/wsi/wsi_common.h
+@@ -179,6 +179,8 @@ struct wsi_device {
+ 
+    bool sw;
+ 
++   bool wants_ahardware_buffer;
++
+    /* Set to true if the implementation is ok with linear WSI images. */
+    bool wants_linear;
+ 
+@@ -271,6 +273,9 @@ struct wsi_device {
+    WSI_CB(MapMemory);
+    WSI_CB(UnmapMemory);
+    WSI_CB(WaitSemaphores);
++#ifdef __ANDROID__
++   WSI_CB(GetMemoryAndroidHardwareBufferANDROID);
++#endif
+ #undef WSI_CB
+ 
+     struct wsi_interface *                  wsi[VK_ICD_WSI_PLATFORM_MAX];
+diff --git a/src/vulkan/wsi/wsi_common_private.h b/src/vulkan/wsi/wsi_common_private.h
+index b89e962c3ff..d30cc3ebb2b 100644
+--- a/src/vulkan/wsi/wsi_common_private.h
++++ b/src/vulkan/wsi/wsi_common_private.h
+@@ -40,6 +40,7 @@ struct wsi_swapchain;
+ #define WSI_DEBUG_NOSHM       (1ull << 2)
+ #define WSI_DEBUG_LINEAR      (1ull << 3)
+ #define WSI_DEBUG_DXGI        (1ull << 4)
++#define WSI_DEBUG_NOAHB        (1ull << 8)
+ 
+ extern uint64_t WSI_DEBUG;
+ 
+@@ -47,6 +48,7 @@ enum wsi_image_type {
+    WSI_IMAGE_TYPE_CPU,
+    WSI_IMAGE_TYPE_DRM,
+    WSI_IMAGE_TYPE_DXGI,
++   WSI_IMAGE_TYPE_AHB,
+ };
+ 
+ struct wsi_base_image_params {
+@@ -165,6 +167,9 @@ struct wsi_image {
+    int dma_buf_fd;
+ #endif
+    void *cpu_map;
++#ifdef __ANDROID__
++   struct AHardwareBuffer *ahb;
++#endif
+ };
+ 
+ struct wsi_swapchain {
+diff --git a/src/vulkan/wsi/wsi_common_x11.c b/src/vulkan/wsi/wsi_common_x11.c
+index 0c0c489d893..b0b08bcdf9c 100644
+--- a/src/vulkan/wsi/wsi_common_x11.c
++++ b/src/vulkan/wsi/wsi_common_x11.c
+@@ -22,7 +22,6 @@
+  */
+ 
+ #include <X11/Xlib-xcb.h>
+-#include <X11/xshmfence.h>
+ #define XK_MISCELLANY
+ #define XK_LATIN1
+ #include <X11/keysymdef.h>
+@@ -69,6 +68,11 @@
+ #include <sys/shm.h>
+ #endif
+ 
++#ifdef __ANDROID__
++#include <android/hardware_buffer.h>
++#include <sys/socket.h>
++#endif
++
+ #ifndef XCB_PRESENT_OPTION_ASYNC_MAY_TEAR
+ #define XCB_PRESENT_OPTION_ASYNC_MAY_TEAR 16
+ #endif
+@@ -1057,7 +1061,6 @@ struct x11_image {
+    xcb_pixmap_t                              pixmap;
+    xcb_xfixes_region_t                       update_region; /* long lived XID */
+    xcb_xfixes_region_t                       update_area;   /* the above or None */
+-   struct xshmfence *                        shm_fence;
+    uint32_t                                  sync_fence;
+    xcb_shm_seg_t                             shmseg;
+    int                                       shmid;
+@@ -1402,8 +1405,6 @@ x11_present_to_x11_dri3(struct x11_swapchain *chain, uint32_t image_index,
+       options |= XCB_PRESENT_OPTION_SUBOPTIMAL;
+ #endif
+ 
+-   xshmfence_reset(image->shm_fence);
+-
+    if (!chain->base.image_info.explicit_sync) {
+       ++chain->sent_image_count;
+       assert(chain->sent_image_count <= chain->base.image_count);
+@@ -1771,9 +1772,6 @@ x11_acquire_next_image(struct wsi_swapchain *anv_chain,
+       return result;
+ 
+    assert(*image_index < chain->base.image_count);
+-   if (chain->images[*image_index].shm_fence &&
+-       !chain->base.image_info.explicit_sync)
+-      xshmfence_await(chain->images[*image_index].shm_fence);
+ 
+    return result;
+ }
+@@ -2059,7 +2057,6 @@ x11_image_init(VkDevice device_h, struct x11_swapchain *chain,
+    xcb_generic_error_t *error = NULL;
+    VkResult result;
+    uint32_t bpp = 32;
+-   int fence_fd;
+ 
+    result = wsi_create_image(&chain->base, &chain->base.image_info,
+                              &image->base);
+@@ -2098,6 +2095,17 @@ x11_image_init(VkDevice device_h, struct x11_swapchain *chain,
+       /* If the image has a modifier, we must have DRI3 v1.2. */
+       assert(chain->has_dri3_modifiers);
+ 
++#ifdef __ANDROID__
++      int sock_fds[2] = { -1, -1 };
++      if (chain->base.wsi->wants_ahardware_buffer) {
++         if (socketpair(AF_UNIX, SOCK_STREAM, 0, sock_fds) < 0) {
++            return VK_ERROR_OUT_OF_HOST_MEMORY;
++         }
++         AHardwareBuffer_sendHandleToUnixSocket(image->base.ahb, sock_fds[0]);
++         image->base.dma_buf_fd = sock_fds[1];
++         image->base.drm_modifier = 1255;
++      }
++#endif
+       /* XCB requires an array of file descriptors but we only have one */
+       int fds[4] = { -1, -1, -1, -1 };
+       for (int i = 0; i < image->base.num_planes; i++) {
+@@ -2128,6 +2136,16 @@ x11_image_init(VkDevice device_h, struct x11_swapchain *chain,
+                                               chain->depth, bpp,
+                                               image->base.drm_modifier,
+                                               fds);
++#ifdef __ANDROID__
++      if (chain->base.wsi->wants_ahardware_buffer) {
++         xcb_flush(chain->conn);
++         read(sock_fds[0], &image->base.dma_buf_fd, 1);
++         for (int i = 0; i < ARRAY_SIZE(sock_fds); i++) {
++            close(sock_fds[i]);
++         }
++         image->base.dma_buf_fd = -1;
++      }
++#endif
+    } else
+ #endif
+    {
+@@ -2140,14 +2158,23 @@ x11_image_init(VkDevice device_h, struct x11_swapchain *chain,
+          return VK_ERROR_OUT_OF_HOST_MEMORY;
+ 
+       cookie =
+-         xcb_dri3_pixmap_from_buffer_checked(chain->conn,
+-                                             image->pixmap,
+-                                             chain->window,
+-                                             image->base.sizes[0],
+-                                             pCreateInfo->imageExtent.width,
+-                                             pCreateInfo->imageExtent.height,
+-                                             image->base.row_pitches[0],
+-                                             chain->depth, bpp, fd);
++         xcb_dri3_pixmap_from_buffers_checked(chain->conn,
++                                              image->pixmap,
++                                              chain->window,
++                                              image->base.num_planes,
++                                              pCreateInfo->imageExtent.width,
++                                              pCreateInfo->imageExtent.height,
++                                              image->base.row_pitches[0],
++                                              image->base.offsets[0],
++                                              image->base.row_pitches[1],
++                                              image->base.offsets[1],
++                                              image->base.row_pitches[2],
++                                              image->base.offsets[2],
++                                              image->base.row_pitches[3],
++                                              image->base.offsets[3],
++                                              chain->depth, bpp,
++                                              1274,
++                                              &fd);
+    }
+ 
+    error = xcb_request_check(chain->conn, cookie);
+@@ -2178,32 +2205,8 @@ x11_image_init(VkDevice device_h, struct x11_swapchain *chain,
+ #endif
+ 
+ out_fence:
+-   fence_fd = xshmfence_alloc_shm();
+-   if (fence_fd < 0)
+-      goto fail_pixmap;
+-
+-   image->shm_fence = xshmfence_map_shm(fence_fd);
+-   if (image->shm_fence == NULL)
+-      goto fail_shmfence_alloc;
+-
+-   image->sync_fence = xcb_generate_id(chain->conn);
+-   xcb_dri3_fence_from_fd(chain->conn,
+-                          image->pixmap,
+-                          image->sync_fence,
+-                          false,
+-                          fence_fd);
+-
+-   xshmfence_trigger(image->shm_fence);
+-
+    return VK_SUCCESS;
+ 
+-fail_shmfence_alloc:
+-   close(fence_fd);
+-
+-fail_pixmap:
+-   cookie = xcb_free_pixmap(chain->conn, image->pixmap);
+-   xcb_discard_reply(chain->conn, cookie.sequence);
+-
+ fail_image:
+    wsi_destroy_image(&chain->base, &image->base);
+ 
+@@ -2218,10 +2221,6 @@ x11_image_finish(struct x11_swapchain *chain,
+    xcb_void_cookie_t cookie;
+ 
+    if (!chain->base.wsi->sw || chain->has_mit_shm) {
+-      cookie = xcb_sync_destroy_fence(chain->conn, image->sync_fence);
+-      xcb_discard_reply(chain->conn, cookie.sequence);
+-      xshmfence_unmap_shm(image->shm_fence);
+-
+       cookie = xcb_free_pixmap(chain->conn, image->pixmap);
+       xcb_discard_reply(chain->conn, cookie.sequence);
+ 
+@@ -2618,6 +2617,12 @@ x11_surface_create_swapchain(VkIcdSurfaceBase *icd_surface,
+          .alloc_shm = wsi_conn->has_mit_shm ? &alloc_shm : NULL,
+       };
+       image_params = &cpu_image_params.base;
++#ifdef __ANDROID__
++   } else if (wsi_device->wants_ahardware_buffer && !(WSI_DEBUG & WSI_DEBUG_NOAHB)) {
++      image_params = &(struct wsi_base_image_params){
++         .image_type = WSI_IMAGE_TYPE_AHB,
++      };
++#endif
+    } else {
+       drm_image_params = (struct wsi_drm_image_params) {
+          .base.image_type = WSI_IMAGE_TYPE_DRM,
+-- 
+2.47.0
+

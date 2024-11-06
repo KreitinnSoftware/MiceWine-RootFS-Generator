@@ -1,0 +1,68 @@
+diff --git a/src/vulkan/wsi/wsi_common_x11.c b/src/vulkan/wsi/wsi_common_x11.c
+index 03980b8d583..9976f8cf798 100644
+--- a/src/vulkan/wsi/wsi_common_x11.c
++++ b/src/vulkan/wsi/wsi_common_x11.c
+@@ -452,7 +452,7 @@ wsi_x11_get_connection(struct wsi_device *wsi_dev,
+ 
+ static const VkFormat formats[] = {
+    VK_FORMAT_R5G6B5_UNORM_PACK16,
+-   VK_FORMAT_B8G8R8A8_SRGB,
++   // VK_FORMAT_B8G8R8A8_SRGB,
+    VK_FORMAT_B8G8R8A8_UNORM,
+    VK_FORMAT_A2R10G10B10_UNORM_PACK32,
+ };
+@@ -1402,7 +1402,7 @@ x11_present_to_x11_dri3(struct x11_swapchain *chain, uint32_t image_index,
+    if (chain->has_dri3_modifiers)
+       options |= XCB_PRESENT_OPTION_SUBOPTIMAL;
+ 
+-   xshmfence_reset(image->shm_fence);
++   // xshmfence_reset(image->shm_fence);
+ 
+    if (!chain->base.image_info.explicit_sync) {
+       ++chain->sent_image_count;
+@@ -2143,14 +2143,23 @@ x11_image_init(VkDevice device_h, struct x11_swapchain *chain,
+          return VK_ERROR_OUT_OF_HOST_MEMORY;
+ 
+       cookie =
+-         xcb_dri3_pixmap_from_buffer_checked(chain->conn,
++         xcb_dri3_pixmap_from_buffers_checked(chain->conn,
+                                              image->pixmap,
+                                              chain->window,
+-                                             image->base.sizes[0],
++                                             image->base.num_planes,
+                                              pCreateInfo->imageExtent.width,
+                                              pCreateInfo->imageExtent.height,
+                                              image->base.row_pitches[0],
+-                                             chain->depth, bpp, fd);
++                                             image->base.offsets[0],
++                                             0,
++                                             0,
++                                             0,
++                                             0,
++                                             0,
++                                             0,
++                                             chain->depth, bpp,
++                                             1274,
++                                             &fd);
+    }
+ 
+    error = xcb_request_check(chain->conn, cookie);
+@@ -2180,6 +2189,9 @@ x11_image_init(VkDevice device_h, struct x11_swapchain *chain,
+    }
+ #endif
+ 
++   image->sync_fence = 0;
++   return VK_SUCCESS;
++
+ out_fence:
+    fence_fd = xshmfence_alloc_shm();
+    if (fence_fd < 0)
+@@ -2222,7 +2234,7 @@ x11_image_finish(struct x11_swapchain *chain,
+ {
+    xcb_void_cookie_t cookie;
+    if (!chain->base.wsi->sw || chain->has_mit_shm) {
+-#ifdef HAVE_X11_DRM
++#if 0
+       cookie = xcb_sync_destroy_fence(chain->conn, image->sync_fence);
+       xcb_discard_reply(chain->conn, cookie.sequence);
+       xshmfence_unmap_shm(image->shm_fence);

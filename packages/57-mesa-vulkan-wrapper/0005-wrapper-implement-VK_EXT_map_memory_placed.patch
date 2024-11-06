@@ -1,0 +1,503 @@
+From b0a6d6abc19f823f9e3f8b7c904c98a404edfdf8 Mon Sep 17 00:00:00 2001
+From: xMeM <haooy@outlook.com>
+Date: Sun, 3 Nov 2024 01:29:23 +0800
+Subject: [PATCH 3/3] wrapper: implement VK_EXT_map_memory_placed
+
+---
+ meson.build                                  |   4 +-
+ src/android_stub/nativewindow_stub.cpp       |   7 +
+ src/vulkan/wrapper/meson.build               |   8 +-
+ src/vulkan/wrapper/wrapper_device.c          |  11 +
+ src/vulkan/wrapper/wrapper_device_memory.c   | 246 +++++++++++++++++++
+ src/vulkan/wrapper/wrapper_instance.c        |   2 +
+ src/vulkan/wrapper/wrapper_physical_device.c |  42 +++-
+ src/vulkan/wrapper/wrapper_private.h         |  13 +-
+ 8 files changed, 327 insertions(+), 6 deletions(-)
+ create mode 100644 src/vulkan/wrapper/wrapper_device_memory.c
+
+diff --git a/meson.build b/meson.build
+index 0e4b114a9fc..f232f7be3ef 100644
+--- a/meson.build
++++ b/meson.build
+@@ -897,8 +897,8 @@ endif
+ pre_args += '-DGLAPI_EXPORT_PROTO_ENTRY_POINTS=@0@'.format(with_glapi_export_proto_entry_points.to_int())
+ 
+ with_android_stub = get_option('android-stub')
+-if with_android_stub and not with_platform_android
+-  error('`-D android-stub=true` makes no sense without `-D platforms=android`')
++if with_wrapper_vk
++  with_android_stub = true
+ endif
+ 
+ with_libbacktrace = get_option('android-libbacktrace') \
+diff --git a/src/android_stub/nativewindow_stub.cpp b/src/android_stub/nativewindow_stub.cpp
+index 9276a9c3d2e..4bd0cfe25ab 100644
+--- a/src/android_stub/nativewindow_stub.cpp
++++ b/src/android_stub/nativewindow_stub.cpp
+@@ -43,6 +43,13 @@ AHardwareBuffer_getNativeHandle(const AHardwareBuffer *buffer)
+    return NULL;
+ }
+ 
++int
++AHardwareBuffer_sendHandleToUnixSocket(const AHardwareBuffer* buffer,
++                                       int socketFd)
++{
++   return 0;
++}
++
+ void
+ ANativeWindow_acquire(ANativeWindow *window)
+ {
+diff --git a/src/vulkan/wrapper/meson.build b/src/vulkan/wrapper/meson.build
+index 8f6e665d0b6..8960fb62493 100644
+--- a/src/vulkan/wrapper/meson.build
++++ b/src/vulkan/wrapper/meson.build
+@@ -66,12 +66,18 @@ wrapper_features = custom_target(
+   depend_files: vk_physical_device_features_gen_depend_files,
+ )
+ 
+-wrapper_files = files('wrapper_device.c', 'wrapper_instance.c', 'wrapper_physical_device.c')
++wrapper_files = files(
++  'wrapper_device.c',
++  'wrapper_device_memory.c',
++  'wrapper_instance.c',
++  'wrapper_physical_device.c',
++)
+ 
+ wrapper_deps = [
+   idep_vulkan_runtime,
+   idep_vulkan_util,
+   idep_vulkan_wsi,
++  dep_android,
+ ]
+ 
+ libvulkan_wrapper = shared_library(
+diff --git a/src/vulkan/wrapper/wrapper_device.c b/src/vulkan/wrapper/wrapper_device.c
+index 19218673dcc..e9b0b1c871e 100644
+--- a/src/vulkan/wrapper/wrapper_device.c
++++ b/src/vulkan/wrapper/wrapper_device.c
+@@ -19,6 +19,8 @@ const struct vk_device_extension_table wrapper_device_extensions = {
+    .KHR_present_id = true,
+    .KHR_present_wait = true,
+    .KHR_incremental_present = true,
++   .KHR_map_memory2 = true,
++   .EXT_map_memory_placed = true,
+ };
+ 
+ const struct vk_device_extension_table wrapper_filter_extensions = {
+@@ -79,6 +81,15 @@ wrapper_CreateDevice(VkPhysicalDevice physicalDevice,
+    if (!device)
+       return vk_error(NULL, VK_ERROR_OUT_OF_HOST_MEMORY);
+ 
++   device->physical = physical_device;
++   device->memorys = _mesa_hash_table_create(NULL,
++                                             _mesa_hash_pointer,
++                                             _mesa_key_pointer_equal);
++   if (!device->memorys) {
++      vk_free2(&device->vk.alloc, pAllocator, device);
++      return vk_error(NULL, VK_ERROR_OUT_OF_HOST_MEMORY);
++   }
++
+    vk_device_dispatch_table_from_entrypoints(
+       &dispatch_table, &wrapper_device_entrypoints, true);
+    vk_device_dispatch_table_from_entrypoints(
+diff --git a/src/vulkan/wrapper/wrapper_device_memory.c b/src/vulkan/wrapper/wrapper_device_memory.c
+new file mode 100644
+index 00000000000..e2e40e5a977
+--- /dev/null
++++ b/src/vulkan/wrapper/wrapper_device_memory.c
+@@ -0,0 +1,246 @@
++#define native_handle_t __native_handle_t
++#define buffer_handle_t __buffer_handle_t
++#include "wrapper_private.h"
++#include "wrapper_entrypoints.h"
++#include "vk_common_entrypoints.h"
++#undef native_handle_t
++#undef buffer_handle_t
++#include "util/hash_table.h"
++#include "vk_util.h"
++
++#include <android/hardware_buffer.h>
++#include <vndk/hardware_buffer.h>
++#include <sys/mman.h>
++
++VKAPI_ATTR VkResult VKAPI_CALL
++wrapper_AllocateMemory(VkDevice _device,
++                       const VkMemoryAllocateInfo* pAllocateInfo,
++                       const VkAllocationCallbacks* pAllocator,
++                       VkDeviceMemory* pMemory)
++{
++   VK_FROM_HANDLE(wrapper_device, device, _device);
++   const VkImportAndroidHardwareBufferInfoANDROID *import_info;
++   const VkExportMemoryAllocateInfo *export_info;
++   VkExportMemoryAllocateInfo local_export_info;
++   VkMemoryAllocateInfo wrapper_allocate_info;
++   struct wrapper_device_memory *memory;
++   VkMemoryPropertyFlags mem_flags;
++   bool can_get_ahardware_buffer;
++   VkResult result;
++
++   mem_flags = device->physical->memory_properties.memoryTypes
++      [pAllocateInfo->memoryTypeIndex].propertyFlags;
++
++   if (!device->vk.enabled_extensions.EXT_map_memory_placed ||
++       !(mem_flags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) {
++      return device->dispatch_table.AllocateMemory(device->dispatch_handle,
++                                                   pAllocateInfo,
++                                                   pAllocator,
++                                                   pMemory);
++   }
++
++   memory = vk_zalloc2(&device->vk.alloc, pAllocator, sizeof(*memory),
++                       8, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
++   if (!memory)
++      return vk_error(device, VK_ERROR_OUT_OF_HOST_MEMORY);
++
++   wrapper_allocate_info = *pAllocateInfo;
++   
++   import_info = vk_find_struct_const(pAllocateInfo,
++                    IMPORT_ANDROID_HARDWARE_BUFFER_INFO_ANDROID);
++   export_info = vk_find_struct_const(pAllocateInfo,
++                    EXPORT_MEMORY_ALLOCATE_INFO);
++
++   if (import_info) {
++      memory->ahardware_buffer = import_info->buffer;
++      AHardwareBuffer_acquire(memory->ahardware_buffer);
++   } else if (!export_info) {
++      local_export_info = (VkExportMemoryAllocateInfo) {
++         .sType = VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO,
++         .pNext = wrapper_allocate_info.pNext,
++         .handleTypes =
++            VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID,
++      };
++      wrapper_allocate_info.pNext = &local_export_info;
++      export_info = &local_export_info;
++   }
++
++   result = device->dispatch_table.AllocateMemory(device->dispatch_handle,
++                                                  &wrapper_allocate_info,
++                                                  pAllocator,
++                                                  pMemory);
++   if (result != VK_SUCCESS) {
++      if (memory->ahardware_buffer)
++         AHardwareBuffer_release(memory->ahardware_buffer);
++      vk_free2(&device->vk.alloc, pAllocator, memory);
++      return vk_error(device, result);
++   }
++
++   can_get_ahardware_buffer = (export_info && export_info->handleTypes ==
++      VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID);
++
++   if (can_get_ahardware_buffer) {
++      const VkMemoryGetAndroidHardwareBufferInfoANDROID get_ahb_info = {
++         .sType =
++            VK_STRUCTURE_TYPE_MEMORY_GET_ANDROID_HARDWARE_BUFFER_INFO_ANDROID,
++         .memory = *pMemory,
++      };
++      device->dispatch_table.GetMemoryAndroidHardwareBufferANDROID(
++         device->dispatch_handle, &get_ahb_info, &memory->ahardware_buffer);
++   }
++
++   memory->alloc_size = pAllocateInfo->allocationSize;
++   _mesa_hash_table_insert(device->memorys, (void *)(*pMemory), memory);
++
++   return VK_SUCCESS;
++}
++
++VKAPI_ATTR void VKAPI_CALL
++wrapper_FreeMemory(VkDevice _device, VkDeviceMemory _memory,
++                   const VkAllocationCallbacks* pAllocator)
++{
++   VK_FROM_HANDLE(wrapper_device, device, _device);
++   struct hash_entry *entry = NULL;
++
++   if (_memory != VK_NULL_HANDLE)
++      entry = _mesa_hash_table_search(device->memorys, (void *)_memory);
++
++   if (entry) {
++      struct wrapper_device_memory *memory = entry->data;
++      if (memory->map_address && memory->map_size) {
++         munmap(memory->map_address, memory->map_size);
++      }
++      if (memory->ahardware_buffer) {
++         AHardwareBuffer_release(memory->ahardware_buffer);
++      }
++      vk_free2(&device->vk.alloc, pAllocator, memory);
++      _mesa_hash_table_remove(device->memorys, entry);
++   }
++
++   device->dispatch_table.FreeMemory(device->dispatch_handle,
++                                     _memory,
++                                     pAllocator);
++}
++
++VKAPI_ATTR VkResult VKAPI_CALL
++wrapper_MapMemory2KHR(VkDevice _device,
++                      const VkMemoryMapInfoKHR* pMemoryMapInfo,
++                      void** ppData)
++{
++   VK_FROM_HANDLE(wrapper_device, device, _device);
++   struct wrapper_device_memory *memory;
++   const VkMemoryMapPlacedInfoEXT *placed_info;
++   const struct hash_entry *entry = NULL;
++   const native_handle_t *handle;
++   const int *handle_fds;
++
++   placed_info = vk_find_struct_const(pMemoryMapInfo->pNext,
++                                      MEMORY_MAP_PLACED_INFO_EXT);
++   if (pMemoryMapInfo->memory != VK_NULL_HANDLE)
++      entry = _mesa_hash_table_search(device->memorys,
++                                      (void *)pMemoryMapInfo->memory);
++   if (!placed_info || !entry) {
++      return device->dispatch_table.MapMemory(device->dispatch_handle,
++                                              pMemoryMapInfo->memory,
++                                              pMemoryMapInfo->offset,
++                                              pMemoryMapInfo->size,
++                                              0,
++                                              ppData);
++   }
++   memory = entry->data;
++
++   if (memory->map_address) {
++      if (placed_info->pPlacedAddress != memory->map_address) {
++         return VK_ERROR_MEMORY_MAP_FAILED;
++      } else {
++         *ppData = (char *)memory->map_address + pMemoryMapInfo->offset;
++         return VK_SUCCESS;
++      }
++   }
++
++   if (!memory->ahardware_buffer) {
++      fprintf(stderr, "Can't get AHardwareBuffer, mapping memory will fail");
++      return vk_error(device, VK_ERROR_MEMORY_MAP_FAILED);
++   }
++
++   handle = AHardwareBuffer_getNativeHandle(memory->ahardware_buffer);
++   handle_fds = &handle->data[0];
++
++   int idx;
++   for (idx = 0; idx < handle->numFds; idx++) {
++      size_t size = lseek(handle_fds[idx], 0, SEEK_END);
++      if (size < memory->alloc_size)
++         continue;
++
++      if (pMemoryMapInfo->size == VK_WHOLE_SIZE)
++      {
++         memory->map_size = size;
++         break;
++      } else if (size >= pMemoryMapInfo->size) {
++         memory->map_size = pMemoryMapInfo->size;
++         break;
++      }
++   }
++   assert(idx < handle->numFds);
++
++   memory->map_address = mmap(placed_info->pPlacedAddress,
++                              memory->map_size,
++                              PROT_READ | PROT_WRITE,
++                              MAP_SHARED | MAP_FIXED,
++                              handle_fds[idx], 0);
++
++   if (memory->map_address == MAP_FAILED) {
++      memory->map_address = NULL;
++      memory->map_size = 0;
++      fprintf(stderr, "%s: mmap failed\n", __func__);
++      return vk_error(device, VK_ERROR_MEMORY_MAP_FAILED);
++   }
++
++   *ppData = (char *)memory->map_address + pMemoryMapInfo->offset;
++
++   return VK_SUCCESS;
++}
++
++VKAPI_ATTR void VKAPI_CALL
++wrapper_UnmapMemory(VkDevice _device, VkDeviceMemory _memory) {
++   vk_common_UnmapMemory(_device, _memory);
++}
++
++VKAPI_ATTR VkResult VKAPI_CALL
++wrapper_UnmapMemory2KHR(VkDevice _device,
++                        const VkMemoryUnmapInfoKHR* pMemoryUnmapInfo)
++{
++   VK_FROM_HANDLE(wrapper_device, device, _device);
++   struct wrapper_device_memory *memory;
++   const struct hash_entry *entry = NULL;
++
++   if (pMemoryUnmapInfo->memory != VK_NULL_HANDLE)
++      entry = _mesa_hash_table_search(device->memorys,
++                                      (void *)pMemoryUnmapInfo->memory);
++   if (!entry) {
++      device->dispatch_table.UnmapMemory(device->dispatch_handle,
++                                       pMemoryUnmapInfo->memory);
++      return VK_SUCCESS;
++   }
++
++   memory = entry->data;
++
++   if (!memory->map_address)
++      return VK_SUCCESS;
++
++   if (pMemoryUnmapInfo->flags & VK_MEMORY_UNMAP_RESERVE_BIT_EXT) {
++      memory->map_address = mmap(memory->map_address, memory->map_size,
++         PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
++      if (memory->map_address == MAP_FAILED) {
++         fprintf(stderr, "Failed to replace mapping with reserved memory");
++         return vk_error(device, VK_ERROR_MEMORY_MAP_FAILED);
++      }
++   } else {
++      munmap(memory->map_address, memory->map_size);
++   }
++
++   memory->map_size = 0;
++   memory->map_address = 0;
++   
++   return VK_SUCCESS;
++}
+diff --git a/src/vulkan/wrapper/wrapper_instance.c b/src/vulkan/wrapper/wrapper_instance.c
+index 17f95e5c410..3b083ec40d8 100644
+--- a/src/vulkan/wrapper/wrapper_instance.c
++++ b/src/vulkan/wrapper/wrapper_instance.c
+@@ -48,6 +48,8 @@ static struct vk_instance_extension_table *supported_instance_extensions;
+ #define DEFAULT_VULKAN_PATH "/system/lib/libvulkan.so"
+ #endif
+ 
++#include <dlfcn.h>
++
+ static bool vulkan_library_init()
+ {
+    if (vulkan_library_handle)
+diff --git a/src/vulkan/wrapper/wrapper_physical_device.c b/src/vulkan/wrapper/wrapper_physical_device.c
+index cb0e766d950..2a9372a5f53 100644
+--- a/src/vulkan/wrapper/wrapper_physical_device.c
++++ b/src/vulkan/wrapper/wrapper_physical_device.c
+@@ -1,11 +1,14 @@
+ #include "wrapper_private.h"
++#include "wrapper_entrypoints.h"
+ #include "wrapper_trampolines.h"
+ #include "vk_alloc.h"
+ #include "vk_common_entrypoints.h"
+ #include "vk_dispatch_table.h"
+ #include "vk_extensions.h"
+ #include "vk_physical_device.h"
++#include "vk_util.h"
+ #include "wsi_common.h"
++#include "util/os_misc.h"
+ 
+ static VkResult
+ wrapper_setup_device_extensions(struct wrapper_physical_device *pdevice) {
+@@ -106,6 +109,8 @@ VkResult enumerate_physical_device(struct vk_instance *_instance)
+       supported_features->presentWait = supported_features->timelineSemaphore;
+       supported_features->swapchainMaintenance1 = true;
+       supported_features->imageCompressionControlSwapchain = false;
++      supported_features->memoryMapPlaced = true;
++      supported_features->memoryUnmapReserve = true;
+ 
+       result = wsi_device_init(&pdevice->wsi_device,
+                                wrapper_physical_device_to_handle(pdevice),
+@@ -119,9 +124,12 @@ VkResult enumerate_physical_device(struct vk_instance *_instance)
+       pdevice->vk.wsi_device = &pdevice->wsi_device;
+       pdevice->wsi_device.force_bgra8_unorm_first = true;
+ #ifdef __ANDROID__
+-      pdevice->wsi_device.wants_ahb = true;
++      pdevice->wsi_device.wants_ahardware_buffer = true;
+ #endif
+ 
++      pdevice->dispatch_table.GetPhysicalDeviceMemoryProperties(
++         pdevice->dispatch_handle, &pdevice->memory_properties);
++
+       list_addtail(&pdevice->vk.link, &_instance->physical_devices.list);
+    }
+ 
+@@ -146,8 +154,40 @@ wrapper_EnumerateDeviceExtensionProperties(VkPhysicalDevice physicalDevice,
+                                                        pProperties);
+ }
+ 
++VKAPI_ATTR void VKAPI_CALL
++wrapper_GetPhysicalDeviceFeatures(VkPhysicalDevice physicalDevice,
++                                  VkPhysicalDeviceFeatures* pFeatures)
++{
++   return vk_common_GetPhysicalDeviceFeatures(physicalDevice, pFeatures);
++}
++
+ VKAPI_ATTR void VKAPI_CALL
+ wrapper_GetPhysicalDeviceFeatures2(VkPhysicalDevice physicalDevice,
+                                    VkPhysicalDeviceFeatures2* pFeatures) {
+    vk_common_GetPhysicalDeviceFeatures2(physicalDevice, pFeatures);
+ }
++
++VKAPI_ATTR void VKAPI_CALL
++wrapper_GetPhysicalDeviceProperties2(VkPhysicalDevice physicalDevice,
++                                     VkPhysicalDeviceProperties2* pProperties)
++{
++   VK_FROM_HANDLE(wrapper_physical_device, pdevice, physicalDevice);
++   pdevice->dispatch_table.GetPhysicalDeviceProperties2(
++      pdevice->dispatch_handle, pProperties);
++
++   vk_foreach_struct(prop, pProperties->pNext) {
++      switch (prop->sType) {
++      case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAP_MEMORY_PLACED_PROPERTIES_EXT:
++      {
++         VkPhysicalDeviceMapMemoryPlacedPropertiesEXT *placed_prop =
++               (VkPhysicalDeviceMapMemoryPlacedPropertiesEXT *)prop;
++         uint64_t os_page_size;
++         os_get_page_size(&os_page_size);
++         placed_prop->minPlacedMemoryMapAlignment = os_page_size;
++         break;
++      }
++      default:
++         break;
++      }
++   }
++}
+diff --git a/src/vulkan/wrapper/wrapper_private.h b/src/vulkan/wrapper/wrapper_private.h
+index 7782ef58335..5d16d5c8ace 100644
+--- a/src/vulkan/wrapper/wrapper_private.h
++++ b/src/vulkan/wrapper/wrapper_private.h
+@@ -1,4 +1,3 @@
+-#include "wrapper_entrypoints.h"
+ #include "vulkan/runtime/vk_instance.h"
+ #include "vulkan/runtime/vk_physical_device.h"
+ #include "vulkan/runtime/vk_device.h"
+@@ -7,7 +6,7 @@
+ #include "vulkan/runtime/vk_log.h"
+ #include "vulkan/util/vk_dispatch_table.h"
+ #include "vulkan/wsi/wsi_common.h"
+-#include <dlfcn.h>
++#include "util/hash_table.h"
+ 
+ extern const struct vk_instance_extension_table wrapper_instance_extensions;
+ extern const struct vk_device_extension_table wrapper_device_extensions;
+@@ -27,6 +26,7 @@ struct wrapper_physical_device {
+    struct vk_physical_device vk;
+ 
+    VkPhysicalDevice dispatch_handle;
++   VkPhysicalDeviceMemoryProperties memory_properties;
+    struct wsi_device wsi_device;
+    struct wrapper_instance *instance;
+    struct vk_physical_device_dispatch_table dispatch_table;
+@@ -50,6 +50,8 @@ struct wrapper_device {
+ 
+    VkDevice dispatch_handle;
+    struct list_head command_buffers;
++   struct hash_table *memorys;
++   struct wrapper_physical_device *physical;
+    struct vk_device_dispatch_table dispatch_table;
+ };
+ 
+@@ -68,6 +70,13 @@ struct wrapper_command_buffer {
+ VK_DEFINE_HANDLE_CASTS(wrapper_command_buffer, vk.base, VkCommandBuffer,
+                        VK_OBJECT_TYPE_COMMAND_BUFFER)
+ 
++struct wrapper_device_memory {
++   struct AHardwareBuffer *ahardware_buffer;
++   void *map_address;
++   size_t map_size;
++   size_t alloc_size;
++};
++
+ VkResult enumerate_physical_device(struct vk_instance *_instance);
+ void destroy_physical_device(struct vk_physical_device *pdevice);
+ 
+-- 
+2.47.0
+

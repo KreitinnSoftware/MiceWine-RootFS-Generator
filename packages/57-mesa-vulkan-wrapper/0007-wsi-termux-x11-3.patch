@@ -1,0 +1,54 @@
+diff --git a/src/vulkan/wsi/wsi_common.c b/src/vulkan/wsi/wsi_common.c
+index 17c5b422988..70444724bb0 100644
+--- a/src/vulkan/wsi/wsi_common.c
++++ b/src/vulkan/wsi/wsi_common.c
+@@ -60,6 +60,7 @@ static const struct debug_control debug_control[] = {
+    { "linear",       WSI_DEBUG_LINEAR },
+    { "dxgi",         WSI_DEBUG_DXGI },
+    { "noahb",        WSI_DEBUG_NOAHB },
++   { "rgba",         WSI_DEBUG_RGBA },
+    { NULL, },
+ };
+ 
+@@ -2337,6 +2338,7 @@ vk_format_to_ahb_format(VkFormat format) {
+    switch (format) {
+    case VK_FORMAT_B8G8R8A8_SRGB:
+    case VK_FORMAT_B8G8R8A8_UNORM:
++   case VK_FORMAT_R8G8B8A8_UNORM:
+       return AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM;
+    case VK_FORMAT_R5G6B5_UNORM_PACK16:
+       return AHARDWAREBUFFER_FORMAT_R5G6B5_UNORM;
+diff --git a/src/vulkan/wsi/wsi_common_private.h b/src/vulkan/wsi/wsi_common_private.h
+index 969d0000785..415242ea9ce 100644
+--- a/src/vulkan/wsi/wsi_common_private.h
++++ b/src/vulkan/wsi/wsi_common_private.h
+@@ -40,7 +40,8 @@ struct wsi_swapchain;
+ #define WSI_DEBUG_NOSHM       (1ull << 2)
+ #define WSI_DEBUG_LINEAR      (1ull << 3)
+ #define WSI_DEBUG_DXGI        (1ull << 4)
+-#define WSI_DEBUG_NOAHB        (1ull << 8)
++#define WSI_DEBUG_NOAHB       (1ull << 8)
++#define WSI_DEBUG_RGBA        (1ull << 9)
+ 
+ extern uint64_t WSI_DEBUG;
+ 
+diff --git a/src/vulkan/wsi/wsi_common_x11.c b/src/vulkan/wsi/wsi_common_x11.c
+index 3ef10b0f53a..662a583be5e 100644
+--- a/src/vulkan/wsi/wsi_common_x11.c
++++ b/src/vulkan/wsi/wsi_common_x11.c
+@@ -888,6 +888,15 @@ next_format:;
+       }
+    }
+ 
++   if (WSI_DEBUG & WSI_DEBUG_RGBA) {
++      for (unsigned i = 0; i < *count; i++) {
++         if (sorted_formats[i] == VK_FORMAT_B8G8R8A8_UNORM ||
++             sorted_formats[i] == VK_FORMAT_B8G8R8A8_SRGB) {
++            sorted_formats[i] = VK_FORMAT_R8G8B8A8_UNORM;
++         }
++      }
++   }
++
+    return true;
+ }
+ 
