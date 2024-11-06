@@ -1,0 +1,35 @@
+diff --git a/include/android_stub/vndk/hardware_buffer.h b/include/android_stub/vndk/hardware_buffer.h
+index 12f8691..91d2251 100644
+--- a/include/android_stub/vndk/hardware_buffer.h
++++ b/include/android_stub/vndk/hardware_buffer.h
+@@ -24,7 +24,7 @@
+ 
+ __BEGIN_DECLS
+ 
+-const native_handle_t* AHardwareBuffer_getNativeHandle(const AHardwareBuffer* buffer);
++const __native_handle_t* AHardwareBuffer_getNativeHandle(const AHardwareBuffer* buffer);
+ 
+ enum CreateFromHandleMethod {
+     // enum values chosen to match internal GraphicBuffer::HandleWrapMethod
+@@ -46,7 +46,7 @@ enum CreateFromHandleMethod {
+  * clone registered. The AHardwareBuffer will own the cloned handle but not the original.
+  */
+ int AHardwareBuffer_createFromHandle(const AHardwareBuffer_Desc* desc,
+-                                     const native_handle_t* handle, int32_t method,
++                                     const __native_handle_t* handle, int32_t method,
+                                      AHardwareBuffer** outBuffer);
+ 
+ /**
+diff --git a/src/vulkan/wrapper/wrapper_device_memory.c b/src/vulkan/wrapper/wrapper_device_memory.c
+index e2e40e5..0b0e763 100644
+--- a/src/vulkan/wrapper/wrapper_device_memory.c
++++ b/src/vulkan/wrapper/wrapper_device_memory.c
+@@ -131,7 +131,7 @@ wrapper_MapMemory2KHR(VkDevice _device,
+    struct wrapper_device_memory *memory;
+    const VkMemoryMapPlacedInfoEXT *placed_info;
+    const struct hash_entry *entry = NULL;
+-   const native_handle_t *handle;
++   const __native_handle_t *handle;
+    const int *handle_fds;
+ 
+    placed_info = vk_find_struct_const(pMemoryMapInfo->pNext,
