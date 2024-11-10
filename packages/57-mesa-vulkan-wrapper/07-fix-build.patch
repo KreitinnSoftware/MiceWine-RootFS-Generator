@@ -21,15 +21,15 @@ index 12f8691..91d2251 100644
  
  /**
 diff --git a/src/vulkan/wrapper/wrapper_device_memory.c b/src/vulkan/wrapper/wrapper_device_memory.c
-index e2e40e5..0b0e763 100644
+index 2fc0b04..a1e0ea0 100644
 --- a/src/vulkan/wrapper/wrapper_device_memory.c
 +++ b/src/vulkan/wrapper/wrapper_device_memory.c
-@@ -131,7 +131,7 @@ wrapper_MapMemory2KHR(VkDevice _device,
-    struct wrapper_device_memory *memory;
-    const VkMemoryMapPlacedInfoEXT *placed_info;
-    const struct hash_entry *entry = NULL;
--   const native_handle_t *handle;
-+   const __native_handle_t *handle;
-    const int *handle_fds;
+@@ -182,7 +182,7 @@ wrapper_MapMemory2KHR(VkDevice _device,
+    assert(memory->dmabuf_fd >= 0 || memory->ahardware_buffer != NULL);
  
-    placed_info = vk_find_struct_const(pMemoryMapInfo->pNext,
+    if (memory->ahardware_buffer) {
+-      const native_handle_t *handle;
++      const __native_handle_t *handle;
+       const int *handle_fds;
+ 
+       handle = AHardwareBuffer_getNativeHandle(memory->ahardware_buffer);
