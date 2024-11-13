@@ -1,0 +1,12 @@
+diff --git a/src/fps_metrics.h b/src/fps_metrics.h
+index a889b37..2b36587 100644
+--- a/src/fps_metrics.h
++++ b/src/fps_metrics.h
+@@ -11,6 +11,7 @@
+ #include <stdexcept>
+ #include <iomanip>
+ #include <spdlog/spdlog.h>
++#include <sstream>
+ 
+ struct metric_t {
+     std::string name;

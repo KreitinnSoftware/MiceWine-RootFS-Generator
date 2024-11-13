@@ -151,7 +151,7 @@ setupPackages()
 	mkdir -p "$PREFIX/include"
 	
 	for package in $PACKAGES; do
-		unset NON_CONVENTIONAL_BUILD_PATH CATEGORY PKG_VER GIT_URL SRC_URL HOST_BUILD_FOLDER HOST_BUILD_MAKE HOST_BUILD_CONFIGURE_ARGS HOST_BUILD_CFLAGS HOST_BUILD_CXXFLAGS HOST_BUILD_LDFLAGS CONFIGURE_ARGS MESON_ARGS CMAKE_ARGS RUN_POST_APPLY_PATCH RUN_POST_BUILD RUN_POST_CONFIGURE CFLAGS CPPFLAGS LDFLAGS LIBS OVERRIDE_PREFIX OVERRIDE_PKG_CONFIG_PATH GIT_COMMIT BLACKLIST_ARCHITECTURE
+		unset NON_CONVENTIONAL_BUILD_PATH CATEGORY PKG_VER GIT_URL SRC_URL HOST_BUILD_FOLDER HOST_BUILD_MAKE HOST_BUILD_CONFIGURE_ARGS HOST_BUILD_CFLAGS HOST_BUILD_CXXFLAGS HOST_BUILD_LDFLAGS CONFIGURE_ARGS MESON_ARGS CMAKE_ARGS RUN_POST_APPLY_PATCH RUN_POST_BUILD RUN_POST_CONFIGURE CFLAGS CPPFLAGS LDFLAGS LIBS OVERRIDE_PREFIX OVERRIDE_PKG_CONFIG_PATH GIT_COMMIT BLACKLIST_ARCHITECTURE BUILD_IN_SRC
 
 		. "$INIT_DIR/packages/$package/build.sh"
 
@@ -174,6 +174,10 @@ setupPackages()
 						downloadAndExtractPackage
 					elif [ -n "$GIT_URL" ]; then
 						gitDownload
+					elif [ -n "$BUILD_IN_SRC" ]; then
+						mkdir -p $package
+						cp -rf "$INIT_DIR/packages/$package/"* $package
+						rm $package/build.sh
 					fi
 
 					cd $package
@@ -284,6 +288,7 @@ setupPackages()
 						echo "make -j $(nproc) DESTDIR=\"\$DESTDIR\" install_sw" >> build.sh
 					elif [ -e "Makefile" ]; then
 						echo "cd .." >> build.sh
+						echo "make -j $(nproc)" >> build.sh
 						echo "make -j $(nproc) install" >> build.sh
 						echo "cd build_dir" >> build.sh
 					else

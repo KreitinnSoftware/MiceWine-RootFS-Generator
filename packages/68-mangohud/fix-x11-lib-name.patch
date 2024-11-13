@@ -1,0 +1,12 @@
+diff --git a/src/loaders/loader_x11.cpp b/src/loaders/loader_x11.cpp
+index 214fd50..124610f 100644
+--- a/src/loaders/loader_x11.cpp
++++ b/src/loaders/loader_x11.cpp
+@@ -110,6 +110,6 @@ static std::shared_ptr<libx11_loader> loader;
+ std::shared_ptr<libx11_loader> get_libx11()
+ {
+     if (!loader)
+-        loader = std::make_shared<libx11_loader>("libX11.so.6");
++        loader = std::make_shared<libx11_loader>("libX11.so");
+     return loader;
+ }
