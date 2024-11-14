@@ -144,137 +144,130 @@ gitDownload()
 	cd ..
 }
 
-setupPackages()
+setupPackage()
 {
-	cd "$INIT_DIR/workdir"
+	unset NON_CONVENTIONAL_BUILD_PATH CATEGORY PKG_VER GIT_URL SRC_URL HOST_BUILD_FOLDER HOST_BUILD_MAKE HOST_BUILD_CONFIGURE_ARGS HOST_BUILD_CFLAGS HOST_BUILD_CXXFLAGS HOST_BUILD_LDFLAGS CONFIGURE_ARGS MESON_ARGS CMAKE_ARGS RUN_POST_APPLY_PATCH RUN_POST_BUILD RUN_POST_CONFIGURE CFLAGS CPPFLAGS LDFLAGS LIBS OVERRIDE_PREFIX OVERRIDE_PKG_CONFIG_PATH GIT_COMMIT BLACKLIST_ARCHITECTURE BUILD_IN_SRC
 
-	mkdir -p "$PREFIX/include"
-	
-	for package in $PACKAGES; do
-		unset NON_CONVENTIONAL_BUILD_PATH CATEGORY PKG_VER GIT_URL SRC_URL HOST_BUILD_FOLDER HOST_BUILD_MAKE HOST_BUILD_CONFIGURE_ARGS HOST_BUILD_CFLAGS HOST_BUILD_CXXFLAGS HOST_BUILD_LDFLAGS CONFIGURE_ARGS MESON_ARGS CMAKE_ARGS RUN_POST_APPLY_PATCH RUN_POST_BUILD RUN_POST_CONFIGURE CFLAGS CPPFLAGS LDFLAGS LIBS OVERRIDE_PREFIX OVERRIDE_PKG_CONFIG_PATH GIT_COMMIT BLACKLIST_ARCHITECTURE BUILD_IN_SRC
+	package=$1
 
-		. "$INIT_DIR/packages/$package/build.sh"
+	. "$INIT_DIR/packages/$package/build.sh"
 
-		if [ "$PKG_VER" == "[gss]" ]; then
-			if [ -n "$GIT_COMMIT" ]; then
-				PKG_VER="$(echo $GIT_COMMIT | cut -c1-7)"
-			fi
+	if [ "$PKG_VER" == "[gss]" ]; then
+		if [ -n "$GIT_COMMIT" ]; then
+			PKG_VER="$(echo $GIT_COMMIT | cut -c1-7)"
 		fi
+	fi
 
-		if [ -f "$INIT_DIR/built-pkgs/$package-$PKG_VER-$ARCHITECTURE.rat" ]; then
-			echo "-- Package '$package' already built, No configuring necessary."
+	if [ ! -f "$INIT_DIR/built-pkgs/$package-$PKG_VER-$ARCHITECTURE.rat" ]; then
+		if [ -e "$INIT_DIR/workdir/$package/build.sh" ]; then
+			echo "-- Package '$package' already configured."
 		else
-			if [ -e "$INIT_DIR/workdir/$package/build.sh" ]; then
-				echo "-- Package '$package' already configured."
+			if [ "$BLACKLIST_ARCHITECTURE" == "$ARCHITECTURE" ]; then
+				echo "-- Warning: '$package' will not be built."
 			else
-				if [ "$BLACKLIST_ARCHITECTURE" == "$ARCHITECTURE" ]; then
-					echo "-- Warning: '$package' will not be built."
-				else
-					if [ -n "$SRC_URL" ]; then
-						downloadAndExtractPackage
-					elif [ -n "$GIT_URL" ]; then
-						gitDownload
-					elif [ -n "$BUILD_IN_SRC" ]; then
-						mkdir -p $package
-						cp -rf "$INIT_DIR/packages/$package/"* $package
-						rm $package/build.sh
-					fi
-
+				if [ -n "$SRC_URL" ]; then
+					downloadAndExtractPackage
+				elif [ -n "$GIT_URL" ]; then
+					gitDownload
+				elif [ -n "$BUILD_IN_SRC" ]; then
+					mkdir -p $package
+					cp -rf "$INIT_DIR/packages/$package/"* $package
+					rm $package/build.sh
+				fi
 					cd $package
-
 					applyPatches
 
-					if [ $EXPERIMENTAL_16KB_PAGESIZE -eq 1 ]; then
-						LDFLAGS+=" -Wl,-z,max-page-size=16384"
+				if [ $EXPERIMENTAL_16KB_PAGESIZE -eq 1 ]; then
+					LDFLAGS+=" -Wl,-z,max-page-size=16384"
+				fi
+
+				if [ $DEBUG_BUILD -eq 1 ]; then
+					if [ -n "$MESON_ARGS" ]; then
+						MESON_ARGS+=" -Dbuildtype=debug"
+					fi
+				else
+					if [ -n "$MESON_ARGS" ]; then
+						MESON_ARGS+=" -Dbuildtype=release"
+					fi
+				fi
+
+				echo "export CFLAGS=\"$CFLAGS\" LIBS=\"$LIBS\" CPPFLAGS=\"$CPPFLAGS\" LDFLAGS=\"$LDFLAGS\"" > build.sh
+				echo "export DESTDIR=\"$INIT_DIR/workdir/$package/destdir-pkg\"" >> build.sh
+
+				PREFIX_DIR=$PREFIX
+
+				if [ -n "$OVERRIDE_PREFIX" ]; then
+					PREFIX_DIR=$OVERRIDE_PREFIX						
+				fi
+
+				if [ "$OVERRIDE_PKG_CONFIG_PATH" != "" ]; then
+					echo "export PKG_CONFIG_PATH=$OVERRIDE_PKG_CONFIG_PATH" >> build.sh
+				else
+					echo "export PKG_CONFIG_PATH=$PKG_CONFIG_PATH" >> build.sh
+				fi
+
+				if [ -e "./configure" ] && [ -n "$CONFIGURE_ARGS" ]; then
+					if [ -n "$HOST_BUILD_CONFIGURE_ARGS" ]; then
+						echo "mkdir -p $HOST_BUILD_FOLDER" >> build.sh
+						echo "cd $HOST_BUILD_FOLDER" >> build.sh
+						echo "env -i bash -l -c \"../configure $HOST_BUILD_CONFIGURE_ARGS\"" >> build.sh
+						echo "$HOST_BUILD_MAKE" >> build.sh
+						echo 'cd $OLDPWD' >> build.sh
 					fi
 
-					if [ $DEBUG_BUILD -eq 1 ]; then
-						if [ -n "$MESON_ARGS" ]; then
-							MESON_ARGS+=" -Dbuildtype=debug"
-						fi
+					echo "../configure --libdir=$PREFIX_DIR/lib --prefix=$PREFIX_DIR $CONFIGURE_ARGS" >> build.sh
+					echo "$RUN_POST_CONFIGURE" >> build.sh
+
+					if [ -e "$INIT_DIR/packages/$package/post-configure.sh" ]; then
+						echo "$INIT_DIR/packages/$package/post-configure.sh" >> build.sh
+					fi
+
+					echo "make -j $(nproc)" >> build.sh
+
+					if [ -e "$INIT_DIR/packages/$package/custom-make-install.sh" ]; then
+						echo "$INIT_DIR/packages/$package/custom-make-install.sh" >> build.sh
 					else
-						if [ -n "$MESON_ARGS" ]; then
-							MESON_ARGS+=" -Dbuildtype=release"
-						fi
+						echo "make -j $(nproc) install" >> build.sh
+					fi
+				elif [ -e "autogen.sh" ] && [ -n "$CONFIGURE_ARGS" ]; then
+					echo "cd .." >> build.sh
+					echo "./autogen.sh" >> build.sh
+					echo "cd build_dir" >> build.sh
+					echo "../configure --libdir=$PREFIX_DIR/lib --prefix=$PREFIX_DIR $CONFIGURE_ARGS" >> build.sh
+					echo "$RUN_POST_CONFIGURE" >> build.sh
+
+					if [ -e "$INIT_DIR/packages/$package/post-configure.sh" ]; then
+						echo "$INIT_DIR/packages/$package/post-configure.sh" >> build.sh
 					fi
 
-					echo "export CFLAGS=\"$CFLAGS\" LIBS=\"$LIBS\" CPPFLAGS=\"$CPPFLAGS\" LDFLAGS=\"$LDFLAGS\"" > build.sh
-					echo "export DESTDIR=\"$INIT_DIR/workdir/$package/destdir-pkg\"" >> build.sh
+					echo "make -j $(nproc)" >> build.sh
 
-					PREFIX_DIR=$PREFIX
-
-					if [ -n "$OVERRIDE_PREFIX" ]; then
-						PREFIX_DIR=$OVERRIDE_PREFIX						
-					fi
-
-					if [ "$OVERRIDE_PKG_CONFIG_PATH" != "" ]; then
-						echo "export PKG_CONFIG_PATH=$OVERRIDE_PKG_CONFIG_PATH" >> build.sh
+					if [ -e "$INIT_DIR/packages/$package/custom-make-install.sh" ]; then
+						echo "$INIT_DIR/packages/$package/custom-make-install.sh" >> build.sh
 					else
-						echo "export PKG_CONFIG_PATH=$PKG_CONFIG_PATH" >> build.sh
+						echo "make -j $(nproc) install" >> build.sh
+					fi
+				elif [ -e ".$NON_CONVENTIONAL_BUILD_PATH/CMakeLists.txt" ] && [ -n "$CMAKE_ARGS" ]; then
+					echo "cmake -DCMAKE_INSTALL_PREFIX=$PREFIX_DIR -DCMAKE_INSTALL_LIBDIR=$PREFIX_DIR/lib $CMAKE_ARGS ..$NON_CONVENTIONAL_BUILD_PATH" >> build.sh
+					echo "make -j $(nproc)" >> build.sh
+
+					if [ -e "$INIT_DIR/packages/$package/custom-make-install.sh" ]; then
+						echo "$INIT_DIR/packages/$package/custom-make-install.sh" >> build.sh
+					else
+						echo "make -j $(nproc) install" >> build.sh
+					fi
+				elif [ -e ".$NON_CONVENTIONAL_BUILD_PATH/meson.build" ] && [ -n "$MESON_ARGS" ]; then
+					echo "meson setup --cross-file=$INIT_DIR/meson-cross-file-$ARCHITECTURE -Dprefix=$PREFIX_DIR $MESON_ARGS ..$NON_CONVENTIONAL_BUILD_PATH" >> build.sh
+
+					if [ -e "$INIT_DIR/packages/$package/post-configure.sh" ]; then
+						echo "$INIT_DIR/packages/$package/post-configure.sh" >> build.sh
 					fi
 
-					if [ -e "./configure" ] && [ -n "$CONFIGURE_ARGS" ]; then
-						if [ -n "$HOST_BUILD_CONFIGURE_ARGS" ]; then
-							echo "mkdir -p $HOST_BUILD_FOLDER" >> build.sh
-							echo "cd $HOST_BUILD_FOLDER" >> build.sh
-							echo "env -i bash -l -c \"../configure $HOST_BUILD_CONFIGURE_ARGS\"" >> build.sh
-							echo "$HOST_BUILD_MAKE" >> build.sh
-							echo 'cd $OLDPWD' >> build.sh
-						fi
+					echo "ninja -j $(nproc)" >> build.sh
 
-						echo "../configure --libdir=$PREFIX_DIR/lib --prefix=$PREFIX_DIR $CONFIGURE_ARGS" >> build.sh
-						echo "$RUN_POST_CONFIGURE" >> build.sh
-
-						if [ -e "$INIT_DIR/packages/$package/post-configure.sh" ]; then
-							echo "$INIT_DIR/packages/$package/post-configure.sh" >> build.sh
-						fi
-
-						echo "make -j $(nproc)" >> build.sh
-
-						if [ -e "$INIT_DIR/packages/$package/custom-make-install.sh" ]; then
-							echo "$INIT_DIR/packages/$package/custom-make-install.sh" >> build.sh
-						else
-							echo "make -j $(nproc) install" >> build.sh
-						fi
-					elif [ -e "autogen.sh" ] && [ -n "$CONFIGURE_ARGS" ]; then
-						echo "cd .." >> build.sh
-						echo "./autogen.sh" >> build.sh
-						echo "cd build_dir" >> build.sh
-						echo "../configure --libdir=$PREFIX_DIR/lib --prefix=$PREFIX_DIR $CONFIGURE_ARGS" >> build.sh
-						echo "$RUN_POST_CONFIGURE" >> build.sh
-
-						if [ -e "$INIT_DIR/packages/$package/post-configure.sh" ]; then
-							echo "$INIT_DIR/packages/$package/post-configure.sh" >> build.sh
-						fi
-
-						echo "make -j $(nproc)" >> build.sh
-
-						if [ -e "$INIT_DIR/packages/$package/custom-make-install.sh" ]; then
-							echo "$INIT_DIR/packages/$package/custom-make-install.sh" >> build.sh
-						else
-							echo "make -j $(nproc) install" >> build.sh
-						fi
-					elif [ -e ".$NON_CONVENTIONAL_BUILD_PATH/CMakeLists.txt" ] && [ -n "$CMAKE_ARGS" ]; then
-						echo "cmake -DCMAKE_INSTALL_PREFIX=$PREFIX_DIR -DCMAKE_INSTALL_LIBDIR=$PREFIX_DIR/lib $CMAKE_ARGS ..$NON_CONVENTIONAL_BUILD_PATH" >> build.sh
-						echo "make -j $(nproc)" >> build.sh
-
-						if [ -e "$INIT_DIR/packages/$package/custom-make-install.sh" ]; then
-							echo "$INIT_DIR/packages/$package/custom-make-install.sh" >> build.sh
-						else
-							echo "make -j $(nproc) install" >> build.sh
-						fi
-					elif [ -e ".$NON_CONVENTIONAL_BUILD_PATH/meson.build" ] && [ -n "$MESON_ARGS" ]; then
-						echo "meson setup --cross-file=$INIT_DIR/meson-cross-file-$ARCHITECTURE -Dprefix=$PREFIX_DIR $MESON_ARGS ..$NON_CONVENTIONAL_BUILD_PATH" >> build.sh
-
-						if [ -e "$INIT_DIR/packages/$package/post-configure.sh" ]; then
-							echo "$INIT_DIR/packages/$package/post-configure.sh" >> build.sh
-						fi
-
-						echo "ninja -j $(nproc)" >> build.sh
-
-						if [ -e "$INIT_DIR/packages/$package/custom-make-install.sh" ]; then
-							echo "$INIT_DIR/packages/$package/custom-make-install.sh" >> build.sh
-						else
+					if [ -e "$INIT_DIR/packages/$package/custom-make-install.sh" ]; then
+						echo "$INIT_DIR/packages/$package/custom-make-install.sh" >> build.sh
+					else
 							echo "ninja -j $(nproc) install" >> build.sh
 						fi
 					elif [ -e "Configure" ] && [ -n "$OPENSSL_FLAGS" ]; then
@@ -284,49 +277,73 @@ setupPackages()
 							echo "$INIT_DIR/packages/$package/post-configure.sh" >> build.sh
 						fi
 
-						echo "make -j $(nproc)" >> build.sh
-						echo "make -j $(nproc) DESTDIR=\"\$DESTDIR\" install_sw" >> build.sh
-					elif [ -e "Makefile" ]; then
-						echo "cd .." >> build.sh
-						echo "make -j $(nproc)" >> build.sh
-						echo "make -j $(nproc) install" >> build.sh
-						echo "cd build_dir" >> build.sh
-					else
-						echo "Unsupported build system. Stopping..."
-						exit 1
-					fi
-
-					if [ -e "$INIT_DIR/packages/$package/post-install.sh" ]; then
-						echo "$INIT_DIR/packages/$package/post-install.sh" >> build.sh
-					fi
-
-					echo 'echo $? > exit_code' >> build.sh
-					echo "$PKG_VER" >> pkg-ver
-					echo "$CATEGORY" >> category
-
-					chmod +x build.sh
-
-					cd ..
+					echo "make -j $(nproc)" >> build.sh
+					echo "make -j $(nproc) DESTDIR=\"\$DESTDIR\" install_sw" >> build.sh
+				elif [ -e "Makefile" ]; then
+					echo "cd .." >> build.sh
+					echo "make -j $(nproc)" >> build.sh
+					echo "make -j $(nproc) install" >> build.sh
+					echo "cd build_dir" >> build.sh
+				else
+					echo "Unsupported build system. Stopping..."
+					exit 1
 				fi
+
+				if [ -e "$INIT_DIR/packages/$package/post-install.sh" ]; then
+					echo "$INIT_DIR/packages/$package/post-install.sh" >> build.sh
+				fi
+
+				echo 'echo $? > exit_code' >> build.sh
+				echo "$PKG_VER" >> pkg-ver
+				echo "$CATEGORY" >> category
+				git -C "$INIT_DIR" log -1 --format="%H" "packages/$package" > pkg-commit
+
+				chmod +x build.sh
+
+				cd ..
+			fi
+		fi
+	fi
+}
+
+setupPackages()
+{
+	cd "$INIT_DIR/workdir"
+
+	mkdir -p "$PREFIX/include"
+
+	for package in $PACKAGES; do
+		packageFullPath=$(ls "$INIT_DIR/built-pkgs/$package"*"$ARCHITECTURE.rat" 2> /dev/zero)
+		packageCommitFullPath=$(ls "$INIT_DIR/built-pkgs/$package"*"$ARCHITECTURE.commit" 2> /dev/zero)
+
+		if [ -f "$packageFullPath" ]; then
+			packageCommit=$(cat "$packageCommitFullPath")
+			actualCommit=$(git -C "$INIT_DIR" log -1 --format="%H" "packages/$package")
+
+			if [ "$packageCommit" == "$actualCommit" ]; then
+				installBuiltPackage "$packageFullPath"
+			else
+				echo "Warning: Package '$package' already built, But it's source is changed. Removing..."
+				rm -f "$packageFullPath"
+				rm -f "$packageCommitFullPath"
 			fi
 		fi
 	done
+	
+	for package in $PACKAGES; do
+		setupPackage $package
+	done
 }
 
-installBuiltPackagesOnEnv()
+installBuiltPackage()
 {
-	if [ -n "$(ls "$INIT_DIR/built-pkgs")" ]; then
-		echo ""
-		echo "-- Installing All Built Packages on Environment --"
-		echo ""
+	local package=$1
 
-		for package in $(find "$INIT_DIR/built-pkgs" -name "*$ARCHITECTURE*"); do
-			echo "-- Installing '$(basename $package .rat)'"
-			unzip -o "$package" -d / &> /dev/zero
-		done
-
-		echo "-- Done"
-	fi
+	echo "-- Installing '$(basename $package .rat)'"
+	unzip -o "$package" -d "$APP_ROOT_DIR" &> /dev/zero
+	touch $APP_ROOT_DIR/makeSymlinks.sh
+	bash $APP_ROOT_DIR/makeSymlinks.sh
+	rm -f $APP_ROOT_DIR/makeSymlinks.sh
 }
 
 compileAll()
@@ -344,6 +361,31 @@ compileAll()
 
 		pkgVersion="$(cat ../pkg-ver)"
 		category="$(cat ../category)"
+		pkgCommit="$(cat ../pkg-commit)"
+
+		pkgLocalChanged="$(git -C "$INIT_DIR" status --short "packages/$package")"
+
+		if [ -n "$pkgLocalChanged" ]; then
+			echo "Source Files for Package '$package' was changed. Reconfiguring..."
+			echo ""
+
+			cd "$INIT_DIR/workdir"
+
+			rm -rf "$package"
+
+			setupPackage $package
+
+			mkdir -p "$INIT_DIR/workdir/$package/build_dir"
+			mkdir -p "$INIT_DIR/workdir/$package/destdir-pkg"
+
+			cd "$INIT_DIR/workdir/$package/build_dir"
+
+			touch exit_code
+
+			pkgVersion="$(cat ../pkg-ver)"
+			category="$(cat ../category)"
+			pkgCommit="$(cat ../pkg-commit)"
+		fi
 
 		if [ -f "$INIT_DIR/built-pkgs/$package-$pkgVersion-$ARCHITECTURE.rat" ]; then
 			echo "-- Package '$package' already built."
@@ -365,7 +407,9 @@ compileAll()
 
 			cp -rf "$INIT_DIR/workdir/$package/destdir-pkg/data/data/com.micewine.emu/"* "/data/data/com.micewine.emu"
 
-   			find "$INIT_DIR/workdir/$package/destdir-pkg" -type f > "$INIT_DIR/logs/$package-package-files.txt"
+			find "$INIT_DIR/workdir/$package/destdir-pkg" -type f > "$INIT_DIR/logs/$package-package-files.txt"
+
+			echo $pkgCommit > "$INIT_DIR/built-pkgs/$package-$pkgVersion-$ARCHITECTURE.commit"
 
 			$INIT_DIR/create-rat-pkg.sh "$package" "$ARCHITECTURE" "$pkgVersion" "$CATEGORY" "$INIT_DIR/workdir/$package/destdir-pkg" "$INIT_DIR/built-pkgs"
 		fi
@@ -389,7 +433,8 @@ showHelp()
 	echo "	aarch64"
 }
 
-export PREFIX=/data/data/com.micewine.emu/files/usr
+export APP_ROOT_DIR=/data/data/com.micewine.emu
+export PREFIX=$APP_ROOT_DIR/files/usr
 
 if [ $# -lt 1 ]; then
 	showHelp
@@ -453,7 +498,6 @@ export INIT_PATH="$PATH"
 
 mkdir -p $INIT_DIR/{workdir,logs,cache,built-pkgs}
 
-installBuiltPackagesOnEnv
 setupBuildEnv 32 $ARCHITECTURE
 setupPackages
 

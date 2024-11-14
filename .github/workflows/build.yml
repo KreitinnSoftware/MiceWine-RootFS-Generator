@@ -20,7 +20,7 @@ jobs:
         pip3 install mako meson ninja docutils
         sudo ln -sf ~/.local/bin/meson /usr/bin/meson
 
-    - name: "Setup Basic Android x86_64 Runtime Environment"
+    - name: "Setup Basic Android (x86_64) Runtime Environment"
       run: |
         git clone https://github.com/termux/termux-docker.git
         sudo cp -rf termux-docker/system/x86 /system
@@ -39,7 +39,13 @@ jobs:
         ./create-rootfs.sh x86_64
         mv "MiceWine-RootFS-($(git rev-parse --short HEAD))-x86_64.rat" /home/runner/MiceWine-RootFS-x86_64.rat
 
-    - name: "Clean x86_64 RootFS"
+    - name: "Save All (x86_64) Rat Packages (for next build be faster)"
+      run: |
+        cd built-pkgs
+        7z a /home/runner/MiceWine-Packages-x86_64.zip
+        cd ..
+
+    - name: "Clean (x86_64) RootFS"
       run: |
         sudo rm -rf /data/data/com.micewine.emu/files/usr workdir rootfs
 
@@ -48,6 +54,12 @@ jobs:
         ./build-all.sh aarch64
         cd logs
         7z a /home/runner/MiceWine-RootFS-aarch64-Logs.zip
+        cd ..
+
+    - name: "Save All (aarch64) Rat Packages (for next build be faster)"
+      run: |
+        cd built-pkgs
+        7z a /home/runner/MiceWine-Packages-aarch64.zip
         cd ..
 
     - name: "Create RootFS File (aarch64)"
@@ -66,5 +78,7 @@ jobs:
         files: |
             /home/runner/MiceWine-RootFS-aarch64.rat
             /home/runner/MiceWine-RootFS-aarch64-Logs.zip
+            /home/runner/MiceWine-Packages-aarch64.zip
             /home/runner/MiceWine-RootFS-x86_64.rat
             /home/runner/MiceWine-RootFS-x86_64-Logs.zip
+            /home/runner/MiceWine-Packages-x86_64.zip
