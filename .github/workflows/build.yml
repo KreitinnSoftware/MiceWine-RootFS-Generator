@@ -26,24 +26,18 @@ jobs:
         sudo cp -rf termux-docker/system/x86 /system
         sudo chown -R $(whoami):$(whoami) /system
         sudo chmod 755 -R /system
-    
+
     - name: "Start Building (x86_64)"
       run: |
         ./build-all.sh x86_64
         cd logs
         7z a /home/runner/MiceWine-RootFS-x86_64-Logs.zip
         cd ..
-        
+
     - name: "Create RootFS File (x86_64)"
       run: |
         ./create-rootfs.sh x86_64
         mv "MiceWine-RootFS-($(git rev-parse --short HEAD))-x86_64.rat" /home/runner/MiceWine-RootFS-x86_64.rat
-
-    - name: "Save All (x86_64) Rat Packages (for next build be faster)"
-      run: |
-        cd built-pkgs
-        7z a /home/runner/MiceWine-Packages-x86_64.zip
-        cd ..
 
     - name: "Clean (x86_64) RootFS"
       run: |
@@ -56,10 +50,10 @@ jobs:
         7z a /home/runner/MiceWine-RootFS-aarch64-Logs.zip
         cd ..
 
-    - name: "Save All (aarch64) Rat Packages (for next build be faster)"
+    - name: "Save All Rat Packages (for next build be faster)"
       run: |
         cd built-pkgs
-        7z a /home/runner/MiceWine-Packages-aarch64.zip
+        7z a /home/runner/MiceWine-Packages.zip
         cd ..
 
     - name: "Create RootFS File (aarch64)"
@@ -69,7 +63,7 @@ jobs:
 
     - name: "Get Short SHA"
       run: echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-          
+
     - name: "Create Release"
       uses: softprops/action-gh-release@v2
       with:
@@ -78,7 +72,7 @@ jobs:
         files: |
             /home/runner/MiceWine-RootFS-aarch64.rat
             /home/runner/MiceWine-RootFS-aarch64-Logs.zip
-            /home/runner/MiceWine-Packages-aarch64.zip
+            /home/runner/MiceWine-Packages.zip
             /home/runner/MiceWine-RootFS-x86_64.rat
             /home/runner/MiceWine-RootFS-x86_64-Logs.zip
-            /home/runner/MiceWine-Packages-x86_64.zip
+
