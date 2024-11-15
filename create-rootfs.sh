@@ -20,7 +20,7 @@ fi
 
 export ROOTFS_PKGS=$(find "$INIT_DIR/built-pkgs" -name "*$1*.rat" | sort)
 export WINE_PKG=$(find "$INIT_DIR/built-pkgs" -name "*wine*.rat")
-export WINE_UTILS_PKG=$(find "$INIT_DIR/Wine-Utils-($GIT_SHORT_SHA)-any.rat")
+export WINE_UTILS_PKG="$INIT_DIR/Wine-Utils-($GIT_SHORT_SHA)-any.rat"
 
 if [ ! -f "$WINE_UTILS_PKG" ]; then
   ./download-external-dependencies.sh
