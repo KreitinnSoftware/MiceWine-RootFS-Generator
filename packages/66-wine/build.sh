@@ -1,6 +1,6 @@
 PKG_VER=9.0-esync
 GIT_URL=https://github.com/KreitinnSoftware/wine
-GIT_COMMIT=wine-9.0
+GIT_COMMIT=3850cee2f69a568ed4c31f462c82b9e3b2f5b342
 BLACKLIST_ARCHITECTURE=aarch64
 HOST_BUILD_CONFIGURE_ARGS="--enable-win64 --without-x"
 HOST_BUILD_FOLDER="$INIT_DIR/workdir/$package/wine-tools"
