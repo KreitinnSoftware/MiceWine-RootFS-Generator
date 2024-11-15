@@ -296,7 +296,7 @@ setupPackage()
 				echo 'echo $? > exit_code' >> build.sh
 				echo "$PKG_VER" >> pkg-ver
 				echo "$CATEGORY" >> category
-				git -C "$INIT_DIR" log -1 --format="%H" -- "packages/$package/" > pkg-commit
+				git -C "$INIT_DIR" log -1 --format="%H" -- "packages/$package" > pkg-commit
 
 				chmod +x build.sh
 
@@ -318,7 +318,7 @@ setupPackages()
 
 		if [ -f "$packageFullPath" ]; then
 			packageCommit=$(cat "$packageCommitFullPath")
-			actualCommit=$(git -C "$INIT_DIR" log -1 --format="%H" "packages/$package")
+			actualCommit=$(git -C "$INIT_DIR" log -1 --format="%H" -- "packages/$package")
 
 			if [ "$packageCommit" == "$actualCommit" ]; then
 				installBuiltPackage "$packageFullPath"

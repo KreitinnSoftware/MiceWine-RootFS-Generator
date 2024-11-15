@@ -12,7 +12,10 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-    - uses: actions/checkout@v4
+    - name: "Clone Repository"
+      run: |
+        git clone https://github.com/KreitinnSoftware/MiceWine-RootFS-Generator
+
     - name: "Environment Preparation"
       run: |
         sudo apt update
@@ -29,45 +32,52 @@ jobs:
 
     - name: "Download Latest Release Rat Packages"
       run: |
+        cd MiceWine-RootFS-Generator
         curl -LO# $(curl -s https://api.github.com/repos/KreitinnSoftware/MiceWine-RootFS-Generator/releases/latest | grep "MiceWine-Packages.zip" | grep "browser_download_url" | sed "s/\"browser_download_url\"://g" | sed "s/\"//g")
         unzip -o MiceWine-Packages.zip -d built-pkgs
 
     - name: "Start Building (x86_64)"
       run: |
+        cd MiceWine-RootFS-Generator
         ./build-all.sh x86_64
         cd logs
         7z a /home/runner/MiceWine-RootFS-x86_64-Logs.zip
-        cd ..
 
     - name: "Create RootFS File (x86_64)"
       run: |
+        cd MiceWine-RootFS-Generator
         ./create-rootfs.sh x86_64
         mv "MiceWine-RootFS-($(git rev-parse --short HEAD))-x86_64.rat" /home/runner/MiceWine-RootFS-x86_64.rat
 
     - name: "Clean (x86_64) RootFS"
       run: |
+        cd MiceWine-RootFS-Generator
         sudo rm -rf /data/data/com.micewine.emu/files/usr workdir rootfs
 
     - name: "Start Building (aarch64)"
       run: |
+        cd MiceWine-RootFS-Generator
         ./build-all.sh aarch64
         cd logs
         7z a /home/runner/MiceWine-RootFS-aarch64-Logs.zip
-        cd ..
 
     - name: "Save All Rat Packages (for next build be faster)"
       run: |
+        cd MiceWine-RootFS-Generator
         cd built-pkgs
         7z a /home/runner/MiceWine-Packages.zip
         cd ..
 
     - name: "Create RootFS File (aarch64)"
       run: |
+        cd MiceWine-RootFS-Generator
         ./create-rootfs.sh aarch64
         mv "MiceWine-RootFS-($(git rev-parse --short HEAD))-aarch64.rat" /home/runner/MiceWine-RootFS-aarch64.rat
 
     - name: "Get Short SHA"
-      run: echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+      run: |
+        cd MiceWine-RootFS-Generator
+        echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
     - name: "Create Release"
       uses: softprops/action-gh-release@v2
