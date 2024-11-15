@@ -24,7 +24,7 @@ export WINE_UTILS_PKG=$(find "$INIT_DIR/Wine-Utils-($GIT_SHORT_SHA)-any.rat")
 
 if [ ! -f "$WINE_UTILS_PKG" ]; then
   ./download-external-dependencies.sh
-  ./create-rat-pkg.sh "Wine-Utils" "any" "($GIT_SHORT_SHA)" "wine-utils" "$INIT_DIR/rootfs" "$INIT_DIR"
+  ./create-rat-pkg.sh "Wine-Utils" "any" "($GIT_SHORT_SHA)" "wine-utils" "$INIT_DIR/wine-utils" "$INIT_DIR"
 fi
 
 ROOTFS_PKGS+=" $WINE_UTILS_PKG"

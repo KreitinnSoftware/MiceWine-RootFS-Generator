@@ -8,13 +8,17 @@ dxvkDownload() {
 
 		curl -# -L -O "https://github.com/doitsujin/dxvk/releases/download/v$1/dxvk-$1.tar.gz"
 
-		mkdir -p "DXVK-$1"
+		if [ $? != 0 ]; then
+			echo "Error on Downloading DXVK-$1-gplasync."
+		else
+			mkdir -p "DXVK-$1"
 
-		tar -xf "dxvk-$1.tar.gz"
+			tar -xf "dxvk-$1.tar.gz"
 
-		mv "dxvk"*"/x32" "dxvk"*"/x64" "DXVK-$1"
+			mv "dxvk"*"/x32" "dxvk"*"/x64" "DXVK-$1"
 
-		rm -rf "dxvk"*
+			rm -rf "dxvk"*
+		fi
 
 		cd "$OLDPWD"
 	fi
@@ -30,13 +34,17 @@ dxvkAsyncDownload() {
 
 		curl -# -L -O "https://github.com/Sporif/dxvk-async/releases/download/$1/dxvk-async-$1.tar.gz"
 
-		mkdir -p "DXVK-$1-async"
+		if [ $? != 0 ]; then
+			echo "Error on Downloading DXVK-$1-async."
+		else
+			mkdir -p "DXVK-$1-async"
 
-		tar -xf "dxvk-async-$1.tar.gz"
+			tar -xf "dxvk-async-$1.tar.gz"
 
-		mv "dxvk"*"/x32" "dxvk"*"/x64" "DXVK-$1-async"
+			mv "dxvk"*"/x32" "dxvk"*"/x64" "DXVK-$1-async"
 
-		rm -rf "dxvk"*
+			rm -rf "dxvk"*
+		fi
 
 		cd "$OLDPWD"
 	fi
@@ -52,13 +60,17 @@ dxvkGplAsyncDownload() {
 
 		curl -# -L -O "https://gitlab.com/Ph42oN/dxvk-gplasync/-/raw/main/releases/dxvk-gplasync-v$1.tar.gz?ref_type=heads&inline=false"
 
-		mkdir -p "DXVK-$1-gplasync"
+		if [ $? != 0 ]; then
+			echo "Error on Downloading DXVK-$1-gplasync."
+		else
+			mkdir -p "DXVK-$1-gplasync"
 
-		tar -xf "dxvk-gplasync-v$1.tar.gz"
+			tar -xf "dxvk-gplasync-v$1.tar.gz"
 
-		mv "dxvk"*"/x32" "dxvk"*"/x64" "DXVK-$1-gplasync"
+			mv "dxvk"*"/x32" "dxvk"*"/x64" "DXVK-$1-gplasync"
 
-		rm -rf "dxvk"*
+			rm -rf "dxvk"*
+		fi
 
 		cd "$OLDPWD"
 	fi
@@ -75,21 +87,25 @@ wined3dDownload() {
 		curl -# -L -O "https://downloads.fdossena.com/Projects/WineD3D/Builds/WineD3DForWindows_$1.zip"
 		curl -# -L -O "https://downloads.fdossena.com/Projects/WineD3D/Builds/WineD3DForWindows_$1-x86_64.zip"
 
-		mkdir -p "WineD3D-($1)/x64"
-		mkdir -p "WineD3D-($1)/x32"
+		if [ $? != 0 ]; then
+			echo "Error on Downloading WineD3D-($1)."
+		else
+			mkdir -p "WineD3D-($1)/x64"
+			mkdir -p "WineD3D-($1)/x32"
 
-		7z x "WineD3D*$1-x86_64.zip" -o"wined3d-x64" -aoa &> /dev/zero
-		7z x "WineD3D*$1.zip" -o"wined3d-x32" -aoa &> /dev/zero
+			7z x "WineD3D*$1-x86_64.zip" -o"wined3d-x64" -aoa &> /dev/zero
+			7z x "WineD3D*$1.zip" -o"wined3d-x32" -aoa &> /dev/zero
 
-		for i in $(find "wined3d-x64" -name "*.dll"); do
-			cp -f "$i" "WineD3D-($1)/x64"
-		done
+			for i in $(find "wined3d-x64" -name "*.dll"); do
+				cp -f "$i" "WineD3D-($1)/x64"
+			done
 
-		for i in $(find "wined3d-x32" -name "*.dll"); do
-			cp -f "$i" "WineD3D-($1)/x32"
-		done
+			for i in $(find "wined3d-x32" -name "*.dll"); do
+				cp -f "$i" "WineD3D-($1)/x32"
+			done
 
-		rm -rf "wined3d"* *".zip"
+			rm -rf "wined3d"* *".zip"
+		fi
 
 		cd "$OLDPWD"
 	fi
@@ -105,14 +121,18 @@ vkd3dDownload() {
 
 		curl -# -L -O "https://github.com/HansKristian-Work/vkd3d-proton/releases/download/v$1/vkd3d-proton-$1.tar.zst"
 
-		mkdir -p "VKD3D-$1"
+		if [ $? != 0 ]; then
+			echo "Error on Downloading VKD3D-$1."
+		else
+			mkdir -p "VKD3D-$1"
 
-		tar -xf "vkd3d-proton-$1.tar.zst"
+			tar -xf "vkd3d-proton-$1.tar.zst"
 
-		mv "vkd3d"*"/x64" "VKD3D-$1/"
-		mv "vkd3d"*"/x86" "VKD3D-$1/x32"
+			mv "vkd3d"*"/x64" "VKD3D-$1/"
+			mv "vkd3d"*"/x86" "VKD3D-$1/x32"
 
-		rm -rf "vkd3d"*
+			rm -rf "vkd3d"*
+		fi
 
 		cd "$OLDPWD"
 	fi
@@ -143,13 +163,13 @@ wineMonoGeckoDownload() {
 }
 
 export INIT_DIR="$PWD"
-export WORKDIR="$PWD/rootfs/files"
+export WORKDIR="$PWD/wine-utils/files"
 
 mkdir -p "$WORKDIR"
 
 cd "$WORKDIR"
 
-wineMonoGeckoDownload 9.3.0 2.47.4
+wineMonoGeckoDownload 8.1.0 2.47.4
 
 mkdir -p "home" "wine-utils"
 
