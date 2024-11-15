@@ -296,7 +296,7 @@ setupPackage()
 				echo 'echo $? > exit_code' >> build.sh
 				echo "$PKG_VER" >> pkg-ver
 				echo "$CATEGORY" >> category
-				git -C "$INIT_DIR" log -1 --format="%H" "packages/$package" > pkg-commit
+				git -C "$INIT_DIR" log -1 --format="%H" -- "packages/$package/" > pkg-commit
 
 				chmod +x build.sh
 

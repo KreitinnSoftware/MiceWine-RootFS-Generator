@@ -27,6 +27,11 @@ jobs:
         sudo chown -R $(whoami):$(whoami) /system
         sudo chmod 755 -R /system
 
+    - name: "Download Latest Release Rat Packages"
+      run: |
+        curl -LO# $(curl -s https://api.github.com/repos/KreitinnSoftware/MiceWine-RootFS-Generator/releases/latest | grep "MiceWine-Packages.zip" | grep "browser_download_url" | sed "s/\"browser_download_url\"://g" | sed "s/\"//g")
+        unzip -o MiceWine-Packages.zip -d built-pkgs
+
     - name: "Start Building (x86_64)"
       run: |
         ./build-all.sh x86_64

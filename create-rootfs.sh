@@ -18,13 +18,16 @@ if [ ! -d "$INIT_DIR/built-pkgs" ]; then
   exit 0
 fi
 
-export ROOTFS_PKGS=$(ls "$INIT_DIR/built-pkgs/"*"$1"*)
-export WINE_PKG=$(find "$INIT_DIR/built-pkgs" | grep "wine")
+export ROOTFS_PKGS=$(find "$INIT_DIR/built-pkgs" -name "*$1*.rat" | sort)
+export WINE_PKG=$(find "$INIT_DIR/built-pkgs" -name "*wine*.rat")
+export WINE_UTILS_PKG=$(find "$INIT_DIR/Wine-Utils-($GIT_SHORT_SHA)-any.rat")
 
-./download-external-dependencies.sh
-./create-rat-pkg.sh "Wine-Utils" "$1" "($GIT_SHORT_SHA)" "wine-utils" "$INIT_DIR/rootfs" "$INIT_DIR"
+if [ ! -f "$WINE_UTILS_PKG" ]; then
+  ./download-external-dependencies.sh
+  ./create-rat-pkg.sh "Wine-Utils" "any" "($GIT_SHORT_SHA)" "wine-utils" "$INIT_DIR/rootfs" "$INIT_DIR"
+fi
 
-ROOTFS_PKGS+=" $INIT_DIR/Wine-Utils-($GIT_SHORT_SHA)-$1.rat"
+ROOTFS_PKGS+=" $WINE_UTILS_PKG"
 
 if [ -f "$WINE_PKG" ]; then
   ROOTFS_PKGS+=" $WINE_PKG"
