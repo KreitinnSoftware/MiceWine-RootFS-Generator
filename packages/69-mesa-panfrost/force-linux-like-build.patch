@@ -1,0 +1,27 @@
+diff --git a/include/vulkan/vk_android_native_buffer.h b/include/vulkan/vk_android_native_buffer.h
+index 52d7a94..da35ae6 100644
+--- a/include/vulkan/vk_android_native_buffer.h
++++ b/include/vulkan/vk_android_native_buffer.h
+@@ -17,7 +17,7 @@
+ #define __VK_ANDROID_NATIVE_BUFFER_H__
+ 
+ /* MESA: A hack to avoid #ifdefs in driver code. */
+-#ifdef ANDROID
++#if 0
+ #include <cutils/native_handle.h>
+ #include <vulkan/vulkan.h>
+ 
+diff --git a/src/util/detect_os.h b/src/util/detect_os.h
+index 6506948..276ef30 100644
+--- a/src/util/detect_os.h
++++ b/src/util/detect_os.h
+@@ -24,9 +24,6 @@
+  * Android defines __linux__, so DETECT_OS_LINUX and DETECT_OS_UNIX will
+  * also be defined.
+  */
+-#if defined(ANDROID)
+-#define DETECT_OS_ANDROID 1
+-#endif
+ 
+ #if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+ #define DETECT_OS_FREEBSD 1
