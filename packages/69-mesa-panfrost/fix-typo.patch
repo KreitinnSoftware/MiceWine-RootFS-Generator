@@ -1,0 +1,13 @@
+diff --git a/src/panfrost/lib/pan_props.c b/src/panfrost/lib/pan_props.c
+index 2bc7733..8d7b5a8 100644
+--- a/src/panfrost/lib/pan_props.c
++++ b/src/panfrost/lib/pan_props.c
+@@ -87,7 +87,7 @@ const struct panfrost_model panfrost_unknown_model = {
+    .min_rev_anisotropic = NO_ANISO, 
+    .tilebuffer_size = 8192, 
+    .quirks = {}, 
+-}
++};
+ 
+ #undef NO_ANISO
+ #undef HAS_ANISO
