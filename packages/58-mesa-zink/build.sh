@@ -1,4 +1,7 @@
 PKG_VER=[gss]
+PKG_CATEGORY="OpenGLDriver"
+PKG_PRETTY_NAME="Mesa Zink Driver"
+
 GIT_URL=https://gitlab.freedesktop.org/mesa/mesa
 GIT_COMMIT=ed64ecc
 LDFLAGS="-L$PREFIX/lib -landroid-shmem -lxcb-xfixes"

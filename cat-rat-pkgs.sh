@@ -45,7 +45,7 @@ done
 
 mv new_makeSymlinks.sh makeSymlinks.sh
 
-$INIT_DIR/create-rat-pkg.sh "$1" "$4" "$2" "$3" "$PWD" "$INIT_DIR"
+$INIT_DIR/create-rat-pkg.sh "$1" "MiceWine RootFS" "$4" "$2" "$3" "$PWD" "$INIT_DIR"
 
 cd "$INIT_DIR"
 

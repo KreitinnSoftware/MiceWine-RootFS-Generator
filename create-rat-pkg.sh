@@ -2,7 +2,7 @@
 
 showHelp()
 {
-	echo "Usage: $0 [package name] [architecture] [version] [category] [destdir-pkg] [output folder]"
+	echo "Usage: $0 [package name] [package pretty name] [architecture] [version] [category] [destdir-pkg] [output folder]"
 	echo ""
 }
 
@@ -30,29 +30,37 @@ symlink2sh() {
 }
 
 export INIT_DIR=$PWD
-export APP_ROOT_DIR=/data/data/com.micewine.emu/
+export APP_ROOT_DIR=/data/data/com.micewine.emu
 
-if [ $# -lt 6 ]; then
+export PACKAGE_NAME=$1
+export PACKAGE_PRETTY_NAME=$2
+export PACKAGE_ARCHITECTURE=$3
+export PACKAGE_VERSION=$4
+export PACKAGE_CATEGORY=$5
+export DESTDIR_PKG=$6
+export OUTDIR=$7
+
+if [ $# -lt 7 ]; then
 	showHelp
 	exit 0
 fi
 
 echo ""
-echo "Creating Package '$1-$3-$2.rat'..."
+echo "Creating Package '$PACKAGE_NAME-$PACKAGE_VERSION-$PACKAGE_ARCHITECTURE.rat'..."
 
-export WORKDIR="$5"
+export WORKDIR="$DESTDIR_PKG"
 
-if [ -d "$5/data/" ]; then
-	WORKDIR="$5/data/data/com.micewine.emu/"
+if [ -d "$DESTDIR_PKG/data/" ]; then
+	WORKDIR="$DESTDIR_PKG/data/data/com.micewine.emu/"
 fi
 
 cd $WORKDIR
 
-echo "name=$1" > pkg-header
-echo "category=$4" >> pkg-header
-echo "version=$3" >> pkg-header
-echo "architecture=$2" >> pkg-header
+echo "name=$PACKAGE_PRETTY_NAME" > pkg-header
+echo "category=$PACKAGE_CATEGORY" >> pkg-header
+echo "version=$PACKAGE_VERSION" >> pkg-header
+echo "architecture=$PACKAGE_ARCHITECTURE" >> pkg-header
 
 symlink2sh "files/" 
 
-7z -tzip -mx=5 a "$6/$1-$3-$2.rat" &> /dev/zero
+7z -tzip -mx=5 a "$OUTDIR/$PACKAGE_NAME-$PACKAGE_VERSION-$PACKAGE_ARCHITECTURE.rat" &> /dev/zero

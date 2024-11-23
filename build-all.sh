@@ -19,25 +19,25 @@ setupBuildEnv()
 		echo ""
 	fi
 
-	if [ ! -d "$INIT_DIR/cache/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64" ]; then
+	if [ ! -d "$INIT_DIR/cache/llvm-mingw-20241119-ucrt-ubuntu-20.04-x86_64" ]; then
 		echo "Downloading llvm-mingw..."
 
-		curl --output "$INIT_DIR/cache/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64.tar.xz" -# -L https://github.com/mstorsjo/llvm-mingw/releases/download/20240619/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64.tar.xz
+		curl --output "$INIT_DIR/cache/llvm-mingw-20241119-ucrt-ubuntu-20.04-x86_64.tar.xz" -# -L https://github.com/mstorsjo/llvm-mingw/releases/download/20241119/llvm-mingw-20241119-ucrt-ubuntu-20.04-x86_64.tar.xz
 
 		echo "Unpacking llvm-mingw..."
 
 		cd "$INIT_DIR/cache"
 
-		tar -xf "$INIT_DIR/cache/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64.tar.xz"
+		tar -xf "$INIT_DIR/cache/llvm-mingw-20241119-ucrt-ubuntu-20.04-x86_64.tar.xz"
 
 		cd "$OLDPWD"
 
-		rm -f "$INIT_DIR/cache/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64.tar.xz"
+		rm -f "$INIT_DIR/cache/llvm-mingw-20241119-ucrt-ubuntu-20.04-x86_64.tar.xz"
 
 		echo ""
 	fi
 
-	export PATH=$INIT_PATH:$INIT_DIR/cache/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin:$INIT_DIR/cache/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64/bin
+	export PATH=$INIT_PATH:$INIT_DIR/cache/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin:$INIT_DIR/cache/llvm-mingw-20241119-ucrt-ubuntu-20.04-x86_64/bin
 	export ANDROID_SDK="$1"
 	export ARCH="$2"
 
@@ -146,7 +146,13 @@ gitDownload()
 
 setupPackage()
 {
-	unset NON_CONVENTIONAL_BUILD_PATH CATEGORY PKG_VER GIT_URL SRC_URL HOST_BUILD_FOLDER HOST_BUILD_MAKE HOST_BUILD_CONFIGURE_ARGS HOST_BUILD_CFLAGS HOST_BUILD_CXXFLAGS HOST_BUILD_LDFLAGS CONFIGURE_ARGS MESON_ARGS CMAKE_ARGS RUN_POST_APPLY_PATCH RUN_POST_BUILD RUN_POST_CONFIGURE CFLAGS CPPFLAGS LDFLAGS LIBS OVERRIDE_PREFIX OVERRIDE_PKG_CONFIG_PATH GIT_COMMIT BLACKLIST_ARCHITECTURE BUILD_IN_SRC
+	unset PKG_VER PKG_CATEGORY PKG_PRETTY_NAME \
+		GIT_URL SRC_URL GIT_COMMIT \
+		HOST_BUILD_FOLDER HOST_BUILD_MAKE HOST_BUILD_CONFIGURE_ARGS HOST_BUILD_CFLAGS HOST_BUILD_CXXFLAGS HOST_BUILD_LDFLAGS \
+		CONFIGURE_ARGS MESON_ARGS CMAKE_ARGS \
+		RUN_POST_APPLY_PATCH RUN_POST_BUILD RUN_POST_CONFIGURE \
+		CFLAGS CPPFLAGS LDFLAGS LIBS OVERRIDE_PREFIX OVERRIDE_PKG_CONFIG_PATH \
+		BLACKLIST_ARCHITECTURE BUILD_IN_SRC
 
 	package=$1
 
@@ -247,8 +253,8 @@ setupPackage()
 					else
 						echo "make -j $(nproc) install" >> build.sh
 					fi
-				elif [ -e ".$NON_CONVENTIONAL_BUILD_PATH/CMakeLists.txt" ] && [ -n "$CMAKE_ARGS" ]; then
-					echo "cmake -DCMAKE_INSTALL_PREFIX=$PREFIX_DIR -DCMAKE_INSTALL_LIBDIR=$PREFIX_DIR/lib $CMAKE_ARGS ..$NON_CONVENTIONAL_BUILD_PATH" >> build.sh
+				elif [ -e "./CMakeLists.txt" ] && [ -n "$CMAKE_ARGS" ]; then
+					echo "cmake -DCMAKE_INSTALL_PREFIX=$PREFIX_DIR -DCMAKE_INSTALL_LIBDIR=$PREFIX_DIR/lib $CMAKE_ARGS .." >> build.sh
 					echo "make -j $(nproc)" >> build.sh
 
 					if [ -e "$INIT_DIR/packages/$package/custom-make-install.sh" ]; then
@@ -256,8 +262,8 @@ setupPackage()
 					else
 						echo "make -j $(nproc) install" >> build.sh
 					fi
-				elif [ -e ".$NON_CONVENTIONAL_BUILD_PATH/meson.build" ] && [ -n "$MESON_ARGS" ]; then
-					echo "meson setup --cross-file=$INIT_DIR/meson-cross-file-$ARCHITECTURE -Dprefix=$PREFIX_DIR $MESON_ARGS ..$NON_CONVENTIONAL_BUILD_PATH" >> build.sh
+				elif [ -e "./meson.build" ] && [ -n "$MESON_ARGS" ]; then
+					echo "meson setup --cross-file=$INIT_DIR/meson-cross-file-$ARCHITECTURE -Dprefix=$PREFIX_DIR $MESON_ARGS .." >> build.sh
 
 					if [ -e "$INIT_DIR/packages/$package/post-configure.sh" ]; then
 						echo "$INIT_DIR/packages/$package/post-configure.sh" >> build.sh
@@ -294,8 +300,11 @@ setupPackage()
 				fi
 
 				echo 'echo $? > exit_code' >> build.sh
+
+				echo "$PKG_PRETTY_NAME" >> pkg-pretty-name
 				echo "$PKG_VER" >> pkg-ver
-				echo "$CATEGORY" >> category
+				echo "$PKG_CATEGORY" >> pkg-category
+
 				git -C "$INIT_DIR" log -1 --format="%H" -- "packages/$package" > pkg-commit
 
 				chmod +x build.sh
@@ -352,16 +361,19 @@ compileAll()
 	echo "-- Starting Building --"
 
 	for package in $(ls "$INIT_DIR/workdir"); do
-		mkdir -p "$INIT_DIR/workdir/$package/build_dir"
-		mkdir -p "$INIT_DIR/workdir/$package/destdir-pkg"
+		local packageBuildDir="$INIT_DIR/workdir/$package/build_dir"
+		local packageDestDirPkg="$INIT_DIR/workdir/$package/destdir-pkg"
+		mkdir -p "$packageBuildDir"
+		mkdir -p "$packageDestDirPkg"
 
 		cd "$INIT_DIR/workdir/$package/build_dir"
 
 		touch exit_code
 
 		pkgVersion="$(cat ../pkg-ver)"
-		category="$(cat ../category)"
+		pkgCategory="$(cat ../pkg-category)"
 		pkgCommit="$(cat ../pkg-commit)"
+		pkgPrettyName="$(cat ../pkg-pretty-name)"
 
 		pkgLocalChanged="$(git -C "$INIT_DIR" status --short "packages/$package")"
 
@@ -375,15 +387,15 @@ compileAll()
 
 			setupPackage $package
 
-			mkdir -p "$INIT_DIR/workdir/$package/build_dir"
-			mkdir -p "$INIT_DIR/workdir/$package/destdir-pkg"
+			mkdir -p "$packageBuildDir"
+			mkdir -p "$packageDestDirPkg"
 
-			cd "$INIT_DIR/workdir/$package/build_dir"
+			cd "$packageBuildDir"
 
 			touch exit_code
 
 			pkgVersion="$(cat ../pkg-ver)"
-			category="$(cat ../category)"
+			pkgCategory="$(cat ../pkg-category)"
 			pkgCommit="$(cat ../pkg-commit)"
 		fi
 
@@ -400,18 +412,22 @@ compileAll()
 				exit 0
 			fi
 
-			if [ ! -d "$INIT_DIR/workdir/$package/destdir-pkg/data/data/com.micewine.emu" ]; then
+			if [ ! -d "$packageDestDirPkg/data/data/com.micewine.emu" ]; then
 				echo "- Package: '"$package"' failed to compile. Check logs"
 				exit 0
 			fi
 
-			cp -rf "$INIT_DIR/workdir/$package/destdir-pkg/data/data/com.micewine.emu/"* "/data/data/com.micewine.emu"
+			cp -rf "$packageDestDirPkg/data/data/com.micewine.emu/"* "/data/data/com.micewine.emu"
 
-			find "$INIT_DIR/workdir/$package/destdir-pkg" -type f > "$INIT_DIR/logs/$package-package-files.txt"
+			find "$packageDestDirPkg" -type f > "$INIT_DIR/logs/$package-package-files.txt"
 
 			echo $pkgCommit > "$INIT_DIR/built-pkgs/$package-$pkgVersion-$ARCHITECTURE.commit"
 
-			$INIT_DIR/create-rat-pkg.sh "$package" "$ARCHITECTURE" "$pkgVersion" "$CATEGORY" "$INIT_DIR/workdir/$package/destdir-pkg" "$INIT_DIR/built-pkgs"
+			if [ ! -n "$pkgPrettyName" ]; then
+				pkgPrettyName=$package
+			fi
+
+			$INIT_DIR/create-rat-pkg.sh "$package" "$pkgPrettyName" "$ARCHITECTURE" "$pkgVersion" "$pkgCategory" "$packageDestDirPkg" "$INIT_DIR/built-pkgs"
 		fi
 	done
 }
@@ -509,4 +525,4 @@ mkdir -p "$INIT_DIR/cache/libc++_shared/files/usr/lib"
 
 cp "$INIT_DIR/cache/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/$ARCHITECTURE-linux-android/libc++_shared.so" "$INIT_DIR/cache/libc++_shared/files/usr/lib"
 
-./create-rat-pkg.sh "libc++_shared" "$ARCHITECTURE" "1.0" "library" "$INIT_DIR/cache/libc++_shared" "$INIT_DIR/built-pkgs"
+./create-rat-pkg.sh "libc++_shared" "Android C++ Library" "$ARCHITECTURE" "1.0" "library" "$INIT_DIR/cache/libc++_shared" "$INIT_DIR/built-pkgs"
