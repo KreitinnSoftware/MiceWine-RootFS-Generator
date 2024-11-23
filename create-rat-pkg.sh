@@ -30,7 +30,7 @@ symlink2sh() {
 }
 
 export INIT_DIR=$PWD
-export APP_ROOT_DIR=/data/data/com.micewine.emu
+export APP_ROOT_DIR=/data/data/com.micewine.emu/
 
 export PACKAGE_NAME=$1
 export PACKAGE_PRETTY_NAME=$2
