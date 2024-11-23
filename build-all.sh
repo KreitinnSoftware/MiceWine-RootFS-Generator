@@ -19,25 +19,25 @@ setupBuildEnv()
 		echo ""
 	fi
 
-	if [ ! -d "$INIT_DIR/cache/llvm-mingw-20241119-ucrt-ubuntu-20.04-x86_64" ]; then
+	if [ ! -d "$INIT_DIR/cache/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64" ]; then
 		echo "Downloading llvm-mingw..."
 
-		curl --output "$INIT_DIR/cache/llvm-mingw-20241119-ucrt-ubuntu-20.04-x86_64.tar.xz" -# -L https://github.com/mstorsjo/llvm-mingw/releases/download/20241119/llvm-mingw-20241119-ucrt-ubuntu-20.04-x86_64.tar.xz
+		curl --output "$INIT_DIR/cache/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64.tar.xz" -# -L https://github.com/mstorsjo/llvm-mingw/releases/download/20240619/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64.tar.xz
 
 		echo "Unpacking llvm-mingw..."
 
 		cd "$INIT_DIR/cache"
 
-		tar -xf "$INIT_DIR/cache/llvm-mingw-20241119-ucrt-ubuntu-20.04-x86_64.tar.xz"
+		tar -xf "$INIT_DIR/cache/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64.tar.xz"
 
 		cd "$OLDPWD"
 
-		rm -f "$INIT_DIR/cache/llvm-mingw-20241119-ucrt-ubuntu-20.04-x86_64.tar.xz"
+		rm -f "$INIT_DIR/cache/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64.tar.xz"
 
 		echo ""
 	fi
 
-	export PATH=$INIT_PATH:$INIT_DIR/cache/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin:$INIT_DIR/cache/llvm-mingw-20241119-ucrt-ubuntu-20.04-x86_64/bin
+	export PATH=$INIT_PATH:$INIT_DIR/cache/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin:$INIT_DIR/cache/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64/bin
 	export ANDROID_SDK="$1"
 	export ARCH="$2"
 
