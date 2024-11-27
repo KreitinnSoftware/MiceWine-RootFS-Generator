@@ -1,4 +1,4 @@
-PKG_VER="9.0-esync"
+PKG_VER="9.0-esync-test-x64-host"
 PKG_CATEGORY="Wine"
 PKG_PRETTY_NAME="Wine ($PKG_VER)"
 
