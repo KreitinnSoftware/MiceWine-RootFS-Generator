@@ -15,6 +15,11 @@ resolvePath()
 	fi
 }
 
+getElementFromHeader()
+{
+	echo "$(cat pkg-header | head -n $1 | tail -n 1 | cut -d "=" -f 2)"
+}
+
 export INIT_DIR=$PWD
 export RAND_VAL=$RANDOM--
 
@@ -36,6 +41,12 @@ for i in $*; do
 		echo "Extracting '$(basename $resolvedPath)'..."
 		7z -aoa x "$resolvedPath" &> /dev/zero
 
+		packageCategory=$(getElementFromHeader 2)
+
+		if [ "$packageCategory" == "VulkanDriver" ]; then
+			echo "$(getElementFromHeader 1):$(getElementFromHeader 3):$(getElementFromHeader 5)" >> builtInVulkanDrivers
+		fi
+
 		if [ -f "makeSymlinks.sh" ]; then
 			cat makeSymlinks.sh >> new_makeSymlinks.sh
 			rm -f makeSymlinks.sh
@@ -45,7 +56,7 @@ done
 
 mv new_makeSymlinks.sh makeSymlinks.sh
 
-$INIT_DIR/create-rat-pkg.sh "$1" "MiceWine RootFS" "$4" "$2" "$3" "$PWD" "$INIT_DIR"
+$INIT_DIR/create-rat-pkg.sh "$1" "MiceWine RootFS" "" "$4" "$2" "$3" "$PWD" "$INIT_DIR"
 
 cd "$INIT_DIR"
 

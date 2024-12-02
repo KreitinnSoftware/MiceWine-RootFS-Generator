@@ -152,7 +152,7 @@ setupPackage()
 		CONFIGURE_ARGS MESON_ARGS CMAKE_ARGS \
 		RUN_POST_APPLY_PATCH RUN_POST_BUILD RUN_POST_CONFIGURE \
 		CFLAGS CPPFLAGS LDFLAGS LIBS OVERRIDE_PREFIX OVERRIDE_PKG_CONFIG_PATH \
-		BLACKLIST_ARCHITECTURE BUILD_IN_SRC
+		BLACKLIST_ARCHITECTURE BUILD_IN_SRC VK_DRIVER_LIB
 
 	package=$1
 
@@ -305,6 +305,10 @@ setupPackage()
 				echo "$PKG_VER" >> pkg-ver
 				echo "$PKG_CATEGORY" >> pkg-category
 
+				if [ "$PKG_CATEGORY" == "VulkanDriver" ]; then
+					echo "$VK_DRIVER_LIB" >> vk-driver-lib
+				fi
+
 				git -C "$INIT_DIR" log -1 --format="%H" -- "packages/$package" > pkg-commit
 
 				chmod +x build.sh
@@ -374,6 +378,11 @@ compileAll()
 		pkgCategory="$(cat ../pkg-category)"
 		pkgCommit="$(cat ../pkg-commit)"
 		pkgPrettyName="$(cat ../pkg-pretty-name)"
+		vkDriverLib=""
+
+		if [ "$pkgCategory" == "VulkanDriver" ]; then
+			vkDriverLib="$(cat ../vk-driver-lib)"
+		fi
 
 		pkgLocalChanged="$(git -C "$INIT_DIR" status --short "packages/$package")"
 
@@ -397,6 +406,10 @@ compileAll()
 			pkgVersion="$(cat ../pkg-ver)"
 			pkgCategory="$(cat ../pkg-category)"
 			pkgCommit="$(cat ../pkg-commit)"
+
+			if [ "$pkgCategory" == "VulkanDriver" ]; then
+				vkDriverLib="$(cat ../vk-driver-lib)"
+			fi
 		fi
 
 		if [ -f "$INIT_DIR/built-pkgs/$package-$pkgVersion-$ARCHITECTURE.rat" ]; then
@@ -427,7 +440,7 @@ compileAll()
 				pkgPrettyName=$package
 			fi
 
-			$INIT_DIR/create-rat-pkg.sh "$package" "$pkgPrettyName" "$ARCHITECTURE" "$pkgVersion" "$pkgCategory" "$packageDestDirPkg" "$INIT_DIR/built-pkgs"
+			$INIT_DIR/create-rat-pkg.sh "$package" "$pkgPrettyName" "$vkDriverLib" "$ARCHITECTURE" "$pkgVersion" "$pkgCategory" "$packageDestDirPkg" "$INIT_DIR/built-pkgs"
 		fi
 	done
 }
@@ -525,4 +538,4 @@ mkdir -p "$INIT_DIR/cache/libc++_shared/files/usr/lib"
 
 cp "$INIT_DIR/cache/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/$ARCHITECTURE-linux-android/libc++_shared.so" "$INIT_DIR/cache/libc++_shared/files/usr/lib"
 
-./create-rat-pkg.sh "libc++_shared" "Android C++ Library" "$ARCHITECTURE" "1.0" "library" "$INIT_DIR/cache/libc++_shared" "$INIT_DIR/built-pkgs"
+./create-rat-pkg.sh "libc++_shared" "Android C++ Library" "" "$ARCHITECTURE" "1.0" "library" "$INIT_DIR/cache/libc++_shared" "$INIT_DIR/built-pkgs"

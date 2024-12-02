@@ -1,6 +1,7 @@
 PKG_VER=[gss]
 PKG_CATEGORY="VulkanDriver"
 PKG_PRETTY_NAME="Mesa Turnip Driver"
+VK_DRIVER_LIB="libvulkan_freedreno.so"
 
 BLACKLIST_ARCHITECTURE=x86_64
 

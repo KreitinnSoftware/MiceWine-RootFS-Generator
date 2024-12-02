@@ -1,6 +1,7 @@
 PKG_VER=[gss]
 PKG_CATEGORY="VulkanDriver"
 PKG_PRETTY_NAME="Mesa Radeon Driver"
+VK_DRIVER_LIB="libvulkan_radeon.so"
 
 BLACKLIST_ARCHITECTURE=aarch64
 
