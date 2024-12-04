@@ -137,7 +137,7 @@ gitDownload()
 	git checkout . &> /dev/zero
 	git submodule update --init --recursive &> /dev/zero
 
-	PKG_VER=$(echo $PKG_VER | sed "s/[gss]/$(git rev-parse --short HEAD)/g")
+	PKG_VER=$(echo $PKG_VER | sed "s/\[gss\]/$(git rev-parse --short HEAD)/g")
 
 	cd ..
 }
@@ -153,6 +153,10 @@ setupPackage()
 		BLACKLIST_ARCHITECTURE BUILD_IN_SRC VK_DRIVER_LIB
 
 	package=$1
+
+	if [ -n "$GIT_COMMIT" ]; then
+		PKG_VER=$(echo $PKG_VER | sed "s/\[gss\]/$(echo $GIT_COMMIT | cut -c1-7)/g")
+	fi
 
 	. "$INIT_DIR/packages/$package/build.sh"
 
