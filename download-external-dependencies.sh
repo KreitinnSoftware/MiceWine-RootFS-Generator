@@ -1,3 +1,29 @@
+customDxvkDownload() {
+	if [ -e "DXVK/$1" ]; then
+		echo "$1 already downloaded."
+	else
+		echo "Downloading $1..."
+
+		cd "DXVK"
+
+		curl -# -L -O "$2"
+
+		if [ $? != 0 ]; then
+			echo "Error on Downloading $1."
+		else
+			mkdir -p "DXVK-$1"
+
+			tar -xf "$3.tar.gz"
+
+			mv "dxvk"*"/x32" "dxvk"*"/x64" "DXVK-$1"
+
+			rm -rf "dxvk"*
+		fi
+
+		cd "$OLDPWD"
+	fi
+}
+
 dxvkDownload() {
 	if [ -e "DXVK/DXVK-$1" ]; then
 		echo "DXVK-$1 already downloaded."
@@ -194,5 +220,7 @@ for i in "9.20" "9.16" "9.3" "9.1" "9.0" "8.15" "7.11" "3.17"; do
 done
 
 vkd3dDownload "2.13"
+
+customDxvkDownload "DXVK-1.10-Stripped-Requiriments" "https://github.com/KreitinnSoftware/dxvk/releases/download/dxvk-1.10-stripped-requiriments/dxvk-1.10-b3e85be0fcef978604656a19ecafdde85a28326a.tar.gz" "dxvk-1.10-b3e85be0fcef978604656a19ecafdde85a28326a"
 
 cp -rf "$INIT_DIR/etc/"* .
