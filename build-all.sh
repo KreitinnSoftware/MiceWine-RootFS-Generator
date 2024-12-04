@@ -137,9 +137,7 @@ gitDownload()
 	git checkout . &> /dev/zero
 	git submodule update --init --recursive &> /dev/zero
 
-	if [ "$PKG_VER" == "[gss]" ]; then
-		PKG_VER=$(git rev-parse --short HEAD)
-	fi
+	PKG_VER=$(echo $PKG_VER | sed "s/[gss]/$(git rev-parse --short HEAD)/g")
 
 	cd ..
 }
@@ -157,12 +155,6 @@ setupPackage()
 	package=$1
 
 	. "$INIT_DIR/packages/$package/build.sh"
-
-	if [ "$PKG_VER" == "[gss]" ]; then
-		if [ -n "$GIT_COMMIT" ]; then
-			PKG_VER="$(echo $GIT_COMMIT | cut -c1-7)"
-		fi
-	fi
 
 	if [ ! -f "$INIT_DIR/built-pkgs/$package-$PKG_VER-$ARCHITECTURE.rat" ]; then
 		if [ -e "$INIT_DIR/workdir/$package/build.sh" ]; then
