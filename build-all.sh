@@ -523,7 +523,7 @@ export INIT_PATH="$PATH"
 
 mkdir -p $INIT_DIR/{workdir,logs,cache,built-pkgs}
 
-setupBuildEnv 32 $ARCHITECTURE
+setupBuildEnv 29 $ARCHITECTURE
 setupPackages
 
 compileAll
