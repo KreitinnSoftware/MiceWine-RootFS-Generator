@@ -1,67 +1,46 @@
 #!/bin/bash
 setupBuildEnv()
 {
-	if [ "$INIT_PATH" == "" ]; then
-		INIT_PATH=$PATH
-	fi
+	if [ ! -d "$INIT_DIR/cache/android-ndk" ]; then
+		echo "Downloading NDK..."
 
-	if [ ! -d "$INIT_DIR/cache/android-ndk-r26b" ]; then
-		echo "Downloading NDK R26b..."
+		curl --output "cache/$NDK_FILENAME" -#L "$NDK_URL"
 
-		curl --output "$INIT_DIR/cache/android-ndk-r26b.zip" -# -L https://dl.google.com/android/repository/android-ndk-r26b-linux.zip
+		echo "Unpacking NDK..."
 
-		echo "Unpacking NDK R26b..."
+		7z x "cache/$NDK_FILENAME" -aoa -o"cache" &> /dev/null
 
-		7z x "$INIT_DIR/cache/android-ndk-r26b.zip" -o"$INIT_DIR/cache" &> /dev/null
+		mv "cache/$(unzip -Z1 "cache/$NDK_FILENAME" | cut -d "/" -f 1 | head -n 1)" "cache/android-ndk"
 
-		rm -f "$INIT_DIR/cache/android-ndk-r26b.zip"
+		rm -f "cache/$NDK_FILENAME"
 
 		echo ""
 	fi
 
-	if [ ! -d "$INIT_DIR/cache/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64" ]; then
+	if [ ! -d "$INIT_DIR/cache/llvm-mingw" ]; then
 		echo "Downloading llvm-mingw..."
 
-		curl --output "$INIT_DIR/cache/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64.tar.xz" -# -L https://github.com/mstorsjo/llvm-mingw/releases/download/20240619/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64.tar.xz
+		curl --output "cache/$MINGW_FILENAME" -#L "$MINGW_URL"
 
 		echo "Unpacking llvm-mingw..."
 
-		cd "$INIT_DIR/cache"
+		tar -xf "cache/$MINGW_FILENAME" -C "cache"
 
-		tar -xf "$INIT_DIR/cache/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64.tar.xz"
+		mv "cache/$(tar -tf "cache/$MINGW_FILENAME" | cut -d "/" -f 1 | head -n 1)" "cache/llvm-mingw"
 
-		cd "$OLDPWD"
-
-		rm -f "$INIT_DIR/cache/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64.tar.xz"
+		rm -f "cache/$MINGW_FILENAME"
 
 		echo ""
 	fi
 
-	export PATH=$INIT_PATH:$INIT_DIR/cache/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin:$INIT_DIR/cache/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64/bin
+	export PATH=$INIT_PATH:$INIT_DIR/cache/android-ndk/toolchains/llvm/prebuilt/linux-x86_64/bin:$INIT_DIR/cache/llvm-mingw/bin
 	export ANDROID_SDK="$1"
 	export ARCH="$2"
 
-	if [ "$ARCH" == "i686" ]; then
-		export CC=i686-linux-android$ANDROID_SDK-clang
-		export CXX=i686-linux-android$ANDROID_SDK-clang++
-		export TOOLCHAIN_VERSION="x86-4.9"
-		export TOOLCHAIN_TRIPLE="i686-linux-android"
-	elif [ "$ARCH" == "x86_64" ]; then
-		export CC=x86_64-linux-android$ANDROID_SDK-clang
-		export CXX=x86_64-linux-android$ANDROID_SDK-clang++
-		export TOOLCHAIN_VERSION="x86_64-4.9"
-		export TOOLCHAIN_TRIPLE="x86_64-linux-android"
-	elif [ "$ARCH" == "armeabi-v7a" ]; then
-		export CC=armv7a-linux-androideabi$ANDROID_SDK-clang
-		export CXX=armv7a-linux-androideabi$ANDROID_SDK-clang++
-		export TOOLCHAIN_VERSION="arm-linux-androideabi-4.9"
-		export TOOLCHAIN_TRIPLE="arm-linux-androideabi"
-	elif [ "$ARCH" == "aarch64" ]; then
-		export CC=aarch64-linux-android$ANDROID_SDK-clang
-		export CXX=aarch64-linux-android$ANDROID_SDK-clang++
-		export TOOLCHAIN_VERSION="aarch64-linux-android-4.9"
-		export TOOLCHAIN_TRIPLE="aarch64-linux-android"
-	fi
+	export CC=$ARCH-linux-android$ANDROID_SDK-clang
+	export CXX=$CC++
+	export TOOLCHAIN_VERSION="$ARCH-linux-android-4.9"
+	export TOOLCHAIN_TRIPLE="$ARCH-linux-android"
 
 	export PKG_CONFIG_PATH="$PREFIX/share/pkgconfig:$PREFIX/lib/pkgconfig"
 	export PKG_CONFIG_LIBDIR="$PREFIX/lib/pkgconfig"
@@ -176,22 +155,9 @@ setupPackage()
 					cp -rf "$INIT_DIR/packages/$package/"* $package
 					rm $package/build.sh
 				fi
-					cd $package
-					applyPatches
 
-				if [ $EXPERIMENTAL_16KB_PAGESIZE -eq 1 ]; then
-					LDFLAGS+=" -Wl,-z,max-page-size=16384"
-				fi
-
-				if [ $DEBUG_BUILD -eq 1 ]; then
-					if [ -n "$MESON_ARGS" ]; then
-						MESON_ARGS+=" -Dbuildtype=debug"
-					fi
-				else
-					if [ -n "$MESON_ARGS" ]; then
-						MESON_ARGS+=" -Dbuildtype=release"
-					fi
-				fi
+				cd $package
+				applyPatches
 
 				echo "export CFLAGS=\"$CFLAGS\" LIBS=\"$LIBS\" CPPFLAGS=\"$CPPFLAGS\" LDFLAGS=\"$LDFLAGS\"" > build.sh
 				echo "export DESTDIR=\"$INIT_DIR/workdir/$package/destdir-pkg\"" >> build.sh
@@ -199,7 +165,7 @@ setupPackage()
 				PREFIX_DIR=$PREFIX
 
 				if [ -n "$OVERRIDE_PREFIX" ]; then
-					PREFIX_DIR=$OVERRIDE_PREFIX						
+					PREFIX_DIR=$OVERRIDE_PREFIX
 				fi
 
 				if [ "$OVERRIDE_PKG_CONFIG_PATH" != "" ]; then
@@ -348,11 +314,18 @@ installBuiltPackage()
 {
 	local package=$1
 
-	echo "-- Installing '$(basename $package .rat)'"
-	unzip -o "$package" -d "$APP_ROOT_DIR" &> /dev/zero
-	touch $APP_ROOT_DIR/makeSymlinks.sh
-	bash $APP_ROOT_DIR/makeSymlinks.sh
-	rm -f $APP_ROOT_DIR/makeSymlinks.sh
+	if [ ! -e "$APP_ROOT_DIR/packages/$(basename $package .rat)" ]; then
+		echo "-- Installing '$(basename $package .rat)'"
+		mkdir -p $APP_ROOT_DIR/packages
+
+		unzip -o "$package" -d "$APP_ROOT_DIR" &> /dev/zero
+
+		touch $APP_ROOT_DIR/makeSymlinks.sh
+		bash $APP_ROOT_DIR/makeSymlinks.sh
+		rm -f $APP_ROOT_DIR/makeSymlinks.sh
+
+		touch $APP_ROOT_DIR/packages/$(basename $package .rat)
+	fi
 }
 
 compileAll()
@@ -446,20 +419,14 @@ showHelp()
 	echo "Usage: $0 ARCHITECTURE [OPTIONS]"
 	echo ""
 	echo "Options:"
-	echo "	--help: Show this message and exit."
-	echo "	--clean-prefix: Clean generated rootfs."
-	echo "	--clean-workdir: Clean workdir (for a clean compiling)."
-	echo "	--clean-cache: Clean cache of downloaded packages."
-	echo "  --debug-flags: Compile Projects with Debug Build Type"
-	echo "  --16kb: Compile with experimental support for Android 15 with 16kb pagesizes"
+	echo "  --help: Show this message and exit."
+	echo "  --clean-workdir: Clean workdir (for a clean compiling)."
+	echo "  --clean-cache: Clean cache of downloaded packages."
 	echo ""
 	echo "Available Architectures:"
-	echo "	x86_64"
-	echo "	aarch64"
+	echo "  x86_64"
+	echo "  aarch64"
 }
-
-export APP_ROOT_DIR=/data/data/com.micewine.emu
-export PREFIX=$APP_ROOT_DIR/files/usr
 
 if [ $# -lt 1 ]; then
 	showHelp
@@ -467,30 +434,35 @@ if [ $# -lt 1 ]; then
 fi
 
 case $1 in "aarch64"|"x86_64")
-		export ARCHITECTURE=$1
-		;;
-		"--help")
-		showHelp
-		exit
-		;;
-		*)
-		echo "Error: Invalid Architecture Specified."
-		echo ""
-		showHelp
-		exit
-	esac
+	export ARCHITECTURE=$1
+	;;
+	"--help")
+	showHelp
+	exit 0
+	;;
+	*)
+	printf "Error: Unsupported Architecture \"$1\" Specified.\n\n"
+	showHelp
+	exit 0
+esac
+
+export APP_ROOT_DIR=/data/data/com.micewine.emu
+export PREFIX=$APP_ROOT_DIR/files/usr
 
 if [ ! -e "$PREFIX" ]; then
 	sudo mkdir -p "$PREFIX"
-	sudo chown -R $(whoami):$(whoami) "$PREFIX/../.."
-	sudo chmod 755 -R "$PREFIX/../.."
-else
-	case $* in *"--clean-prefix"*)
-		echo "Cleaning Prefix..."
-
-		rm -rf $PREFIX/*
-	esac
+	sudo chown -R $(whoami):$(whoami) "$APP_ROOT_DIR"
+	sudo chmod 755 -R "$APP_ROOT_DIR"
 fi
+
+export NDK_URL="https://dl.google.com/android/repository/android-ndk-r26b-linux.zip"
+export NDK_FILENAME="${NDK_URL##*/}"
+export MINGW_URL="https://github.com/mstorsjo/llvm-mingw/releases/download/20240619/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64.tar.xz"
+export MINGW_FILENAME="${MINGW_URL##*/}"
+
+export PACKAGES="$(ls packages)"
+export INIT_DIR="$PWD"
+export INIT_PATH="$PATH"
 
 case $* in "--clean-cache")
 	rm -rf cache
@@ -500,28 +472,9 @@ case $* in "--clean-workdir")
 	rm -rf workdir
 esac
 
-export DEBUG_BUILD=0
-
-case $* in "--debug-flags")
-	DEBUG_BUILD=1
-esac
-
-export EXPERIMENTAL_16KB_PAGESIZE=0
-
-case $* in "--16kb")
-	echo "Warning: Compiling MiceWine RootFS with experimental support to 16kb pagesizes, Work is not garanted"
-	echo ""
-
-	EXPERIMENTAL_16KB_PAGESIZE=1
-esac
-
 rm -rf logs
 
-export PACKAGES="$(ls packages)"
-export INIT_DIR="$PWD"
-export INIT_PATH="$PATH"
-
-mkdir -p $INIT_DIR/{workdir,logs,cache,built-pkgs}
+mkdir -p {workdir,logs,cache,built-pkgs}
 
 setupBuildEnv 29 $ARCHITECTURE
 setupPackages
