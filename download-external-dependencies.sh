@@ -195,7 +195,7 @@ mkdir -p "$WORKDIR"
 
 cd "$WORKDIR"
 
-wineMonoGeckoDownload 8.1.0 2.47.4
+wineMonoGeckoDownload 9.3.0 2.47.4
 
 mkdir -p "home" "wine-utils"
 
