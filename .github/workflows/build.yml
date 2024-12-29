@@ -82,8 +82,9 @@ jobs:
     - name: "Create Release"
       uses: softprops/action-gh-release@v2
       with:
-        name: "MiceWine RootFS ${{ github.sha }}"
+        name: "MiceWine RootFS (${{ github.sha }})"
         tag_name: ${{ env.SHORT_SHA }}
+        prerelease: true
         files: |
             /home/runner/MiceWine-RootFS-aarch64.rat
             /home/runner/MiceWine-RootFS-aarch64-Logs.zip
