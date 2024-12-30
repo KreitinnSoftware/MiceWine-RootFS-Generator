@@ -1,0 +1,52 @@
+diff -uNr 70-mesa-vulkan-wrapper-new/include/android_stub/vndk/hardware_buffer.h 70-mesa-vulkan-wrapper-new.mod/include/android_stub/vndk/hardware_buffer.h
+--- 70-mesa-vulkan-wrapper-new/include/android_stub/vndk/hardware_buffer.h	2024-10-16 13:57:54.000000000 -0300
++++ 70-mesa-vulkan-wrapper-new.mod/include/android_stub/vndk/hardware_buffer.h	2024-12-30 18:05:05.746485985 -0300
+@@ -24,7 +24,7 @@
+ 
+ __BEGIN_DECLS
+ 
+-const native_handle_t* AHardwareBuffer_getNativeHandle(const AHardwareBuffer* buffer);
++const __native_handle_t* AHardwareBuffer_getNativeHandle(const AHardwareBuffer* buffer);
+ 
+ enum CreateFromHandleMethod {
+     // enum values chosen to match internal GraphicBuffer::HandleWrapMethod
+@@ -46,7 +46,7 @@
+  * clone registered. The AHardwareBuffer will own the cloned handle but not the original.
+  */
+ int AHardwareBuffer_createFromHandle(const AHardwareBuffer_Desc* desc,
+-                                     const native_handle_t* handle, int32_t method,
++                                     const __native_handle_t* handle, int32_t method,
+                                      AHardwareBuffer** outBuffer);
+ 
+ /**
+diff -uNr 70-mesa-vulkan-wrapper-new/src/vulkan/wrapper/wrapper_device_memory.c 70-mesa-vulkan-wrapper-new.mod/src/vulkan/wrapper/wrapper_device_memory.c
+--- 70-mesa-vulkan-wrapper-new/src/vulkan/wrapper/wrapper_device_memory.c	2024-12-30 18:00:22.163506877 -0300
++++ 70-mesa-vulkan-wrapper-new.mod/src/vulkan/wrapper/wrapper_device_memory.c	2024-12-30 18:03:52.594491374 -0300
+@@ -14,6 +14,7 @@
+ #include <sys/mman.h>
+ #include <sys/ioctl.h>
+ #include <linux/dma-heap.h>
++#include <fcntl.h>
+ 
+ static int
+ safe_ioctl(int fd, unsigned long request, void *arg)
+@@ -271,7 +272,7 @@
+    assert(memory->dmabuf_fd >= 0 || memory->ahardware_buffer != NULL);
+ 
+    if (memory->ahardware_buffer) {
+-      const native_handle_t *handle;
++      const __native_handle_t *handle;
+       const int *handle_fds;
+ 
+       handle = AHardwareBuffer_getNativeHandle(memory->ahardware_buffer);
+diff -uNr 70-mesa-vulkan-wrapper-new/src/vulkan/wrapper/wrapper_physical_device.c 70-mesa-vulkan-wrapper-new.mod/src/vulkan/wrapper/wrapper_physical_device.c
+--- 70-mesa-vulkan-wrapper-new/src/vulkan/wrapper/wrapper_physical_device.c	2024-12-30 18:00:22.163506877 -0300
++++ 70-mesa-vulkan-wrapper-new.mod/src/vulkan/wrapper/wrapper_physical_device.c	2024-12-30 18:03:08.098494652 -0300
+@@ -9,6 +9,7 @@
+ #include "vk_util.h"
+ #include "wsi_common.h"
+ #include "util/os_misc.h"
++#include <fcntl.h>
+ 
+ static VkResult
+ wrapper_setup_device_extensions(struct wrapper_physical_device *pdevice) {

@@ -1,6 +1,6 @@
-From 7c2187cfd58354f937cb7de4727ef7040d1acb9f Mon Sep 17 00:00:00 2001
+From 71435ecce42a2438096d6c24b3730fd3686a99ee Mon Sep 17 00:00:00 2001
 From: xMeM <haooy@outlook.com>
-Date: Fri, 8 Nov 2024 17:21:21 +0800
+Date: Thu, 14 Nov 2024 15:27:49 +0800
 Subject: [PATCH 2/2] vulkan/x11: termux-x11 support
 
 Signed-off-by: xMeM <haooy@outlook.com>
@@ -8,8 +8,8 @@ Signed-off-by: xMeM <haooy@outlook.com>
  src/vulkan/wsi/wsi_common.c         | 314 +++++++++++++++++++++++++++-
  src/vulkan/wsi/wsi_common.h         |   7 +
  src/vulkan/wsi/wsi_common_private.h |   8 +
- src/vulkan/wsi/wsi_common_x11.c     |  92 ++++----
- 4 files changed, 377 insertions(+), 44 deletions(-)
+ src/vulkan/wsi/wsi_common_x11.c     |  99 +++++----
+ 4 files changed, 390 insertions(+), 38 deletions(-)
 
 diff --git a/src/vulkan/wsi/wsi_common.c b/src/vulkan/wsi/wsi_common.c
 index a11b6bd64bc..77755e96b93 100644
@@ -484,7 +484,7 @@ index b89e962c3ff..c205c4f62c3 100644
  
  struct wsi_swapchain {
 diff --git a/src/vulkan/wsi/wsi_common_x11.c b/src/vulkan/wsi/wsi_common_x11.c
-index 0c0c489d893..7911e54eae6 100644
+index 0c0c489d893..5ed5d42341e 100644
 --- a/src/vulkan/wsi/wsi_common_x11.c
 +++ b/src/vulkan/wsi/wsi_common_x11.c
 @@ -22,7 +22,6 @@
@@ -515,26 +515,31 @@ index 0c0c489d893..7911e54eae6 100644
     uint32_t                                  sync_fence;
     xcb_shm_seg_t                             shmseg;
     int                                       shmid;
-@@ -1402,8 +1405,6 @@ x11_present_to_x11_dri3(struct x11_swapchain *chain, uint32_t image_index,
+@@ -1402,7 +1405,9 @@ x11_present_to_x11_dri3(struct x11_swapchain *chain, uint32_t image_index,
        options |= XCB_PRESENT_OPTION_SUBOPTIMAL;
  #endif
  
 -   xshmfence_reset(image->shm_fence);
--
++   xcb_void_cookie_t scookie = xcb_sync_reset_fence(chain->conn,
++      image->sync_fence);
++   xcb_discard_reply(chain->conn, scookie.sequence);
+ 
     if (!chain->base.image_info.explicit_sync) {
        ++chain->sent_image_count;
-       assert(chain->sent_image_count <= chain->base.image_count);
-@@ -1771,9 +1772,6 @@ x11_acquire_next_image(struct wsi_swapchain *anv_chain,
+@@ -1771,9 +1776,9 @@ x11_acquire_next_image(struct wsi_swapchain *anv_chain,
        return result;
  
     assert(*image_index < chain->base.image_count);
 -   if (chain->images[*image_index].shm_fence &&
 -       !chain->base.image_info.explicit_sync)
 -      xshmfence_await(chain->images[*image_index].shm_fence);
++   xcb_void_cookie_t cookie = xcb_sync_await_fence(
++      chain->conn, 1, &chain->images[*image_index].sync_fence);
++   xcb_discard_reply(chain->conn, cookie.sequence);
  
     return result;
  }
-@@ -2098,6 +2096,17 @@ x11_image_init(VkDevice device_h, struct x11_swapchain *chain,
+@@ -2098,6 +2103,17 @@ x11_image_init(VkDevice device_h, struct x11_swapchain *chain,
        /* If the image has a modifier, we must have DRI3 v1.2. */
        assert(chain->has_dri3_modifiers);
  
@@ -552,7 +557,7 @@ index 0c0c489d893..7911e54eae6 100644
        /* XCB requires an array of file descriptors but we only have one */
        int fds[4] = { -1, -1, -1, -1 };
        for (int i = 0; i < image->base.num_planes; i++) {
-@@ -2128,6 +2137,16 @@ x11_image_init(VkDevice device_h, struct x11_swapchain *chain,
+@@ -2128,6 +2144,16 @@ x11_image_init(VkDevice device_h, struct x11_swapchain *chain,
                                                chain->depth, bpp,
                                                image->base.drm_modifier,
                                                fds);
@@ -569,7 +574,7 @@ index 0c0c489d893..7911e54eae6 100644
     } else
  #endif
     {
-@@ -2140,14 +2159,23 @@ x11_image_init(VkDevice device_h, struct x11_swapchain *chain,
+@@ -2140,14 +2166,23 @@ x11_image_init(VkDevice device_h, struct x11_swapchain *chain,
           return VK_ERROR_OUT_OF_HOST_MEMORY;
  
        cookie =
@@ -601,7 +606,7 @@ index 0c0c489d893..7911e54eae6 100644
     }
  
     error = xcb_request_check(chain->conn, cookie);
-@@ -2178,32 +2206,8 @@ x11_image_init(VkDevice device_h, struct x11_swapchain *chain,
+@@ -2178,31 +2213,16 @@ x11_image_init(VkDevice device_h, struct x11_swapchain *chain,
  #endif
  
  out_fence:
@@ -613,7 +618,7 @@ index 0c0c489d893..7911e54eae6 100644
 -   if (image->shm_fence == NULL)
 -      goto fail_shmfence_alloc;
 -
--   image->sync_fence = xcb_generate_id(chain->conn);
+    image->sync_fence = xcb_generate_id(chain->conn);
 -   xcb_dri3_fence_from_fd(chain->conn,
 -                          image->pixmap,
 -                          image->sync_fence,
@@ -622,30 +627,33 @@ index 0c0c489d893..7911e54eae6 100644
 -
 -   xshmfence_trigger(image->shm_fence);
 -
-    return VK_SUCCESS;
- 
+-   return VK_SUCCESS;
+-
 -fail_shmfence_alloc:
 -   close(fence_fd);
--
++   cookie = xcb_sync_create_fence(chain->conn,
++                         image->pixmap,
++                         image->sync_fence,
++                         false);
++   xcb_discard_reply(chain->conn, cookie.sequence);
+ 
 -fail_pixmap:
 -   cookie = xcb_free_pixmap(chain->conn, image->pixmap);
--   xcb_discard_reply(chain->conn, cookie.sequence);
--
++   cookie = xcb_sync_trigger_fence(chain->conn, image->sync_fence);
+    xcb_discard_reply(chain->conn, cookie.sequence);
++   return VK_SUCCESS;
+ 
  fail_image:
     wsi_destroy_image(&chain->base, &image->base);
- 
-@@ -2218,10 +2222,6 @@ x11_image_finish(struct x11_swapchain *chain,
-    xcb_void_cookie_t cookie;
- 
+@@ -2220,7 +2240,6 @@ x11_image_finish(struct x11_swapchain *chain,
     if (!chain->base.wsi->sw || chain->has_mit_shm) {
--      cookie = xcb_sync_destroy_fence(chain->conn, image->sync_fence);
--      xcb_discard_reply(chain->conn, cookie.sequence);
+       cookie = xcb_sync_destroy_fence(chain->conn, image->sync_fence);
+       xcb_discard_reply(chain->conn, cookie.sequence);
 -      xshmfence_unmap_shm(image->shm_fence);
--
+ 
        cookie = xcb_free_pixmap(chain->conn, image->pixmap);
        xcb_discard_reply(chain->conn, cookie.sequence);
- 
-@@ -2618,6 +2618,12 @@ x11_surface_create_swapchain(VkIcdSurfaceBase *icd_surface,
+@@ -2618,6 +2637,12 @@ x11_surface_create_swapchain(VkIcdSurfaceBase *icd_surface,
           .alloc_shm = wsi_conn->has_mit_shm ? &alloc_shm : NULL,
        };
        image_params = &cpu_image_params.base;
