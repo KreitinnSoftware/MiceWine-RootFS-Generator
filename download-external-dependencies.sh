@@ -11,11 +11,11 @@ customDxvkDownload() {
 		if [ $? != 0 ]; then
 			echo "Error on Downloading $1."
 		else
-			mkdir -p "DXVK-$1"
+			mkdir -p "$1"
 
 			tar -xf "$3.tar.gz"
 
-			mv "dxvk"*"/x32" "dxvk"*"/x64" "DXVK-$1"
+			mv "dxvk"*"/x32" "dxvk"*"/x64" "$1"
 
 			rm -rf "dxvk"*
 		fi
@@ -215,12 +215,12 @@ for i in "2.5" "2.4.1" "2.4" "2.3.1" "2.3" "2.2" "2.1" "2.0" "1.10.3" "1.10.2" "
 	dxvkDownload "$i"
 done
 
-for i in "9.20" "9.16" "9.3" "9.1" "9.0" "8.15" "7.11" "3.17"; do
+for i in "10.0-rc3" "9.20" "9.16" "9.3" "9.1" "9.0" "8.15" "7.11" "3.17"; do
 	wined3dDownload "$i"
 done
 
 vkd3dDownload "2.13"
 
-customDxvkDownload "DXVK-1.10-Stripped-Requiriments" "https://github.com/KreitinnSoftware/dxvk/releases/download/dxvk-1.10-stripped-requiriments/dxvk-1.10-b3e85be0fcef978604656a19ecafdde85a28326a.tar.gz" "dxvk-1.10-b3e85be0fcef978604656a19ecafdde85a28326a"
+customDxvkDownload "DXVK-1.10-Stripped-Requirements" "https://github.com/KreitinnSoftware/dxvk/releases/download/dxvk-1.10-stripped-requirements/dxvk-1.10-b3e85be0fcef978604656a19ecafdde85a28326a.tar.gz" "dxvk-1.10-b3e85be0fcef978604656a19ecafdde85a28326a"
 
 cp -rf "$INIT_DIR/etc/"* .
