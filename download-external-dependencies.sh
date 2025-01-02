@@ -13,7 +13,7 @@ customDxvkDownload() {
 		else
 			mkdir -p "$1"
 
-			tar -xf "$(basename $1).tar.gz"
+			tar -xf "$(basename $2)"
 
 			mv "dxvk"*"/x32" "dxvk"*"/x64" "$1"
 
@@ -220,7 +220,7 @@ for i in "10.0-rc3" "9.20" "9.16" "9.3" "9.1" "9.0" "8.15" "7.11" "3.17"; do
 done
 
 for i in "2.14" "2.13" "2.12" "2.11.1" "2.11" "2.10" "2.9" "2.8"; do
-	vkd3dDownload "$1"
+	vkd3dDownload "$i"
 done
 
 customDxvkDownload "DXVK-1.10-Stripped-Requirements" "https://github.com/KreitinnSoftware/dxvk/releases/download/dxvk-1.10-stripped-requirements/dxvk-1.10-b3e85be0fcef978604656a19ecafdde85a28326a.tar.gz"
