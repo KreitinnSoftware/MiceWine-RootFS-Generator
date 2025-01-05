@@ -32,6 +32,8 @@ mkdir -p /tmp/$RAND_VAL
 
 cd /tmp/$RAND_VAL
 
+mkdir -p "vulkanDrivers"
+
 touch new_makeSymlinks.sh
 
 for i in $*; do
@@ -39,12 +41,15 @@ for i in $*; do
 
 	if [ -n "$resolvedPath" ]; then
 		echo "Extracting '$(basename $resolvedPath)'..."
-		7z -aoa x "$resolvedPath" &> /dev/zero
+
+		7z -aoa e "$resolvedPath" pkg-header
 
 		packageCategory=$(getElementFromHeader 2)
 
 		if [ "$packageCategory" == "VulkanDriver" ]; then
-			echo "$(getElementFromHeader 1):$(getElementFromHeader 3):$(getElementFromHeader 5)" >> builtInVulkanDrivers
+			cp -f "$resolvedPath" "vulkanDrivers"
+		else
+			7z -aoa x "$resolvedPath" &> /dev/zero
 		fi
 
 		if [ -f "makeSymlinks.sh" ]; then
