@@ -33,7 +33,7 @@ jobs:
     - name: "Download Latest Release Rat Packages"
       run: |
         cd MiceWine-RootFS-Generator
-        curl -LO# $(curl -s https://api.github.com/repos/KreitinnSoftware/MiceWine-RootFS-Generator/releases | grep "MiceWine-Packages.zip" -m 1 | grep "browser_download_url" | head -n 1 | sed "s/\"browser_download_url\"://g" | sed "s/\"//g") || true
+        curl -LO# $(curl -s https://api.github.com/repos/KreitinnSoftware/MiceWine-RootFS-Generator/releases | grep "MiceWine-Packages.zip" | grep "browser_download_url" -m 1 | head -n 1 | sed "s/\"browser_download_url\"://g" | sed "s/\"//g") || true
         unzip -o MiceWine-Packages.zip -d built-pkgs || true
 
     - name: "Start Building (x86_64)"
