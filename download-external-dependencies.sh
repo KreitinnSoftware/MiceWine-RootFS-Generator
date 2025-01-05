@@ -84,7 +84,7 @@ dxvkGplAsyncDownload() {
 
 		cd "DXVK"
 
-		curl -# -L -O "https://gitlab.com/Ph42oN/dxvk-gplasync/-/raw/main/releases/dxvk-gplasync-v$1.tar.gz?ref_type=heads&inline=false"
+		curl -# -L -O "https://github.com/KreitinnSoftware/dxvk-gplasync/raw/refs/heads/main/dxvk-gplasync-v$1.tar.gz"
 
 		if [ $? != 0 ]; then
 			echo "Error on Downloading DXVK-$1-gplasync."
