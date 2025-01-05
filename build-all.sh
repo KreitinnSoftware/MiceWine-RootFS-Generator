@@ -274,6 +274,8 @@ setupPackage()
 				chmod +x build.sh
 
 				cd ..
+
+				echo $package >> index
 			fi
 		fi
 	fi
@@ -330,8 +332,9 @@ compileAll()
 {
 	echo ""
 	echo "-- Starting Building --"
+	echo ""
 
-	for package in $(ls "$INIT_DIR/workdir"); do
+	for package in $(cat "$INIT_DIR/workdir/index"); do
 		local packageBuildDir="$INIT_DIR/workdir/$package/build_dir"
 		local packageDestDirPkg="$INIT_DIR/workdir/$package/destdir-pkg"
 		mkdir -p "$packageBuildDir"
@@ -382,7 +385,6 @@ compileAll()
 		if [ -f "$INIT_DIR/built-pkgs/$package-$pkgVersion-$ARCHITECTURE.rat" ]; then
 			echo "-- Package '$package' already built."
 		else
-			echo ""
 			echo "-- Compiling Package '$package'..."
 
 			../build.sh 1> "$INIT_DIR/logs/$package-log.txt" 2> "$INIT_DIR/logs/$package-error_log.txt"
@@ -407,7 +409,7 @@ compileAll()
 				pkgPrettyName=$package
 			fi
 
-			$INIT_DIR/create-rat-pkg.sh "$package" "$pkgPrettyName" "$vkDriverLib" "$ARCHITECTURE" "$pkgVersion" "$pkgCategory" "$packageDestDirPkg" "$INIT_DIR/built-pkgs"
+			$INIT_DIR/create-rat-pkg.sh "$package" "$pkgPrettyName" "$vkDriverLib" "$ARCHITECTURE" "$pkgVersion" "$pkgCategory" "$packageDestDirPkg" "$INIT_DIR/built-pkgs" 0
 		fi
 	done
 }
@@ -458,7 +460,7 @@ export NDK_FILENAME="${NDK_URL##*/}"
 export MINGW_URL="https://github.com/mstorsjo/llvm-mingw/releases/download/20240619/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64.tar.xz"
 export MINGW_FILENAME="${MINGW_URL##*/}"
 
-export PACKAGES="$(ls packages)"
+export PACKAGES="$(cat packages/index)"
 export INIT_DIR="$PWD"
 export INIT_PATH="$PATH"
 

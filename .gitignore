@@ -3,3 +3,5 @@ logs
 cache
 rootfs
 built-pkgs
+wine-utils
+*.rat

@@ -46,8 +46,10 @@ if [ $# -lt 8 ]; then
 	exit 0
 fi
 
-echo ""
-echo "Creating Package '$PACKAGE_NAME-$PACKAGE_VERSION-$PACKAGE_ARCHITECTURE.rat'..."
+if [ "$9" != "0" ]; then
+  echo ""
+  echo "Creating Package '$PACKAGE_NAME-$PACKAGE_VERSION-$PACKAGE_ARCHITECTURE.rat'..."
+fi
 
 export WORKDIR="$DESTDIR_PKG"
 
