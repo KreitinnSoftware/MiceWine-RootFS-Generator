@@ -42,7 +42,7 @@ for i in $*; do
 	if [ -n "$resolvedPath" ]; then
 		echo "Extracting '$(basename $resolvedPath)'..."
 
-		7z -aoa e "$resolvedPath" pkg-header
+		7z -aoa e "$resolvedPath" pkg-header &> /dev/zero
 
 		packageCategory=$(getElementFromHeader 2)
 
