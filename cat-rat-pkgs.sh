@@ -33,6 +33,7 @@ mkdir -p /tmp/$RAND_VAL
 cd /tmp/$RAND_VAL
 
 mkdir -p "vulkanDrivers"
+mkdir -p "box64"
 
 touch new_makeSymlinks.sh
 
@@ -48,6 +49,8 @@ for i in $*; do
 
 		if [ "$packageCategory" == "VulkanDriver" ]; then
 			cp -f "$resolvedPath" "vulkanDrivers"
+		elif [ "$packageCategory" == "Box64" ]; then
+			cp -f "$resolvedPath" "box64"
 		else
 			7z -aoa x "$resolvedPath" &> /dev/zero
 		fi
