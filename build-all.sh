@@ -17,23 +17,23 @@ setupBuildEnv()
 		echo ""
 	fi
 
-	if [ ! -d "$INIT_DIR/cache/llvm-mingw" ]; then
-		echo "Downloading llvm-mingw..."
+	if [ ! -d "$INIT_DIR/cache/mingw" ]; then
+		echo "Downloading mingw..."
 
 		curl --output "cache/$MINGW_FILENAME" -#L "$MINGW_URL"
 
-		echo "Unpacking llvm-mingw..."
+		echo "Unpacking mingw..."
 
 		tar -xf "cache/$MINGW_FILENAME" -C "cache"
 
-		mv "cache/$(tar -tf "cache/$MINGW_FILENAME" | cut -d "/" -f 1 | head -n 1)" "cache/llvm-mingw"
+		mv "cache/$(tar -tf "cache/$MINGW_FILENAME" | cut -d "/" -f 1 | head -n 1)" "cache/mingw"
 
 		rm -f "cache/$MINGW_FILENAME"
 
 		echo ""
 	fi
 
-	export PATH=$INIT_PATH:$INIT_DIR/cache/android-ndk/toolchains/llvm/prebuilt/linux-x86_64/bin:$INIT_DIR/cache/llvm-mingw/bin
+	export PATH=$INIT_PATH:$INIT_DIR/cache/android-ndk/toolchains/llvm/prebuilt/linux-x86_64/bin:$INIT_DIR/cache/mingw/$(echo $MINGW_FILENAME | sed "s/.tar.xz//g")/bin
 	export ANDROID_SDK="$1"
 	export ARCH="$2"
 
@@ -457,7 +457,7 @@ fi
 
 export NDK_URL="https://dl.google.com/android/repository/android-ndk-r26b-linux.zip"
 export NDK_FILENAME="${NDK_URL##*/}"
-export MINGW_URL="https://github.com/mstorsjo/llvm-mingw/releases/download/20240619/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64.tar.xz"
+export MINGW_URL="http://techer.pascal.free.fr/Red-Rose_MinGW-w64-Toolchain/Red-Rose-MinGW-w64-Posix-Urct-v12.0.0.r458.g03d8a40f5-Gcc-11.5.0.tar.xz"
 export MINGW_FILENAME="${MINGW_URL##*/}"
 
 export PACKAGES="$(cat packages/index)"

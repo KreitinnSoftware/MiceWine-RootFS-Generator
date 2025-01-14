@@ -1,4 +1,4 @@
-PKG_VER="10.0-rc5-esync"
+PKG_VER="10.0-rc5-esync-2"
 PKG_CATEGORY="Wine"
 PKG_PRETTY_NAME="Wine ($PKG_VER)"
 
