@@ -1,0 +1,21 @@
+diff --git a/bin/install_megadrivers.py b/bin/install_megadrivers.py
+index 216f6999feb..c79e95d1afd 100644
+--- a/bin/install_megadrivers.py
++++ b/bin/install_megadrivers.py
+@@ -24,7 +24,16 @@
+ 
+ import argparse
+ import os
++import shutil
++ 
++def link(src, dest):
++    shutil.copyfile(src, dest)
+ 
++def unlink(src):
++    os.remove(src)
++
++os.link = link
++os.unlink = unlink
+ 
+ def resolve_libdir(libdir):
+     if os.path.isabs(libdir):
