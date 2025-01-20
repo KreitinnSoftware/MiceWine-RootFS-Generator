@@ -108,7 +108,7 @@ wined3dDownload() {
 	else
 		echo "Downloading WineD3D-$1..."
 
-		cd "WineD3D"	
+		cd "WineD3D"
 
 		curl -# -L -O "https://downloads.fdossena.com/Projects/WineD3D/Builds/WineD3DForWindows_$1.zip"
 		curl -# -L -O "https://downloads.fdossena.com/Projects/WineD3D/Builds/WineD3DForWindows_$1-x86_64.zip"
@@ -211,7 +211,7 @@ for i in "2.0" "1.10.3" "1.10.2" "1.10.1" "1.10" "1.9.4" "1.9.3" "1.9.2" "1.9.1"
 	dxvkAsyncDownload "$i"
 done
 
-for i in "2.5" "2.4.1" "2.4" "2.3.1" "2.3" "2.2" "2.1" "2.0" "1.10.3" "1.10.2" "1.10.1" "1.10" "1.9.4" "1.9.3" "1.9.2" "1.9.1" "1.9" "1.7.2" "1.7.1" "1.7" "1.7.3"; do
+for i in "2.5.3" "2.5.2" "2.5.1" "2.5" "2.4.1" "2.4" "2.3.1" "2.3" "2.2" "2.1" "2.0" "1.10.3" "1.10.2" "1.10.1" "1.10" "1.9.4" "1.9.3" "1.9.2" "1.9.1" "1.9" "1.7.2" "1.7.1" "1.7" "1.7.3"; do
 	dxvkDownload "$i"
 done
 
@@ -225,5 +225,8 @@ done
 
 customDxvkDownload "DXVK-1.10-Stripped-Requirements" "https://github.com/KreitinnSoftware/dxvk/releases/download/dxvk-1.10-stripped-requirements/dxvk-1.10-b3e85be0fcef978604656a19ecafdde85a28326a.tar.gz"
 customDxvkDownload "DXVK-1.7.3-Stripped-Requirements" "https://github.com/KreitinnSoftware/dxvk/releases/download/1.7.3-stripped-4a2c907ab3601eb80269c026b311438f23e066d0/dxvk-1.7.3-stripped-4a2c907ab3601eb80269c026b311438f23e066d0.tar.gz"
+customDxvkDownload "DXVK-1.10.6-Sarek-Stripped-Requirements" "https://github.com/KreitinnSoftware/dxvk-gplasync/raw/refs/heads/main/dxvk-sarek-stripped.tar.gz"
+customDxvkDownload "DXVK-1.10.6-Sarek" "https://github.com/pythonlover02/DXVK-Sarek/releases/download/v1.10.6/dxvk-sarek-v1.10.6.tar.gz"
+customDxvkDownload "DXVK-1.10.6-Sarek-ASync" "https://github.com/pythonlover02/DXVK-Sarek/releases/download/v1.10.6/dxvk-sarek-async-v1.10.6.tar.gz"
 
 cp -rf "$INIT_DIR/etc/"* .
