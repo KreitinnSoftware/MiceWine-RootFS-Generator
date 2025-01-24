@@ -275,6 +275,10 @@ setupPackage()
 
 				cd ..
 
+				if [ -n "$CI" ]; then
+					rm -rf "$INIT_DIR/cache/$package"
+				fi
+
 				echo $package >> index
 			fi
 		fi
@@ -410,6 +414,10 @@ compileAll()
 			fi
 
 			$INIT_DIR/create-rat-pkg.sh "$package" "$pkgPrettyName" "$vkDriverLib" "$ARCHITECTURE" "$pkgVersion" "$pkgCategory" "$packageDestDirPkg" "$INIT_DIR/built-pkgs" 0
+
+			if [ -n "$CI" ]; then
+				rm -rf "$INIT_DIR/workdir/$package"
+			fi
 		fi
 	done
 }
@@ -422,6 +430,7 @@ showHelp()
 	echo "  --help: Show this message and exit."
 	echo "  --clean-workdir: Clean workdir (for a clean compiling)."
 	echo "  --clean-cache: Clean cache of downloaded packages."
+	echo "  --ci: Clean cache and build files after build of each package (for saving space on CI)"
 	echo ""
 	echo "Available Architectures:"
 	echo "  x86_64"
@@ -470,6 +479,10 @@ esac
 
 case $* in "--clean-workdir")
 	rm -rf workdir
+esac
+
+case $* in "--ci")
+	export CI=1
 esac
 
 rm -rf logs
