@@ -65,6 +65,7 @@ icoutils
 gstreamer
 gst-plugins-base
 gst-plugins-good
+gst-plugins-ugly
 box64
 wine
 libandroid-wordexp
