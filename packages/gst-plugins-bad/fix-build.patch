@@ -1,0 +1,14 @@
+diff -uNr gst-plugins-bad/sys/kms/gstkmssink.c gst-plugins-bad.mod/sys/kms/gstkmssink.c
+--- gst-plugins-bad/sys/kms/gstkmssink.c	2025-01-24 23:59:44.074586375 -0300
++++ gst-plugins-bad.mod/sys/kms/gstkmssink.c	2025-01-24 23:59:39.355599380 -0300
+@@ -68,6 +68,10 @@
+ #include "gstkmsedid.h"
+ #endif
+ 
++#ifdef __ANDROID__
++#define ffs __builtin_ffs
++#endif
++
+ #define GST_PLUGIN_NAME "kmssink"
+ #define GST_PLUGIN_DESC "Video sink using the Linux kernel mode setting API"
+ 
