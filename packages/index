@@ -66,7 +66,6 @@ gstreamer
 gst-plugins-base
 gst-plugins-good
 gst-plugins-ugly
-gst-plugins-bad
 box64
 wine
 libandroid-wordexp
