@@ -36,7 +36,7 @@ jobs:
     - name: "Start Building (x86_64)"
       run: |
         cd MiceWine-RootFS-Generator
-        ./build-all.sh x86_64 --ci
+        ./build-all.sh x86_64 --ci --hide-host-include
         cd logs
         7z a /home/runner/MiceWine-RootFS-x86_64-Logs.zip
 
@@ -54,7 +54,7 @@ jobs:
     - name: "Start Building (aarch64)"
       run: |
         cd MiceWine-RootFS-Generator
-        ./build-all.sh aarch64 --ci
+        ./build-all.sh aarch64 --ci --hide-host-include
         cd logs
         7z a /home/runner/MiceWine-RootFS-aarch64-Logs.zip
 

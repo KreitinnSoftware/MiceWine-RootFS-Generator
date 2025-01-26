@@ -269,6 +269,12 @@ setupPackage()
 					echo "$VK_DRIVER_LIB" >> vk-driver-lib
 				fi
 
+				if [ -n "$HIDE_HOST_INCLUDE" ]; then
+					if [ -z "$HOST_BUILD_MAKE" ]; then
+						echo "1" >> hide-host-include
+					fi
+				fi
+
 				git -C "$INIT_DIR" log -1 --format="%H" -- "packages/$package" > pkg-commit
 
 				chmod +x build.sh
@@ -391,7 +397,15 @@ compileAll()
 		else
 			echo "-- Compiling Package '$package'..."
 
+			if [ -f "../hide-host-include" ]; then
+				sudo mount --bind $PREFIX/include /usr/include
+			fi
+
 			../build.sh 1> "$INIT_DIR/logs/$package-log.txt" 2> "$INIT_DIR/logs/$package-error_log.txt"
+
+			if [ -f "../hide-host-include" ]; then
+				sudo umount /usr/include
+			fi
 
 			if [ "$?" != "0" ]; then
 				echo "- Package: '"$package"' failed to compile. Check logs"
@@ -431,6 +445,7 @@ showHelp()
 	echo "  --clean-workdir: Clean workdir (for a clean compiling)."
 	echo "  --clean-cache: Clean cache of downloaded packages."
 	echo "  --ci: Clean cache and build files after build of each package (for saving space on CI)"
+	echo "  --hide-host-include: Try to hide system wide include dir by using mount --bind"
 	echo ""
 	echo "Available Architectures:"
 	echo "  x86_64"
@@ -473,16 +488,20 @@ export PACKAGES="$(cat packages/index)"
 export INIT_DIR="$PWD"
 export INIT_PATH="$PATH"
 
-case $* in "--clean-cache")
+case $* in *"--clean-cache"*)
 	rm -rf cache
 esac
 
-case $* in "--clean-workdir")
+case $* in *"--clean-workdir"*)
 	rm -rf workdir
 esac
 
-case $* in "--ci")
+case $* in *"--ci"*)
 	export CI=1
+esac
+
+case $* in *"--hide-host-include"*)
+	export HIDE_HOST_INCLUDE=1
 esac
 
 rm -rf logs
