@@ -1,0 +1,25 @@
+diff -uNr mangohud/src/cpu.cpp mangohud-mod/src/cpu.cpp
+--- mangohud/src/cpu.cpp	2025-02-16 11:41:44.227866045 -0300
++++ mangohud-mod/src/cpu.cpp	2025-02-16 11:43:38.085309923 -0300
+@@ -109,6 +109,10 @@
+ 
+ bool CPUStats::Init()
+ {
++#ifdef __ANDROID__
++    return false;
++#endif
++
+     if (m_inited)
+         return true;
+ 
+@@ -502,6 +506,10 @@
+ }
+ 
+ bool CPUStats::GetCpuFile() {
++#ifdef __ANDROID__
++    return false;
++#endif
++
+     if (m_cpuTempFile)
+         return true;
+ 
