@@ -59,6 +59,7 @@ mesa-vulkan-wrapper-rev8
 mesa-vulkan-wrapper-rev9
 libadrenotools
 mesa-vulkan-wrapper
+mesa-vulkan-wrapper-adrenotools
 mesa-zink
 pcre2
 glib

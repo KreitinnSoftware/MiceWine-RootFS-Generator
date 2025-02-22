@@ -1,79 +1,79 @@
 name: Build and Release MiceWine RootFS
 
 on:
+  push:
+    branches: "*"
   workflow_dispatch:
 
 jobs:
   build:
 
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
-    - name: "Clone Repository"
-      run: |
-        git clone https://github.com/KreitinnSoftware/MiceWine-RootFS-Generator
 
-    - name: "Environment Preparation"
+    - name: "Install ArchLinux"
       run: |
         sudo apt update
-        sudo apt install -y python3 python3-pip cmake wget git p7zip build-essential pkg-config xmlto fop xsltproc llvm autoconf libxml-parser-perl bison flex glslang-tools
-        pip3 install mako meson ninja docutils StrEnum
-        sudo ln -sf ~/.local/bin/meson /usr/bin/meson
+        sudo apt install -y arch-install-scripts wget
+        sudo mkdir -p /mnt/
 
-    - name: "Setup Basic Android (x86_64) Runtime Environment"
+        wget https://geo.mirror.pkgbuild.com/iso/2025.02.01/archlinux-bootstrap-x86_64.tar.zst
+
+        sudo tar -xf archlinux-bootstrap-x86_64.tar.zst
+        sudo rm -f archlinux-bootstrap-x86_64.tar.zst
+        sudo mv root.x86_64 /mnt/arch
+
+        sudo arch-chroot /mnt/arch bash -c "pacman-key --init && pacman-key --populate && sed -i "s/#Server/Server/g" /etc/pacman.d/mirrorlist && sed -i "s/CheckSpace/#CheckSpace/g" /etc/pacman.conf && pacman -Syu --noconfirm base base-devel git cmake meson ninja bison flex python-pip wget python-mako python-pyyaml unzip 7zip glslang glib2-devel python-docutils xmlto fop libxslt python-docutils"
+
+    - name: "Checkout Repository"
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: "Copy Repository to Chroot"
       run: |
-        git clone https://github.com/termux/termux-docker.git
-        sudo cp -rf termux-docker/system/x86 /system
-        sudo chown -R $(whoami):$(whoami) /system
-        sudo chmod 755 -R /system
+        sudo cp -rf $PWD /mnt/arch/MiceWine-RootFS-Generator
 
     - name: "Download Latest Release Rat Packages"
       run: |
-        cd MiceWine-RootFS-Generator
         curl -LO# https://github.com/KreitinnSoftware/MiceWine-RootFS-Generator/releases/download/$(curl -s https://api.github.com/repos/KreitinnSoftware/MiceWine-RootFS-Generator/releases | grep tag_name -m 1 | cut -d ":" -f 2 | sed "s/\"//g" | sed "s/,//g" | sed "s/ //g")/MiceWine-Packages.zip || true
-        unzip -o MiceWine-Packages.zip -d built-pkgs || true
+        sudo unzip -o MiceWine-Packages.zip -d /mnt/arch/MiceWine-RootFS-Generator/built-pkgs || true
+        rm -f MiceWine-Packages.zip
+
+    - name: "Setup Basic Android (x86_64) Runtime Environment (Required for Building x86_64 glib)"
+      run: |
+        git clone https://github.com/termux/termux-docker.git
+        sudo cp -rf termux-docker/system/x86 /mnt/arch/system
+        sudo chown -R $(whoami):$(whoami) /mnt/arch/system
+        sudo chmod 755 -R /mnt/arch/system
 
     - name: "Start Building (x86_64)"
       run: |
-        cd MiceWine-RootFS-Generator
-        ./build-all.sh x86_64 --ci
-        cd logs
-        7z a /home/runner/MiceWine-RootFS-x86_64-Logs.zip
+        sudo arch-chroot /mnt/arch bash -c "cd /MiceWine-RootFS-Generator && ./build-all.sh x86_64 --ci && cd logs && 7z a /MiceWine-RootFS-x86_64-Logs.zip"
 
     - name: "Create RootFS File (x86_64)"
       run: |
-        cd MiceWine-RootFS-Generator
-        ./create-rootfs.sh x86_64
-        mv "MiceWine-RootFS-($(git rev-parse --short HEAD))-x86_64.rat" /home/runner/MiceWine-RootFS-x86_64.rat
+        sudo arch-chroot /mnt/arch bash -c "cd /MiceWine-RootFS-Generator && ./create-rootfs.sh x86_64 && mv MiceWine-RootFS-\($(git rev-parse --short HEAD)\)-x86_64.rat /MiceWine-RootFS-x86_64.rat"
 
     - name: "Clean (x86_64) RootFS"
       run: |
-        cd MiceWine-RootFS-Generator
-        sudo rm -rf /data/data/com.micewine.emu/files/usr workdir rootfs
+        sudo rm -rf /mnt/arch/data /mnt/arch/MiceWine-RootFS-Generator/workdir /mnt/arch/MiceWine-RootFS-Generator/rootfs
 
     - name: "Start Building (aarch64)"
       run: |
-        cd MiceWine-RootFS-Generator
-        ./build-all.sh aarch64 --ci
-        cd logs
-        7z a /home/runner/MiceWine-RootFS-aarch64-Logs.zip
-
-    - name: "Save All Rat Packages (for next build be faster)"
-      run: |
-        cd MiceWine-RootFS-Generator
-        cd built-pkgs
-        7z a /home/runner/MiceWine-Packages.zip
-        cd ..
+        sudo arch-chroot /mnt/arch bash -c "cd /MiceWine-RootFS-Generator && ./build-all.sh aarch64 --ci && cd logs && 7z a /MiceWine-RootFS-aarch64-Logs.zip"
 
     - name: "Create RootFS File (aarch64)"
       run: |
-        cd MiceWine-RootFS-Generator
-        ./create-rootfs.sh aarch64
-        mv "MiceWine-RootFS-($(git rev-parse --short HEAD))-aarch64.rat" /home/runner/MiceWine-RootFS-aarch64.rat
+        sudo arch-chroot /mnt/arch bash -c "cd /MiceWine-RootFS-Generator && ./create-rootfs.sh aarch64 && mv MiceWine-RootFS-\($(git rev-parse --short HEAD)\)-aarch64.rat /MiceWine-RootFS-aarch64.rat"
+
+    - name: "Save Rat Packages"
+      run: |
+        sudo arch-chroot /mnt/arch bash -c "cd /MiceWine-RootFS-Generator/built-pkgs && 7z a /MiceWine-Packages.zip"
 
     - name: "Get Short SHA"
       run: |
-        cd MiceWine-RootFS-Generator
         echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
     - name: "Create Release"
@@ -83,9 +83,9 @@ jobs:
         tag_name: ${{ env.SHORT_SHA }}
         prerelease: true
         files: |
-            /home/runner/MiceWine-RootFS-aarch64.rat
-            /home/runner/MiceWine-RootFS-aarch64-Logs.zip
-            /home/runner/MiceWine-Packages.zip
-            /home/runner/MiceWine-RootFS-x86_64.rat
-            /home/runner/MiceWine-RootFS-x86_64-Logs.zip
+          /mnt/arch/MiceWine-RootFS-aarch64.rat
+          /mnt/arch/MiceWine-RootFS-aarch64-Logs.zip
+          /mnt/arch/MiceWine-Packages.zip
+          /mnt/arch/MiceWine-RootFS-x86_64.rat
+          /mnt/arch/MiceWine-RootFS-x86_64-Logs.zip
 
