@@ -1,0 +1,12 @@
+diff -uNr libadrenotools/CMakeLists.txt libadrenotools-mod/CMakeLists.txt
+--- libadrenotools/CMakeLists.txt	2025-02-22 00:49:47.364769744 +0000
++++ libadrenotools-mod/CMakeLists.txt	2025-02-22 01:19:37.538558903 +0000
+@@ -10,6 +10,8 @@
+ 
+ add_subdirectory(lib/linkernsbypass)
+ 
++set_property(TARGET linkernsbypass PROPERTY POSITION_INDEPENDENT_CODE ON)
++
+ set(LIB_SOURCES src/bcenabler.cpp
+                 src/driver.cpp
+                 include/adrenotools/bcenabler.h
