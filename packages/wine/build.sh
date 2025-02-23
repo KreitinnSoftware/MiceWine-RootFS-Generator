@@ -1,4 +1,4 @@
-PKG_VER="10.0-esync"
+PKG_VER="10.0-2-esync"
 PKG_CATEGORY="Wine"
 PKG_PRETTY_NAME="Wine ($PKG_VER)"
 
@@ -10,6 +10,7 @@ HOST_BUILD_CONFIGURE_ARGS="--enable-win64 --without-x"
 HOST_BUILD_FOLDER="$INIT_DIR/workdir/$package/wine-tools"
 HOST_BUILD_MAKE="make -j $(nproc) __tooldeps__ nls/all"
 OVERRIDE_PREFIX="$(realpath $PREFIX/../wine)"
+
 CONFIGURE_ARGS="--enable-archs=i386,x86_64 \
 				--host=$TOOLCHAIN_TRIPLE \
 				--with-wine-tools=$INIT_DIR/workdir/$package/wine-tools \
@@ -26,9 +27,10 @@ CONFIGURE_ARGS="--enable-archs=i386,x86_64 \
 				--with-opengl \
 				--with-gnutls \
 				--with-mingw=clang \
-				--with-xi \
-    				--enable-nls \
+				--enable-nls \
 				--without-xshm \
+				--with-xinput \
+				--with-xinput2 \
 				--without-xxf86vm \
 				--without-osmesa \
 				--without-usb \
