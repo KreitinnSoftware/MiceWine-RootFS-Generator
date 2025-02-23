@@ -26,6 +26,7 @@ CONFIGURE_ARGS="--enable-archs=i386,x86_64 \
 				--with-opengl \
 				--with-gnutls \
 				--with-mingw=clang \
+    				--enable-nls \
 				--without-xshm \
 				--without-xxf86vm \
 				--without-osmesa \
