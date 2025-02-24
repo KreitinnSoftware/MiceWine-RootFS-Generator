@@ -1,0 +1,4 @@
+PKG_VER=1.0
+PKG_PRETTY_NAME="Android C++ Library"
+PKG_CATEGORY=library
+BUILD_IN_SRC=1

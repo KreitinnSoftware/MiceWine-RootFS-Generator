@@ -248,7 +248,13 @@ setupPackage()
 				elif [ -e "Makefile" ]; then
 					echo "cd .." >> build.sh
 					echo "make -j $(nproc)" >> build.sh
-					echo "make -j $(nproc) install" >> build.sh
+
+					if [ -e "$INIT_DIR/packages/$package/custom-make-install.sh" ]; then
+						echo "$INIT_DIR/packages/$package/custom-make-install.sh" >> build.sh
+					else
+						echo "make -j $(nproc) install" >> build.sh
+					fi
+
 					echo "cd build_dir" >> build.sh
 				else
 					echo "Unsupported build system. Stopping..."
@@ -344,6 +350,9 @@ compileAll()
 	echo "-- Starting Building --"
 	echo ""
 
+	local packageNum=1
+	local packageCount=$(cat "$INIT_DIR/workdir/index" | wc -l)
+
 	for package in $(cat "$INIT_DIR/workdir/index"); do
 		local packageBuildDir="$INIT_DIR/workdir/$package/build_dir"
 		local packageDestDirPkg="$INIT_DIR/workdir/$package/destdir-pkg"
@@ -393,9 +402,9 @@ compileAll()
 		fi
 
 		if [ -f "$INIT_DIR/built-pkgs/$package-$pkgVersion-$ARCHITECTURE.rat" ]; then
-			echo "-- Package '$package' already built."
+			echo "-- [$packageNum/$packageCount] Package '$package' already built."
 		else
-			echo "-- Compiling Package '$package'..."
+			echo "-- [$packageNum/$packageCount] Compiling Package '$package'..."
 
 			if [ -f "../hide-host-include" ]; then
 				sudo mount --bind $PREFIX/include /usr/include
@@ -408,12 +417,12 @@ compileAll()
 			fi
 
 			if [ "$?" != "0" ]; then
-				echo "- Package: '"$package"' failed to compile. Check logs"
+				echo "- [$packageNum/$packageCount] Package: '"$package"' failed to compile. Check logs"
 				exit 0
 			fi
 
 			if [ ! -d "$packageDestDirPkg/data/data/com.micewine.emu" ]; then
-				echo "- Package: '"$package"' failed to compile. Check logs"
+				echo "- [$packageNum/$packageCount] Package: '"$package"' failed to compile. Check logs"
 				exit 0
 			fi
 
@@ -433,6 +442,8 @@ compileAll()
 				rm -rf "$INIT_DIR/workdir/$package"
 			fi
 		fi
+
+		packageNum=$(( $packageNum + 1 ))
 	done
 }
 
@@ -512,11 +523,3 @@ setupBuildEnv 29 $ARCHITECTURE
 setupPackages
 
 compileAll
-
-cd "$INIT_DIR"
-
-mkdir -p "$INIT_DIR/cache/libc++_shared/files/usr/lib"
-
-cp "$INIT_DIR/cache/android-ndk/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/$ARCHITECTURE-linux-android/libc++_shared.so" "$INIT_DIR/cache/libc++_shared/files/usr/lib"
-
-./create-rat-pkg.sh "libc++_shared" "Android C++ Library" "" "$ARCHITECTURE" "1.0" "library" "$INIT_DIR/cache/libc++_shared" "$INIT_DIR/built-pkgs"
