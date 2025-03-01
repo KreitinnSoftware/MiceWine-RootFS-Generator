@@ -214,7 +214,7 @@ setupPackage()
 						echo "make -j $(nproc) install" >> build.sh
 					fi
 				elif [ -e "./CMakeLists.txt" ] && [ -n "$CMAKE_ARGS" ]; then
-					echo "cmake -DCMAKE_INSTALL_PREFIX=$PREFIX_DIR -DCMAKE_INSTALL_LIBDIR=$PREFIX_DIR/lib $CMAKE_ARGS .." >> build.sh
+					echo "cmake -DCMAKE_INSTALL_PREFIX=$PREFIX_DIR -DCMAKE_INSTALL_LIBDIR=$PREFIX_DIR/lib -DCMAKE_BUILD_TYPE=Release $CMAKE_ARGS .." >> build.sh
 					echo "make -j $(nproc)" >> build.sh
 
 					if [ -e "$INIT_DIR/packages/$package/custom-make-install.sh" ]; then
@@ -223,7 +223,7 @@ setupPackage()
 						echo "make -j $(nproc) install" >> build.sh
 					fi
 				elif [ -e "./meson.build" ] && [ -n "$MESON_ARGS" ]; then
-					echo "meson setup --cross-file=$INIT_DIR/meson-cross-file-$ARCHITECTURE -Dprefix=$PREFIX_DIR $MESON_ARGS .." >> build.sh
+					echo "meson setup --cross-file=$INIT_DIR/meson-cross-file-$ARCHITECTURE -Dprefix=$PREFIX_DIR -Dbuildtype=release $MESON_ARGS .." >> build.sh
 
 					if [ -e "$INIT_DIR/packages/$package/post-configure.sh" ]; then
 						echo "$INIT_DIR/packages/$package/post-configure.sh" >> build.sh
