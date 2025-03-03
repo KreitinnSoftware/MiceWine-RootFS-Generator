@@ -1,4 +1,4 @@
-PKG_VER="10.1-esync-xinput"
+PKG_VER="10.1-1-esync-xinput"
 PKG_CATEGORY="Wine"
 PKG_PRETTY_NAME="Wine ($PKG_VER)"
 
