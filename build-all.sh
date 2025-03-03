@@ -304,8 +304,8 @@ setupPackages()
 	mkdir -p "$PREFIX/include"
 
 	for package in $PACKAGES; do
-		packageFullPath=$(ls "$INIT_DIR/built-pkgs/$package"*"$ARCHITECTURE.rat" 2> /dev/zero)
-		packageCommitFullPath=$(ls "$INIT_DIR/built-pkgs/$package"*"$ARCHITECTURE.commit" 2> /dev/zero)
+		packageFullPath=$(find "$INIT_DIR/built-pkgs/$package-"*"$ARCHITECTURE.rat" 2> /dev/zero)
+		packageCommitFullPath=$(ls "$INIT_DIR/built-pkgs/$package-"*"$ARCHITECTURE.commit" 2> /dev/zero)
 
 		if [ -f "$packageFullPath" ]; then
 			packageCommit=$(cat "$packageCommitFullPath")
