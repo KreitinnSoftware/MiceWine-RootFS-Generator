@@ -24,7 +24,7 @@ jobs:
         sudo rm -f archlinux-bootstrap-x86_64.tar.zst
         sudo mv root.x86_64 /mnt/arch
 
-        sudo arch-chroot /mnt/arch bash -c "pacman-key --init && pacman-key --populate && sed -i "s/#Server/Server/g" /etc/pacman.d/mirrorlist && sed -i "s/CheckSpace/#CheckSpace/g" /etc/pacman.conf && pacman -Syu --noconfirm base base-devel git cmake meson ninja bison flex python-pip wget python-mako python-pyyaml unzip 7zip glslang glib2-devel python-docutils xmlto fop libxslt python-docutils"
+        sudo arch-chroot /mnt/arch bash -c "pacman-key --init && pacman-key --populate && sed -i "s/#Server/Server/g" /etc/pacman.d/mirrorlist && sed -i "s/CheckSpace/#CheckSpace/g" /etc/pacman.conf && pacman -Syu --noconfirm base base-devel git cmake meson ninja bison flex python-pip wget python-mako python-pyyaml unzip 7zip glslang glib2-devel python-docutils xmlto fop libxslt python-docutils mingw-w64-gcc"
 
     - name: "Checkout Repository"
       uses: actions/checkout@v4

@@ -17,23 +17,7 @@ setupBuildEnv()
 		echo ""
 	fi
 
-	if [ ! -d "$INIT_DIR/cache/mingw" ]; then
-		echo "Downloading mingw..."
-
-		curl --output "cache/$MINGW_FILENAME" -#L "$MINGW_URL"
-
-		echo "Unpacking mingw..."
-
-		tar -xf "cache/$MINGW_FILENAME" -C "cache"
-
-		mv "cache/$(tar -tf "cache/$MINGW_FILENAME" | cut -d "/" -f 1 | head -n 1)" "cache/mingw"
-
-		rm -f "cache/$MINGW_FILENAME"
-
-		echo ""
-	fi
-
-	export PATH=$INIT_PATH:$INIT_DIR/cache/android-ndk/toolchains/llvm/prebuilt/linux-x86_64/bin:$INIT_DIR/cache/mingw/bin
+	export PATH=$INIT_PATH:$INIT_DIR/cache/android-ndk/toolchains/llvm/prebuilt/linux-x86_64/bin
 	export ANDROID_SDK="$1"
 	export ARCH="$2"
 
@@ -492,8 +476,6 @@ fi
 
 export NDK_URL="https://dl.google.com/android/repository/android-ndk-r26b-linux.zip"
 export NDK_FILENAME="${NDK_URL##*/}"
-export MINGW_URL="https://github.com/mstorsjo/llvm-mingw/releases/download/20240619/llvm-mingw-20240619-ucrt-ubuntu-20.04-x86_64.tar.xz"
-export MINGW_FILENAME="${MINGW_URL##*/}"
 
 export PACKAGES="$(cat packages/index)"
 export INIT_DIR="$PWD"

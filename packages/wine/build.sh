@@ -25,7 +25,7 @@ CONFIGURE_ARGS="--enable-archs=i386,x86_64 \
 				--with-gstreamer \
 				--with-opengl \
 				--with-gnutls \
-				--with-mingw=clang \
+				--with-mingw=gcc \
 				--with-xinput \
 				--with-xinput2 \
     				--enable-nls \
