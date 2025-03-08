@@ -1,5 +1,5 @@
 PKG_VER=25.0.0-[gss]-adrenotools
-PKG_CATEGORY="VulkanDriver"
+PKG_CATEGORY="AdrenoTools"
 PKG_PRETTY_NAME="Mesa Android Wrapper (AdrenoTools)"
 VK_DRIVER_LIB="libvulkan_wrapper.so"
 

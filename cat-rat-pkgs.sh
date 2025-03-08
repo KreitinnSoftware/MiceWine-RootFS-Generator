@@ -33,6 +33,7 @@ mkdir -p /tmp/$RAND_VAL
 cd /tmp/$RAND_VAL
 
 mkdir -p "vulkanDrivers"
+mkdir -p "adrenoTools"
 mkdir -p "box64"
 mkdir -p "wine"
 
@@ -54,6 +55,8 @@ for i in $*; do
 			cp -f "$resolvedPath" "box64"
 		elif [ "$packageCategory" == "Wine" ]; then
 			cp -f "$resolvedPath" "wine"
+		elif [ "$packageCategory" == "AdrenoTools" ]; then
+			cp -f "$resolvedPath" "adrenoTools"
 		else
 			7z -aoa x "$resolvedPath" &> /dev/zero
 		fi
