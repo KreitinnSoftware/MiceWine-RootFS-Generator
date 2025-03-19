@@ -42,7 +42,7 @@ touch new_makeSymlinks.sh
 for i in $*; do
 	resolvedPath=$(resolvePath "$i")
 
-	if [ -n "$resolvedPath" ]; then
+	if [ -n "$resolvedPath" ] && [ ! -f "$INIT_DIR/built-pkgs/$(basename $i | sed "s/.rat/.isOptional/g")" ]; then
 		echo "Extracting '$(basename $resolvedPath)'..."
 
 		7z -aoa e "$resolvedPath" pkg-header &> /dev/zero

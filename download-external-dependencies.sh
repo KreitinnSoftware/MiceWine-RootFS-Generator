@@ -203,30 +203,55 @@ cd "wine-utils"
 
 mkdir -p "DXVK" "WineD3D" "VKD3D"
 
-for i in "2.4-1" "2.3.1-1" "2.3-1" "2.2-4" "2.1-4"; do
+export DXVK_GPLASYNC_LIST=""
+export DXVK_ASYNC_LIST=""
+export DXVK_LIST=""
+export WINED3D_LIST=""
+export VKD3D_LIST=""
+
+case "$1" in "--optional")
+	DXVK_GPLASYNC_LIST="2.4-1 2.3.1-1 2.3-1 2.2-4 2.1-4"
+	DXVK_ASYNC_LIST="2.0 1.10.3 1.10.2 1.10.1 1.10 1.9.4 1.9.3 1.9.2 1.9.1 1.9"
+	DXVK_LIST="2.5.3 2.5.2 2.5.1 2.5 2.4.1 2.4 2.3.1 2.3 2.2 2.1 2.0 1.10.3 1.10.2 1.10.1 1.10 1.9.4 1.9.3 1.9.2 1.9.1 1.9 1.7.2 1.7.1 1.7 1.7.3"
+	WINED3D_LIST="10.0 10.0-rc3 9.20 9.16 9.3 9.1 9.0 8.15 7.11 3.17"
+	VKD3D_LIST="2.14.1 2.14 2.13 2.12 2.11.1 2.11 2.10 2.9 2.8"
+	;;
+	*)
+	DXVK_GPLASYNC_LIST="2.4-1"
+	DXVK_ASYNC_LIST="1.10.3"
+	DXVK_LIST="2.4.1 1.10.3"
+	WINED3D_LIST="3.17 10.0"
+	VKD3D_LIST="2.8"
+esac
+
+
+for i in $DXVK_GPLASYNC_LIST; do
 	dxvkGplAsyncDownload "$i"
 done
 
-for i in "2.0" "1.10.3" "1.10.2" "1.10.1" "1.10" "1.9.4" "1.9.3" "1.9.2" "1.9.1" "1.9"; do
+for i in $DXVK_ASYNC_LIST; do
 	dxvkAsyncDownload "$i"
 done
 
-for i in "2.5.3" "2.5.2" "2.5.1" "2.5" "2.4.1" "2.4" "2.3.1" "2.3" "2.2" "2.1" "2.0" "1.10.3" "1.10.2" "1.10.1" "1.10" "1.9.4" "1.9.3" "1.9.2" "1.9.1" "1.9" "1.7.2" "1.7.1" "1.7" "1.7.3"; do
+for i in $DXVK_LIST; do
 	dxvkDownload "$i"
 done
 
-for i in "10.0" "10.0-rc3" "9.20" "9.16" "9.3" "9.1" "9.0" "8.15" "7.11" "3.17"; do
+for i in $WINED3D_LIST; do
 	wined3dDownload "$i"
 done
 
-for i in "2.14.1" "2.14" "2.13" "2.12" "2.11.1" "2.11" "2.10" "2.9" "2.8"; do
+for i in $VKD3D_LIST; do
 	vkd3dDownload "$i"
 done
 
-customDxvkDownload "DXVK-1.10-Stripped-Requirements" "https://github.com/KreitinnSoftware/dxvk/releases/download/dxvk-1.10-stripped-requirements/dxvk-1.10-b3e85be0fcef978604656a19ecafdde85a28326a.tar.gz"
 customDxvkDownload "DXVK-1.7.3-Stripped-Requirements" "https://github.com/KreitinnSoftware/dxvk/releases/download/1.7.3-stripped-4a2c907ab3601eb80269c026b311438f23e066d0/dxvk-1.7.3-stripped-4a2c907ab3601eb80269c026b311438f23e066d0.tar.gz"
-customDxvkDownload "DXVK-1.10.6-Sarek-Stripped-Requirements" "https://github.com/KreitinnSoftware/dxvk-gplasync/raw/refs/heads/main/dxvk-sarek-stripped.tar.gz"
-customDxvkDownload "DXVK-1.10.6-Sarek" "https://github.com/pythonlover02/DXVK-Sarek/releases/download/v1.10.6/dxvk-sarek-v1.10.6.tar.gz"
-customDxvkDownload "DXVK-1.10.6-Sarek-ASync" "https://github.com/pythonlover02/DXVK-Sarek/releases/download/v1.10.6/dxvk-sarek-async-v1.10.6.tar.gz"
+
+case "$1" in "--optional")
+	customDxvkDownload "DXVK-1.10-Stripped-Requirements" "https://github.com/KreitinnSoftware/dxvk/releases/download/dxvk-1.10-stripped-requirements/dxvk-1.10-b3e85be0fcef978604656a19ecafdde85a28326a.tar.gz"
+	customDxvkDownload "DXVK-1.10.6-Sarek-Stripped-Requirements" "https://github.com/KreitinnSoftware/dxvk-gplasync/raw/refs/heads/main/dxvk-sarek-stripped.tar.gz"
+	customDxvkDownload "DXVK-1.10.6-Sarek" "https://github.com/pythonlover02/DXVK-Sarek/releases/download/v1.10.6/dxvk-sarek-v1.10.6.tar.gz"
+	customDxvkDownload "DXVK-1.10.6-Sarek-ASync" "https://github.com/pythonlover02/DXVK-Sarek/releases/download/v1.10.6/dxvk-sarek-async-v1.10.6.tar.gz"
+esac
 
 cp -rf "$INIT_DIR/etc/"* .

@@ -121,7 +121,7 @@ gitDownload()
 
 setupPackage()
 {
-	unset PKG_VER PKG_CATEGORY PKG_PRETTY_NAME \
+	unset PKG_VER PKG_CATEGORY PKG_PRETTY_NAME PKG_OPTIONAL \
 		GIT_URL SRC_URL GIT_COMMIT \
 		HOST_BUILD_FOLDER HOST_BUILD_MAKE HOST_BUILD_CONFIGURE_ARGS HOST_BUILD_CFLAGS HOST_BUILD_CXXFLAGS HOST_BUILD_LDFLAGS \
 		CONFIGURE_ARGS MESON_ARGS CMAKE_ARGS \
@@ -270,6 +270,7 @@ setupPackage()
 				echo "$PKG_PRETTY_NAME" >> pkg-pretty-name
 				echo "$PKG_VER" >> pkg-ver
 				echo "$PKG_CATEGORY" >> pkg-category
+				echo "$PKG_OPTIONAL" >> pkg-optional
 
 				if [ "$PKG_CATEGORY" == "VulkanDriver" ]; then
 					echo "$VK_DRIVER_LIB" >> vk-driver-lib
@@ -366,6 +367,7 @@ compileAll()
 		pkgVersion="$(cat ../pkg-ver)"
 		pkgCategory="$(cat ../pkg-category)"
 		pkgCommit="$(cat ../pkg-commit)"
+		pkgOptional="$(cat ../pkg-optional)"
 		pkgPrettyName="$(cat ../pkg-pretty-name)"
 		vkDriverLib=""
 
@@ -395,6 +397,7 @@ compileAll()
 			pkgVersion="$(cat ../pkg-ver)"
 			pkgCategory="$(cat ../pkg-category)"
 			pkgCommit="$(cat ../pkg-commit)"
+			pkgOptional="$(cat ../pkg-optional)"
 
 			if [ "$pkgCategory" == "VulkanDriver" ]; then
 				vkDriverLib="$(cat ../vk-driver-lib)"
@@ -431,6 +434,10 @@ compileAll()
 			find "$packageDestDirPkg" -type f > "$INIT_DIR/logs/$package-package-files.txt"
 
 			echo $pkgCommit > "$INIT_DIR/built-pkgs/$package-$pkgVersion-$ARCHITECTURE.commit"
+
+			if [ -n "$pkgOptional" ]; then
+				touch "$INIT_DIR/built-pkgs/$package-$pkgVersion-$ARCHITECTURE.isOptional"
+			fi
 
 			if [ ! -n "$pkgPrettyName" ]; then
 				pkgPrettyName=$package
