@@ -272,7 +272,7 @@ setupPackage()
 				echo "$PKG_CATEGORY" >> pkg-category
 				echo "$PKG_OPTIONAL" >> pkg-optional
 
-				if [ "$PKG_CATEGORY" == "VulkanDriver" ]; then
+				if [ "$PKG_CATEGORY" == "VulkanDriver" ] || [ "$PKG_CATEGORY" == "AdrenoTools" ]; then
 					echo "$VK_DRIVER_LIB" >> vk-driver-lib
 				fi
 
