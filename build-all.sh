@@ -371,7 +371,7 @@ compileAll()
 		pkgPrettyName="$(cat ../pkg-pretty-name)"
 		vkDriverLib=""
 
-		if [ "$pkgCategory" == "VulkanDriver" ] || [ "$PKG_CATEGORY" == "AdrenoTools" ]; then
+		if [ "$pkgCategory" == "VulkanDriver" ] || [ "$pkgCategory" == "AdrenoTools" ]; then
 			vkDriverLib="$(cat ../vk-driver-lib)"
 		fi
 
