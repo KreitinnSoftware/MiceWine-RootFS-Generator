@@ -272,7 +272,7 @@ setupPackage()
 				echo "$PKG_CATEGORY" >> pkg-category
 				echo "$PKG_OPTIONAL" >> pkg-optional
 
-				if [ "$PKG_CATEGORY" == "VulkanDriver" ]; then
+				if [ "$PKG_CATEGORY" == "VulkanDriver" ] || [ "$PKG_CATEGORY" == "AdrenoTools" ]; then
 					echo "$VK_DRIVER_LIB" >> vk-driver-lib
 				fi
 
@@ -371,7 +371,7 @@ compileAll()
 		pkgPrettyName="$(cat ../pkg-pretty-name)"
 		vkDriverLib=""
 
-		if [ "$pkgCategory" == "VulkanDriver" ]; then
+		if [ "$pkgCategory" == "VulkanDriver" ] || [ "$PKG_CATEGORY" == "AdrenoTools" ]; then
 			vkDriverLib="$(cat ../vk-driver-lib)"
 		fi
 
@@ -399,7 +399,7 @@ compileAll()
 			pkgCommit="$(cat ../pkg-commit)"
 			pkgOptional="$(cat ../pkg-optional)"
 
-			if [ "$pkgCategory" == "VulkanDriver" ]; then
+			if [ "$pkgCategory" == "VulkanDriver" ] || [ "$PKG_CATEGORY" == "AdrenoTools" ]; then
 				vkDriverLib="$(cat ../vk-driver-lib)"
 			fi
 		fi
