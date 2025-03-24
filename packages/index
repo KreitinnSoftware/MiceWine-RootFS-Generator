@@ -71,7 +71,9 @@ gst-plugins-base
 gst-plugins-good
 gst-plugins-ugly
 gst-plugins-bad
-box64
+box64-0.3.2
+box64-0.3.3-8bb53e1
+box64-0.3.4
 wine
 libandroid-wordexp
 mangohud
