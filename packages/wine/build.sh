@@ -1,11 +1,11 @@
-PKG_VER="10.1-7-esync-xinput"
+PKG_VER="10.1-8-esync-xinput"
 PKG_CATEGORY="Wine"
 PKG_PRETTY_NAME="Wine ($PKG_VER)"
 
 BLACKLIST_ARCHITECTURE=aarch64
 
 GIT_URL=https://github.com/KreitinnSoftware/wine
-GIT_COMMIT=af317a94572048bd51ca4e6e7f8f6e988b2c1a3a
+GIT_COMMIT=7e93e231f5b27f59f06bd9fbd72705ea7ddccd1a
 HOST_BUILD_CONFIGURE_ARGS="--enable-win64 --without-x"
 HOST_BUILD_FOLDER="$INIT_DIR/workdir/$package/wine-tools"
 HOST_BUILD_MAKE="make -j $(nproc) __tooldeps__ nls/all"
