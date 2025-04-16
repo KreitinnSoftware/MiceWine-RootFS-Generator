@@ -27,7 +27,10 @@ libsndfile
 opus
 libogg
 libvorbis
-fakeintl
+libiconv
+libunistring
+libxml2
+gettext
 pulseaudio
 libdrm
 Vulkan-Headers
@@ -38,8 +41,6 @@ libglvnd
 GLU
 FreeGLUT
 mesa-demos
-libiconv
-libunistring
 openssl
 libghttp
 libevent
@@ -50,7 +51,6 @@ libnettle
 libidn2
 libgnutls
 libffi
-libxml2
 zstd
 libarchive
 android-shmem
