@@ -1,0 +1,9 @@
+diff -uNr libsndfile/CMakeLists.txt libsndfile-fix/CMakeLists.txt
+--- libsndfile/CMakeLists.txt	2025-04-16 12:22:49.528240419 -0300
++++ libsndfile-fix/CMakeLists.txt	2025-04-16 12:57:57.492746076 -0300
+@@ -1,4 +1,4 @@
+-cmake_minimum_required (VERSION 3.1..3.18)
++cmake_minimum_required (VERSION 3.12...3.18)
+ 
+ # MSVC runtime library flags are selected by an abstraction, CMake >= 3.15
+ # This policy still need to be set even with cmake_minimum_required() command above.
