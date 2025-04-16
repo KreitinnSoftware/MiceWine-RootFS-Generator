@@ -1,6 +1,6 @@
-diff -uNr 30-pulseaudio/meson.build 30-pulseaudio-mod/meson.build
---- 30-pulseaudio/meson.build	2024-01-12 14:22:09.000000000 -0300
-+++ 30-pulseaudio-mod/meson.build	2024-12-15 20:43:42.843655547 -0300
+diff -uNr pulseaudio-v17.0/meson.build pulseaudio-v17.0-fix/meson.build
+--- pulseaudio-v17.0/meson.build	2024-01-12 14:22:09.000000000 -0300
++++ pulseaudio-v17.0-fix/meson.build	2025-04-16 13:35:43.427767624 -0300
 @@ -12,9 +12,10 @@
  # For tarballs, the first split will do nothing, but for builds in git, we
  # split out suffixes when there are commits since the last tag
@@ -25,15 +25,6 @@ diff -uNr 30-pulseaudio/meson.build 30-pulseaudio-mod/meson.build
  # Headers which are usable
  
  check_usable_headers = [
-@@ -381,7 +378,7 @@
-     libintl_dep = cc.find_library('intl')
-   endif
- else
--  libintl_dep = cc.find_library('intl')
-+  libintl_dep = []
- endif
- 
- # Symbols
 @@ -448,6 +445,7 @@
  # Core Dependencies
  
@@ -42,9 +33,9 @@ diff -uNr 30-pulseaudio/meson.build 30-pulseaudio-mod/meson.build
  
  thread_dep = dependency('threads')
  foreach f : [
-diff -uNr 30-pulseaudio/src/daemon/caps.c 30-pulseaudio-mod/src/daemon/caps.c
---- 30-pulseaudio/src/daemon/caps.c	2024-01-12 14:22:09.000000000 -0300
-+++ 30-pulseaudio-mod/src/daemon/caps.c	2024-12-15 20:43:42.843655547 -0300
+diff -uNr pulseaudio-v17.0/src/daemon/caps.c pulseaudio-v17.0-fix/src/daemon/caps.c
+--- pulseaudio-v17.0/src/daemon/caps.c	2024-01-12 14:22:09.000000000 -0300
++++ pulseaudio-v17.0-fix/src/daemon/caps.c	2025-04-16 13:33:36.687754997 -0300
 @@ -36,64 +36,11 @@
  
  #include "caps.h"
@@ -113,9 +104,9 @@ diff -uNr 30-pulseaudio/src/daemon/caps.c 30-pulseaudio-mod/src/daemon/caps.c
 -#endif
 +    return;
  }
-diff -uNr 30-pulseaudio/src/daemon/main.c 30-pulseaudio-mod/src/daemon/main.c
---- 30-pulseaudio/src/daemon/main.c	2024-01-12 14:22:09.000000000 -0300
-+++ 30-pulseaudio-mod/src/daemon/main.c	2024-12-15 20:43:42.844655547 -0300
+diff -uNr pulseaudio-v17.0/src/daemon/main.c pulseaudio-v17.0-fix/src/daemon/main.c
+--- pulseaudio-v17.0/src/daemon/main.c	2024-01-12 14:22:09.000000000 -0300
++++ pulseaudio-v17.0-fix/src/daemon/main.c	2025-04-16 13:33:36.691088331 -0300
 @@ -163,206 +163,11 @@
  }
  
@@ -324,9 +315,9 @@ diff -uNr 30-pulseaudio/src/daemon/main.c 30-pulseaudio-mod/src/daemon/main.c
  #ifdef HAVE_SYS_RESOURCE_H
  
  static int set_one_rlimit(const pa_rlimit *r, int resource, const char *name) {
-diff -uNr 30-pulseaudio/src/modules/echo-cancel/module-echo-cancel.c 30-pulseaudio-mod/src/modules/echo-cancel/module-echo-cancel.c
---- 30-pulseaudio/src/modules/echo-cancel/module-echo-cancel.c	2024-01-12 14:22:09.000000000 -0300
-+++ 30-pulseaudio-mod/src/modules/echo-cancel/module-echo-cancel.c	2024-12-15 20:43:42.844655547 -0300
+diff -uNr pulseaudio-v17.0/src/modules/echo-cancel/module-echo-cancel.c pulseaudio-v17.0-fix/src/modules/echo-cancel/module-echo-cancel.c
+--- pulseaudio-v17.0/src/modules/echo-cancel/module-echo-cancel.c	2024-01-12 14:22:09.000000000 -0300
++++ pulseaudio-v17.0-fix/src/modules/echo-cancel/module-echo-cancel.c	2025-04-16 13:33:36.714421667 -0300
 @@ -2067,18 +2067,18 @@
      }
  
@@ -351,9 +342,9 @@ diff -uNr 30-pulseaudio/src/modules/echo-cancel/module-echo-cancel.c 30-pulseaud
              if (u->drift_file == NULL)
                  perror ("fopen failed");
          }
-diff -uNr 30-pulseaudio/src/modules/meson.build 30-pulseaudio-mod/src/modules/meson.build
---- 30-pulseaudio/src/modules/meson.build	2024-01-12 14:22:09.000000000 -0300
-+++ 30-pulseaudio-mod/src/modules/meson.build	2024-12-15 20:43:42.844655547 -0300
+diff -uNr pulseaudio-v17.0/src/modules/meson.build pulseaudio-v17.0-fix/src/modules/meson.build
+--- pulseaudio-v17.0/src/modules/meson.build	2024-01-12 14:22:09.000000000 -0300
++++ pulseaudio-v17.0-fix/src/modules/meson.build	2025-04-16 13:33:36.717755000 -0300
 @@ -58,6 +58,8 @@
    [ 'module-virtual-sink', 'module-virtual-sink.c' ],
    [ 'module-virtual-source', 'module-virtual-source.c' ],
@@ -363,9 +354,9 @@ diff -uNr 30-pulseaudio/src/modules/meson.build 30-pulseaudio-mod/src/modules/me
  ]
  
  if host_machine.system() == 'windows'
-diff -uNr 30-pulseaudio/src/modules/module-pipe-source.c 30-pulseaudio-mod/src/modules/module-pipe-source.c
---- 30-pulseaudio/src/modules/module-pipe-source.c	2024-01-12 14:22:09.000000000 -0300
-+++ 30-pulseaudio-mod/src/modules/module-pipe-source.c	2024-12-15 20:43:42.845655547 -0300
+diff -uNr pulseaudio-v17.0/src/modules/module-pipe-source.c pulseaudio-v17.0-fix/src/modules/module-pipe-source.c
+--- pulseaudio-v17.0/src/modules/module-pipe-source.c	2024-01-12 14:22:09.000000000 -0300
++++ pulseaudio-v17.0-fix/src/modules/module-pipe-source.c	2025-04-16 13:33:36.717755000 -0300
 @@ -59,7 +59,7 @@
          "channels=<number of channels> "
          "channel_map=<channel map>");
@@ -375,9 +366,9 @@ diff -uNr 30-pulseaudio/src/modules/module-pipe-source.c 30-pulseaudio-mod/src/m
  #define DEFAULT_SOURCE_NAME "fifo_input"
  
  struct userdata {
-diff -uNr 30-pulseaudio/src/modules/module-protocol-stub.c 30-pulseaudio-mod/src/modules/module-protocol-stub.c
---- 30-pulseaudio/src/modules/module-protocol-stub.c	2024-01-12 14:22:09.000000000 -0300
-+++ 30-pulseaudio-mod/src/modules/module-protocol-stub.c	2024-12-15 20:43:42.845655547 -0300
+diff -uNr pulseaudio-v17.0/src/modules/module-protocol-stub.c pulseaudio-v17.0-fix/src/modules/module-protocol-stub.c
+--- pulseaudio-v17.0/src/modules/module-protocol-stub.c	2024-01-12 14:22:09.000000000 -0300
++++ pulseaudio-v17.0-fix/src/modules/module-protocol-stub.c	2025-04-16 13:33:36.717755000 -0300
 @@ -303,13 +303,13 @@
      /* Windows doesn't support getuid(), so we ignore the per-user Esound socket compile flag.
       * Moreover, Esound Unix sockets haven't been supported on Windows historically. */
@@ -395,9 +386,9 @@ diff -uNr 30-pulseaudio/src/modules/module-protocol-stub.c 30-pulseaudio-mod/src
  
      if (pa_make_secure_parent_dir(u->socket_path, pa_in_system_mode() ? 0755U : 0700U, (uid_t)-1, (gid_t)-1, false) < 0) {
          pa_log("Failed to create socket directory '%s': %s\n", u->socket_path, pa_cstrerror(errno));
-diff -uNr 30-pulseaudio/src/modules/sles/module-sles-sink.c 30-pulseaudio-mod/src/modules/sles/module-sles-sink.c
---- 30-pulseaudio/src/modules/sles/module-sles-sink.c	1969-12-31 21:00:00.000000000 -0300
-+++ 30-pulseaudio-mod/src/modules/sles/module-sles-sink.c	2024-12-15 20:43:59.221654341 -0300
+diff -uNr pulseaudio-v17.0/src/modules/sles/module-sles-sink.c pulseaudio-v17.0-fix/src/modules/sles/module-sles-sink.c
+--- pulseaudio-v17.0/src/modules/sles/module-sles-sink.c	1969-12-31 21:00:00.000000000 -0300
++++ pulseaudio-v17.0-fix/src/modules/sles/module-sles-sink.c	2025-04-16 13:33:36.724421668 -0300
 @@ -0,0 +1,661 @@
 +/***
 +  This file is part of PulseAudio.
@@ -1060,9 +1051,9 @@ diff -uNr 30-pulseaudio/src/modules/sles/module-sles-sink.c 30-pulseaudio-mod/sr
 +
 +    pa_xfree(u);
 +}
-diff -uNr 30-pulseaudio/src/modules/sles/module-sles-source.c 30-pulseaudio-mod/src/modules/sles/module-sles-source.c
---- 30-pulseaudio/src/modules/sles/module-sles-source.c	1969-12-31 21:00:00.000000000 -0300
-+++ 30-pulseaudio-mod/src/modules/sles/module-sles-source.c	2024-12-15 20:43:51.998654873 -0300
+diff -uNr pulseaudio-v17.0/src/modules/sles/module-sles-source.c pulseaudio-v17.0-fix/src/modules/sles/module-sles-source.c
+--- pulseaudio-v17.0/src/modules/sles/module-sles-source.c	1969-12-31 21:00:00.000000000 -0300
++++ pulseaudio-v17.0-fix/src/modules/sles/module-sles-source.c	2025-04-16 13:33:36.724421668 -0300
 @@ -0,0 +1,435 @@
 +/***
 +  This file is part of PulseAudio.
@@ -1499,9 +1490,9 @@ diff -uNr 30-pulseaudio/src/modules/sles/module-sles-source.c 30-pulseaudio-mod/
 +
 +    pa_xfree(u);
 +}
-diff -uNr 30-pulseaudio/src/pulsecore/core-util.c 30-pulseaudio-mod/src/pulsecore/core-util.c
---- 30-pulseaudio/src/pulsecore/core-util.c	2024-01-12 14:22:09.000000000 -0300
-+++ 30-pulseaudio-mod/src/pulsecore/core-util.c	2024-12-15 20:43:42.846655547 -0300
+diff -uNr pulseaudio-v17.0/src/pulsecore/core-util.c pulseaudio-v17.0-fix/src/pulsecore/core-util.c
+--- pulseaudio-v17.0/src/pulsecore/core-util.c	2024-01-12 14:22:09.000000000 -0300
++++ pulseaudio-v17.0-fix/src/pulsecore/core-util.c	2025-04-16 13:33:36.731088335 -0300
 @@ -1766,7 +1766,7 @@
       * users, too. Since we need POSIX locking and UNIX sockets in
       * this directory, we try XDG_RUNTIME_DIR first, and if that isn't
@@ -1540,9 +1531,9 @@ diff -uNr 30-pulseaudio/src/pulsecore/core-util.c 30-pulseaudio-mod/src/pulsecor
  }
  
  int pa_open_cloexec(const char *fn, int flags, mode_t mode) {
-diff -uNr 30-pulseaudio/src/pulsecore/esound.h 30-pulseaudio-mod/src/pulsecore/esound.h
---- 30-pulseaudio/src/pulsecore/esound.h	2024-01-12 14:22:09.000000000 -0300
-+++ 30-pulseaudio-mod/src/pulsecore/esound.h	2024-12-15 20:43:42.846655547 -0300
+diff -uNr pulseaudio-v17.0/src/pulsecore/esound.h pulseaudio-v17.0-fix/src/pulsecore/esound.h
+--- pulseaudio-v17.0/src/pulsecore/esound.h	2024-01-12 14:22:09.000000000 -0300
++++ pulseaudio-v17.0-fix/src/pulsecore/esound.h	2025-04-16 13:33:36.731088335 -0300
 @@ -23,8 +23,8 @@
  /* Most of the following is blatantly stolen from esound. */
  
@@ -1554,9 +1545,9 @@ diff -uNr 30-pulseaudio/src/pulsecore/esound.h 30-pulseaudio-mod/src/pulsecore/e
  
  /* length of the audio buffer size */
  #define ESD_BUF_SIZE (4 * 1024)
-diff -uNr 30-pulseaudio/src/pulsecore/log.c 30-pulseaudio-mod/src/pulsecore/log.c
---- 30-pulseaudio/src/pulsecore/log.c	2024-01-12 14:22:09.000000000 -0300
-+++ 30-pulseaudio-mod/src/pulsecore/log.c	2024-12-15 20:43:42.846655547 -0300
+diff -uNr pulseaudio-v17.0/src/pulsecore/log.c pulseaudio-v17.0-fix/src/pulsecore/log.c
+--- pulseaudio-v17.0/src/pulsecore/log.c	2024-01-12 14:22:09.000000000 -0300
++++ pulseaudio-v17.0-fix/src/pulsecore/log.c	2025-04-16 13:33:36.734421669 -0300
 @@ -30,6 +30,10 @@
  #include <fcntl.h>
  #include <sys/stat.h>
@@ -1568,9 +1559,9 @@ diff -uNr 30-pulseaudio/src/pulsecore/log.c 30-pulseaudio-mod/src/pulsecore/log.
  #ifdef HAVE_EXECINFO_H
  #include <execinfo.h>
  #endif
-diff -uNr 30-pulseaudio/src/pulsecore/meson.build 30-pulseaudio-mod/src/pulsecore/meson.build
---- 30-pulseaudio/src/pulsecore/meson.build	2024-01-12 14:22:09.000000000 -0300
-+++ 30-pulseaudio-mod/src/pulsecore/meson.build	2024-12-15 20:43:42.846655547 -0300
+diff -uNr pulseaudio-v17.0/src/pulsecore/meson.build pulseaudio-v17.0-fix/src/pulsecore/meson.build
+--- pulseaudio-v17.0/src/pulsecore/meson.build	2024-01-12 14:22:09.000000000 -0300
++++ pulseaudio-v17.0-fix/src/pulsecore/meson.build	2025-04-16 13:33:36.734421669 -0300
 @@ -185,14 +185,7 @@
  foreach simd_kwargs : simd_variants
  
@@ -1587,9 +1578,9 @@ diff -uNr 30-pulseaudio/src/pulsecore/meson.build 30-pulseaudio-mod/src/pulsecor
    endif
  
    libpulsecore_simd = simd.check('libpulsecore_simd',
-diff -uNr 30-pulseaudio/src/pulsecore/shm.c 30-pulseaudio-mod/src/pulsecore/shm.c
---- 30-pulseaudio/src/pulsecore/shm.c	2024-01-12 14:22:09.000000000 -0300
-+++ 30-pulseaudio-mod/src/pulsecore/shm.c	2024-12-15 20:43:42.847655547 -0300
+diff -uNr pulseaudio-v17.0/src/pulsecore/shm.c pulseaudio-v17.0-fix/src/pulsecore/shm.c
+--- pulseaudio-v17.0/src/pulsecore/shm.c	2024-01-12 14:22:09.000000000 -0300
++++ pulseaudio-v17.0-fix/src/pulsecore/shm.c	2025-04-16 13:33:36.737755002 -0300
 @@ -67,7 +67,7 @@
  /* On Linux we know that the shared memory blocks are files in
   * /dev/shm. We can use that information to list all blocks and
@@ -1599,9 +1590,9 @@ diff -uNr 30-pulseaudio/src/pulsecore/shm.c 30-pulseaudio-mod/src/pulsecore/shm.
  #define SHM_ID_LEN 10
  #elif defined(__sun)
  #define SHM_PATH "/tmp"
-diff -uNr 30-pulseaudio/src/tests/meson.build 30-pulseaudio-mod/src/tests/meson.build
---- 30-pulseaudio/src/tests/meson.build	2024-01-12 14:22:09.000000000 -0300
-+++ 30-pulseaudio-mod/src/tests/meson.build	2024-12-15 20:43:42.847655547 -0300
+diff -uNr pulseaudio-v17.0/src/tests/meson.build pulseaudio-v17.0-fix/src/tests/meson.build
+--- pulseaudio-v17.0/src/tests/meson.build	2024-01-12 14:22:09.000000000 -0300
++++ pulseaudio-v17.0-fix/src/tests/meson.build	2025-04-16 13:33:36.744421670 -0300
 @@ -106,8 +106,6 @@
      default_tests += [
        [ 'sigbus-test', 'sigbus-test.c',
