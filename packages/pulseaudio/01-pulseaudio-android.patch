@@ -1,6 +1,6 @@
 diff -uNr pulseaudio-v17.0/meson.build pulseaudio-v17.0-fix/meson.build
 --- pulseaudio-v17.0/meson.build	2024-01-12 14:22:09.000000000 -0300
-+++ pulseaudio-v17.0-fix/meson.build	2025-04-16 13:35:43.427767624 -0300
++++ pulseaudio-v17.0-fix/meson.build	2025-04-18 23:59:54.638088915 -0300
 @@ -12,9 +12,10 @@
  # For tarballs, the first split will do nothing, but for builds in git, we
  # split out suffixes when there are commits since the last tag
@@ -25,6 +25,15 @@ diff -uNr pulseaudio-v17.0/meson.build pulseaudio-v17.0-fix/meson.build
  # Headers which are usable
  
  check_usable_headers = [
+@@ -381,7 +378,7 @@
+     libintl_dep = cc.find_library('intl')
+   endif
+ else
+-  libintl_dep = cc.find_library('intl')
++  libintl_dep = []
+ endif
+ 
+ # Symbols
 @@ -448,6 +445,7 @@
  # Core Dependencies
  
@@ -35,7 +44,7 @@ diff -uNr pulseaudio-v17.0/meson.build pulseaudio-v17.0-fix/meson.build
  foreach f : [
 diff -uNr pulseaudio-v17.0/src/daemon/caps.c pulseaudio-v17.0-fix/src/daemon/caps.c
 --- pulseaudio-v17.0/src/daemon/caps.c	2024-01-12 14:22:09.000000000 -0300
-+++ pulseaudio-v17.0-fix/src/daemon/caps.c	2025-04-16 13:33:36.687754997 -0300
++++ pulseaudio-v17.0-fix/src/daemon/caps.c	2025-04-18 23:59:19.905580799 -0300
 @@ -36,64 +36,11 @@
  
  #include "caps.h"
@@ -106,7 +115,7 @@ diff -uNr pulseaudio-v17.0/src/daemon/caps.c pulseaudio-v17.0-fix/src/daemon/cap
  }
 diff -uNr pulseaudio-v17.0/src/daemon/main.c pulseaudio-v17.0-fix/src/daemon/main.c
 --- pulseaudio-v17.0/src/daemon/main.c	2024-01-12 14:22:09.000000000 -0300
-+++ pulseaudio-v17.0-fix/src/daemon/main.c	2025-04-16 13:33:36.691088331 -0300
++++ pulseaudio-v17.0-fix/src/daemon/main.c	2025-04-18 23:59:19.906580799 -0300
 @@ -163,206 +163,11 @@
  }
  
@@ -317,7 +326,7 @@ diff -uNr pulseaudio-v17.0/src/daemon/main.c pulseaudio-v17.0-fix/src/daemon/mai
  static int set_one_rlimit(const pa_rlimit *r, int resource, const char *name) {
 diff -uNr pulseaudio-v17.0/src/modules/echo-cancel/module-echo-cancel.c pulseaudio-v17.0-fix/src/modules/echo-cancel/module-echo-cancel.c
 --- pulseaudio-v17.0/src/modules/echo-cancel/module-echo-cancel.c	2024-01-12 14:22:09.000000000 -0300
-+++ pulseaudio-v17.0-fix/src/modules/echo-cancel/module-echo-cancel.c	2025-04-16 13:33:36.714421667 -0300
++++ pulseaudio-v17.0-fix/src/modules/echo-cancel/module-echo-cancel.c	2025-04-18 23:59:19.908580799 -0300
 @@ -2067,18 +2067,18 @@
      }
  
@@ -344,7 +353,7 @@ diff -uNr pulseaudio-v17.0/src/modules/echo-cancel/module-echo-cancel.c pulseaud
          }
 diff -uNr pulseaudio-v17.0/src/modules/meson.build pulseaudio-v17.0-fix/src/modules/meson.build
 --- pulseaudio-v17.0/src/modules/meson.build	2024-01-12 14:22:09.000000000 -0300
-+++ pulseaudio-v17.0-fix/src/modules/meson.build	2025-04-16 13:33:36.717755000 -0300
++++ pulseaudio-v17.0-fix/src/modules/meson.build	2025-04-18 23:59:19.909580799 -0300
 @@ -58,6 +58,8 @@
    [ 'module-virtual-sink', 'module-virtual-sink.c' ],
    [ 'module-virtual-source', 'module-virtual-source.c' ],
@@ -356,7 +365,7 @@ diff -uNr pulseaudio-v17.0/src/modules/meson.build pulseaudio-v17.0-fix/src/modu
  if host_machine.system() == 'windows'
 diff -uNr pulseaudio-v17.0/src/modules/module-pipe-source.c pulseaudio-v17.0-fix/src/modules/module-pipe-source.c
 --- pulseaudio-v17.0/src/modules/module-pipe-source.c	2024-01-12 14:22:09.000000000 -0300
-+++ pulseaudio-v17.0-fix/src/modules/module-pipe-source.c	2025-04-16 13:33:36.717755000 -0300
++++ pulseaudio-v17.0-fix/src/modules/module-pipe-source.c	2025-04-18 23:59:19.910580799 -0300
 @@ -59,7 +59,7 @@
          "channels=<number of channels> "
          "channel_map=<channel map>");
@@ -368,7 +377,7 @@ diff -uNr pulseaudio-v17.0/src/modules/module-pipe-source.c pulseaudio-v17.0-fix
  struct userdata {
 diff -uNr pulseaudio-v17.0/src/modules/module-protocol-stub.c pulseaudio-v17.0-fix/src/modules/module-protocol-stub.c
 --- pulseaudio-v17.0/src/modules/module-protocol-stub.c	2024-01-12 14:22:09.000000000 -0300
-+++ pulseaudio-v17.0-fix/src/modules/module-protocol-stub.c	2025-04-16 13:33:36.717755000 -0300
++++ pulseaudio-v17.0-fix/src/modules/module-protocol-stub.c	2025-04-18 23:59:19.911580799 -0300
 @@ -303,13 +303,13 @@
      /* Windows doesn't support getuid(), so we ignore the per-user Esound socket compile flag.
       * Moreover, Esound Unix sockets haven't been supported on Windows historically. */
@@ -388,7 +397,7 @@ diff -uNr pulseaudio-v17.0/src/modules/module-protocol-stub.c pulseaudio-v17.0-f
          pa_log("Failed to create socket directory '%s': %s\n", u->socket_path, pa_cstrerror(errno));
 diff -uNr pulseaudio-v17.0/src/modules/sles/module-sles-sink.c pulseaudio-v17.0-fix/src/modules/sles/module-sles-sink.c
 --- pulseaudio-v17.0/src/modules/sles/module-sles-sink.c	1969-12-31 21:00:00.000000000 -0300
-+++ pulseaudio-v17.0-fix/src/modules/sles/module-sles-sink.c	2025-04-16 13:33:36.724421668 -0300
++++ pulseaudio-v17.0-fix/src/modules/sles/module-sles-sink.c	2025-04-18 23:59:19.912593694 -0300
 @@ -0,0 +1,661 @@
 +/***
 +  This file is part of PulseAudio.
@@ -1053,7 +1062,7 @@ diff -uNr pulseaudio-v17.0/src/modules/sles/module-sles-sink.c pulseaudio-v17.0-
 +}
 diff -uNr pulseaudio-v17.0/src/modules/sles/module-sles-source.c pulseaudio-v17.0-fix/src/modules/sles/module-sles-source.c
 --- pulseaudio-v17.0/src/modules/sles/module-sles-source.c	1969-12-31 21:00:00.000000000 -0300
-+++ pulseaudio-v17.0-fix/src/modules/sles/module-sles-source.c	2025-04-16 13:33:36.724421668 -0300
++++ pulseaudio-v17.0-fix/src/modules/sles/module-sles-source.c	2025-04-18 23:59:19.912720512 -0300
 @@ -0,0 +1,435 @@
 +/***
 +  This file is part of PulseAudio.
@@ -1492,7 +1501,7 @@ diff -uNr pulseaudio-v17.0/src/modules/sles/module-sles-source.c pulseaudio-v17.
 +}
 diff -uNr pulseaudio-v17.0/src/pulsecore/core-util.c pulseaudio-v17.0-fix/src/pulsecore/core-util.c
 --- pulseaudio-v17.0/src/pulsecore/core-util.c	2024-01-12 14:22:09.000000000 -0300
-+++ pulseaudio-v17.0-fix/src/pulsecore/core-util.c	2025-04-16 13:33:36.731088335 -0300
++++ pulseaudio-v17.0-fix/src/pulsecore/core-util.c	2025-04-18 23:59:19.913580799 -0300
 @@ -1766,7 +1766,7 @@
       * users, too. Since we need POSIX locking and UNIX sockets in
       * this directory, we try XDG_RUNTIME_DIR first, and if that isn't
@@ -1533,7 +1542,7 @@ diff -uNr pulseaudio-v17.0/src/pulsecore/core-util.c pulseaudio-v17.0-fix/src/pu
  int pa_open_cloexec(const char *fn, int flags, mode_t mode) {
 diff -uNr pulseaudio-v17.0/src/pulsecore/esound.h pulseaudio-v17.0-fix/src/pulsecore/esound.h
 --- pulseaudio-v17.0/src/pulsecore/esound.h	2024-01-12 14:22:09.000000000 -0300
-+++ pulseaudio-v17.0-fix/src/pulsecore/esound.h	2025-04-16 13:33:36.731088335 -0300
++++ pulseaudio-v17.0-fix/src/pulsecore/esound.h	2025-04-18 23:59:19.914580799 -0300
 @@ -23,8 +23,8 @@
  /* Most of the following is blatantly stolen from esound. */
  
@@ -1547,7 +1556,7 @@ diff -uNr pulseaudio-v17.0/src/pulsecore/esound.h pulseaudio-v17.0-fix/src/pulse
  #define ESD_BUF_SIZE (4 * 1024)
 diff -uNr pulseaudio-v17.0/src/pulsecore/log.c pulseaudio-v17.0-fix/src/pulsecore/log.c
 --- pulseaudio-v17.0/src/pulsecore/log.c	2024-01-12 14:22:09.000000000 -0300
-+++ pulseaudio-v17.0-fix/src/pulsecore/log.c	2025-04-16 13:33:36.734421669 -0300
++++ pulseaudio-v17.0-fix/src/pulsecore/log.c	2025-04-18 23:59:19.915580799 -0300
 @@ -30,6 +30,10 @@
  #include <fcntl.h>
  #include <sys/stat.h>
@@ -1561,7 +1570,7 @@ diff -uNr pulseaudio-v17.0/src/pulsecore/log.c pulseaudio-v17.0-fix/src/pulsecor
  #endif
 diff -uNr pulseaudio-v17.0/src/pulsecore/meson.build pulseaudio-v17.0-fix/src/pulsecore/meson.build
 --- pulseaudio-v17.0/src/pulsecore/meson.build	2024-01-12 14:22:09.000000000 -0300
-+++ pulseaudio-v17.0-fix/src/pulsecore/meson.build	2025-04-16 13:33:36.734421669 -0300
++++ pulseaudio-v17.0-fix/src/pulsecore/meson.build	2025-04-18 23:59:19.916580799 -0300
 @@ -185,14 +185,7 @@
  foreach simd_kwargs : simd_variants
  
@@ -1580,7 +1589,7 @@ diff -uNr pulseaudio-v17.0/src/pulsecore/meson.build pulseaudio-v17.0-fix/src/pu
    libpulsecore_simd = simd.check('libpulsecore_simd',
 diff -uNr pulseaudio-v17.0/src/pulsecore/shm.c pulseaudio-v17.0-fix/src/pulsecore/shm.c
 --- pulseaudio-v17.0/src/pulsecore/shm.c	2024-01-12 14:22:09.000000000 -0300
-+++ pulseaudio-v17.0-fix/src/pulsecore/shm.c	2025-04-16 13:33:36.737755002 -0300
++++ pulseaudio-v17.0-fix/src/pulsecore/shm.c	2025-04-18 23:59:19.917580799 -0300
 @@ -67,7 +67,7 @@
  /* On Linux we know that the shared memory blocks are files in
   * /dev/shm. We can use that information to list all blocks and
@@ -1592,7 +1601,7 @@ diff -uNr pulseaudio-v17.0/src/pulsecore/shm.c pulseaudio-v17.0-fix/src/pulsecor
  #define SHM_PATH "/tmp"
 diff -uNr pulseaudio-v17.0/src/tests/meson.build pulseaudio-v17.0-fix/src/tests/meson.build
 --- pulseaudio-v17.0/src/tests/meson.build	2024-01-12 14:22:09.000000000 -0300
-+++ pulseaudio-v17.0-fix/src/tests/meson.build	2025-04-16 13:33:36.744421670 -0300
++++ pulseaudio-v17.0-fix/src/tests/meson.build	2025-04-18 23:59:19.918580799 -0300
 @@ -106,8 +106,6 @@
      default_tests += [
        [ 'sigbus-test', 'sigbus-test.c',
