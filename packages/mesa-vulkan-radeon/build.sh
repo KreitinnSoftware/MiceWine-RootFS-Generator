@@ -3,7 +3,7 @@ PKG_CATEGORY="VulkanDriver"
 PKG_PRETTY_NAME="Mesa Radeon Driver"
 VK_DRIVER_LIB="libvulkan_radeon.so"
 
-BLACKLIST_ARCHITECTURE=aarch64
+BLACKLIST_ARCH=aarch64
 
 SRC_URL=https://archive.mesa3d.org/mesa-$PKG_VER.tar.xz
 LDFLAGS="-L$PREFIX/lib -landroid-shmem"

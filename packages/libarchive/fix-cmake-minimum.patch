@@ -1,0 +1,10 @@
+diff -uNr libarchive/CMakeLists.txt libarchive-fix/CMakeLists.txt
+--- libarchive/CMakeLists.txt	2024-10-13 05:11:23.000000000 -0300
++++ libarchive-fix/CMakeLists.txt	2025-04-16 21:44:09.420760045 -0300
+@@ -1,5 +1,5 @@
+ #
+-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12 FATAL_ERROR)
++CMAKE_MINIMUM_REQUIRED(VERSION 3.12...3.21 FATAL_ERROR)
+ if(APPLE AND CMAKE_VERSION VERSION_LESS "3.17.0")
+   message(WARNING "CMake>=3.17.0 required to make the generated shared library have the same Mach-O headers as autotools")
+ endif()

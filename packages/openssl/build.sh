@@ -4,9 +4,9 @@ CFLAGS="-DNO_SYSLOG"
 
 getOpenSSLArch()
 {
-	if [ "$ARCHITECTURE" == "aarch64" ]; then
+	if [ "$ARCH" == "aarch64" ]; then
 		echo "arm64"
-	elif [ "$ARCHITECTURE" == "x86_64" ]; then
+	elif [ "$ARCH" == "x86_64" ]; then
 		echo "x86_64"
 	fi
 }

@@ -27,6 +27,9 @@ libsndfile
 opus
 libogg
 libvorbis
+libiconv
+libunistring
+libxml2
 fakeintl
 pulseaudio
 libdrm
@@ -38,8 +41,6 @@ libglvnd
 GLU
 FreeGLUT
 mesa-demos
-libiconv
-libunistring
 openssl
 libghttp
 libevent
@@ -50,7 +51,6 @@ libnettle
 libidn2
 libgnutls
 libffi
-libxml2
 zstd
 libarchive
 android-shmem

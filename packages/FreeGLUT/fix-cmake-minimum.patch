@@ -1,0 +1,9 @@
+diff -uNr freeglut-3.4.0/CMakeLists.txt freeglut-3.4.0-fix/CMakeLists.txt
+--- freeglut-3.4.0/CMakeLists.txt	2022-10-07 13:12:51.000000000 -0300
++++ freeglut-3.4.0-fix/CMakeLists.txt	2025-04-16 14:32:50.880357391 -0300
+@@ -1,4 +1,4 @@
+-CMAKE_MINIMUM_REQUIRED(VERSION 3.0.0 FATAL_ERROR)
++CMAKE_MINIMUM_REQUIRED(VERSION 3.12...3.21 FATAL_ERROR)
+ PROJECT(freeglut C)
+ 
+ # for multiarch LIBDIR support (requires cmake>=2.8.8)
