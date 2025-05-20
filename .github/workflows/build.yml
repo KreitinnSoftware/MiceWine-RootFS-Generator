@@ -18,7 +18,7 @@ jobs:
         sudo apt install -y arch-install-scripts wget
         sudo mkdir -p /mnt/
 
-        wget https://geo.mirror.pkgbuild.com/iso/2025.02.01/archlinux-bootstrap-x86_64.tar.zst
+        wget https://geo.mirror.pkgbuild.com/iso/latest/archlinux-bootstrap-x86_64.tar.zst
 
         sudo tar -xf archlinux-bootstrap-x86_64.tar.zst
         sudo rm -f archlinux-bootstrap-x86_64.tar.zst
