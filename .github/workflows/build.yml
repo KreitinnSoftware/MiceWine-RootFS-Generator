@@ -77,7 +77,7 @@ jobs:
         echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
     - name: "Create Release"
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@v1
       with:
         name: "MiceWine RootFS (${{ env.SHORT_SHA }})"
         tag_name: ${{ env.SHORT_SHA }}
