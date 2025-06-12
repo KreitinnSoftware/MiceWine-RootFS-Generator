@@ -50,11 +50,11 @@ jobs:
 
     - name: "Start Building (x86_64)"
       run: |
-        sudo arch-chroot /mnt/arch bash -c "cd /MiceWine-RootFS-Generator && ./build-all.sh x86_64 --ci && cd logs && 7z a /MiceWine-RootFS-\($(git rev-parse --short HEAD)\)-x86_64-Logs.zip"
+        sudo arch-chroot /mnt/arch bash -c "cd /MiceWine-RootFS-Generator && ./build-all.sh x86_64 --ci && cd logs && 7z a /MiceWine-RootFS-$(git rev-parse --short HEAD)-x86_64-Logs.zip"
 
     - name: "Create RootFS File (x86_64)"
       run: |
-        sudo arch-chroot /mnt/arch bash -c "cd /MiceWine-RootFS-Generator && ./create-rootfs-rat.sh x86_64 && mv MiceWine-RootFS-\($(git rev-parse --short HEAD)\)-x86_64.rat /"
+        sudo arch-chroot /mnt/arch bash -c "cd /MiceWine-RootFS-Generator && ./create-rootfs-rat.sh x86_64 && mv MiceWine-RootFS-$(git rev-parse --short HEAD)-x86_64.rat /"
 
     - name: "Clean (x86_64) RootFS"
       run: |
@@ -62,11 +62,11 @@ jobs:
 
     - name: "Start Building (aarch64)"
       run: |
-        sudo arch-chroot /mnt/arch bash -c "cd /MiceWine-RootFS-Generator && ./build-all.sh aarch64 --ci && cd logs && 7z a /MiceWine-RootFS-\($(git rev-parse --short HEAD)\)-aarch64-Logs.zip"
+        sudo arch-chroot /mnt/arch bash -c "cd /MiceWine-RootFS-Generator && ./build-all.sh aarch64 --ci && cd logs && 7z a /MiceWine-RootFS-$(git rev-parse --short HEAD)-aarch64-Logs.zip"
 
     - name: "Create RootFS File (aarch64)"
       run: |
-        sudo arch-chroot /mnt/arch bash -c "cd /MiceWine-RootFS-Generator && ./create-rootfs-rat.sh aarch64 && mv MiceWine-RootFS-\($(git rev-parse --short HEAD)\)-aarch64.rat /"
+        sudo arch-chroot /mnt/arch bash -c "cd /MiceWine-RootFS-Generator && ./create-rootfs-rat.sh aarch64 && mv MiceWine-RootFS-$(git rev-parse --short HEAD)-aarch64.rat /"
 
     - name: "Save Rat Packages"
       run: |
