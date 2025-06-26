@@ -1,20 +1,14 @@
-diff --git a/src/gpu.cpp b/src/gpu.cpp
-index 1dfe720..4c6821f 100644
---- a/src/gpu.cpp
-+++ b/src/gpu.cpp
-@@ -21,6 +21,7 @@ namespace fs = ghc::filesystem;
+diff -uNr ../mangohud/src/gpu.cpp ./src/gpu.cpp
+--- ../mangohud/src/gpu.cpp	2025-03-05 06:56:10.000000000 -0300
++++ ./src/gpu.cpp	2025-06-26 19:20:46.145938572 -0300
+@@ -20,6 +20,10 @@
+ namespace fs = ghc::filesystem;
+ 
  GPUS::GPUS(overlay_params* params) : params(params) {
++#ifdef __ANDROID__
++    return;
++#endif
++
      std::vector<std::string> gpu_entries;
  
-+#ifndef __ANDROID__
      for (const auto& entry : fs::directory_iterator("/sys/class/drm")) {
-         if (entry.is_directory()) {
-             std::string node_name = entry.path().filename().string();
-@@ -68,6 +69,7 @@ GPUS::GPUS(overlay_params* params) : params(params) {
- 
-         SPDLOG_DEBUG("GPU Found: node_name: {}, vendor_id: {:x} device_id: {:x} pci_dev: {}", node_name, vendor_id, device_id, pci_dev);
-     }
-+#endif
- 
-     find_active_gpu();
- }

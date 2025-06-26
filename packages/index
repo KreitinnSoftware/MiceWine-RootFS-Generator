@@ -23,6 +23,7 @@ libXrandr
 libXxf86vm
 libxshmfence
 xkeyboard-config
+xkbcommon
 libsndfile
 opus
 libogg
