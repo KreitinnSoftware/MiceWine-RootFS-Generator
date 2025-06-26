@@ -1,4 +1,4 @@
-PKG_VER=24.3.0
+PKG_VER=25.1.4
 PKG_CATEGORY="OpenGLDriver"
 PKG_PRETTY_NAME="Mesa Zink Driver"
 
