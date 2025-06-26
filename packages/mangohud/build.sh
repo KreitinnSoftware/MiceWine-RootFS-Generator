@@ -1,5 +1,4 @@
-PKG_VER=[gss]
-GIT_URL=https://github.com/flightlessmango/MangoHud.git
-GIT_COMMIT=1d19d431f185ae2065bb456b619471e1d650c5b0
+PKG_VER=0.8.1
+SRC_URL=https://github.com/flightlessmango/MangoHud/releases/download/v$PKG_VER/MangoHud-v$PKG_VER-Source.tar.xz
 LDFLAGS="-Wl,--undefined-version"
 MESON_ARGS="-Dwith_xnvctrl=disabled -Dwith_wayland=disabled -Dwith_dbus=disabled -Dtests=disabled"

@@ -1,7 +1,6 @@
-diff --git a/src/fps_metrics.h b/src/fps_metrics.h
-index a889b37..2b36587 100644
---- a/src/fps_metrics.h
-+++ b/src/fps_metrics.h
+diff -uNr ../mangohud/src/fps_metrics.h ./src/fps_metrics.h
+--- ../mangohud/src/fps_metrics.h	2025-03-05 06:56:10.000000000 -0300
++++ ./src/fps_metrics.h	2025-06-26 19:17:05.817373239 -0300
 @@ -11,6 +11,7 @@
  #include <stdexcept>
  #include <iomanip>
@@ -10,3 +9,21 @@ index a889b37..2b36587 100644
  
  struct metric_t {
      std::string name;
+@@ -165,4 +166,4 @@
+         }
+ };
+ 
+-extern std::unique_ptr<fpsMetrics> fpsmetrics;
+\ No newline at end of file
++extern std::unique_ptr<fpsMetrics> fpsmetrics;
+diff -uNr ../mangohud/src/gpu_fdinfo.h ./src/gpu_fdinfo.h
+--- ../mangohud/src/gpu_fdinfo.h	2025-03-05 06:56:10.000000000 -0300
++++ ./src/gpu_fdinfo.h	2025-06-26 19:17:54.112818545 -0300
+@@ -11,6 +11,7 @@
+ #include <map>
+ #include <set>
+ #include <regex>
++#include <sstream>
+ 
+ #ifdef TEST_ONLY
+ #include <../src/mesa/util/os_time.h>
