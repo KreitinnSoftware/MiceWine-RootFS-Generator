@@ -1,0 +1,26 @@
+diff --git a/src/util/detect_os.h b/src/util/detect_os.h
+index 469b502bbd9..8a72b42aa08 100644
+--- a/src/util/detect_os.h
++++ b/src/util/detect_os.h
+@@ -25,7 +25,7 @@
+  * also be defined.
+  */
+ #if defined(ANDROID)
+-#define DETECT_OS_ANDROID 1
++#define DETECT_OS_ANDROID 0
+ #endif
+ 
+ #if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+diff --git a/include/vulkan/vk_android_native_buffer.h b/include/vulkan/vk_android_native_buffer.h
+index 746103bc1f4..9a76a321ffc 100644
+--- a/include/vulkan/vk_android_native_buffer.h
++++ b/include/vulkan/vk_android_native_buffer.h
+@@ -18,7 +18,7 @@
+ #define __VK_ANDROID_NATIVE_BUFFER_H__
+ 
+ /* MESA: A hack to avoid #ifdefs in driver code. */
+-#ifdef ANDROID
++#if 0
+ #include <cutils/native_handle.h>
+ #include <vulkan/vulkan.h>
+ 
