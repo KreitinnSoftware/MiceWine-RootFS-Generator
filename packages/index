@@ -23,7 +23,6 @@ libXrandr
 libXxf86vm
 libxshmfence
 xkeyboard-config
-xkbcommon
 libsndfile
 opus
 libogg
@@ -31,6 +30,7 @@ libvorbis
 libiconv
 libunistring
 libxml2
+xkbcommon
 fakeintl
 pulseaudio
 libdrm
