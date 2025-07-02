@@ -245,11 +245,7 @@ for i in $VKD3D_LIST; do
 	vkd3dDownload "$i"
 done
 
-customDxvkDownload "DXVK-1.7.3-Stripped-Requirements" "https://github.com/KreitinnSoftware/dxvk/releases/download/1.7.3-stripped-4a2c907ab3601eb80269c026b311438f23e066d0/dxvk-1.7.3-stripped-4a2c907ab3601eb80269c026b311438f23e066d0.tar.gz"
-
 case "$1" in "--optional")
-	customDxvkDownload "DXVK-1.10-Stripped-Requirements" "https://github.com/KreitinnSoftware/dxvk/releases/download/dxvk-1.10-stripped-requirements/dxvk-1.10-b3e85be0fcef978604656a19ecafdde85a28326a.tar.gz"
-	customDxvkDownload "DXVK-1.10.6-Sarek-Stripped-Requirements" "https://github.com/KreitinnSoftware/dxvk-gplasync/raw/refs/heads/main/dxvk-sarek-stripped.tar.gz"
 	customDxvkDownload "DXVK-1.10.6-Sarek" "https://github.com/pythonlover02/DXVK-Sarek/releases/download/v1.10.6/dxvk-sarek-v1.10.6.tar.gz"
 	customDxvkDownload "DXVK-1.10.6-Sarek-ASync" "https://github.com/pythonlover02/DXVK-Sarek/releases/download/v1.10.6/dxvk-sarek-async-v1.10.6.tar.gz"
 esac
