@@ -3,3 +3,4 @@ SRC_URL=https://download.gnome.org/sources/glib/${PKG_VER%.*}/glib-$PKG_VER.tar.
 MESON_ARGS="-Dintrospection=disabled -Druntime_dir=$PREFIX/var/run -Dlibmount=disabled -Dman-pages=enabled -Dtests=false -Dselinux=disabled -Dlibelf=disabled"
 CFLAGS="-I$PREFIX/include"
 LDFLAGS="-L$PREFIX/lib -l:libiconv.a"
+DEPENDENCIES="zlib libiconv pcre2 libffi"

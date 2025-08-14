@@ -4,3 +4,4 @@ MESON_ARGS="-Dintrospection=disabled -Dcheck=disabled -Dtests=disabled -Dexample
 MESON_ARGS+="-Dbenchmarks=disabled -Dlibunwind=disabled -Dlibdw=disabled -Dnls=disabled"
 CFLAGS="-I$PREFIX/include"
 LDFLAGS="-L$PREFIX/lib"
+DEPENDENCIES="glib"

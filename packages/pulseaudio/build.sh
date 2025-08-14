@@ -4,3 +4,4 @@ MESON_ARGS="-Dalsa=disabled -Dx11=disabled -Dgtk=disabled -Dopenssl=disabled -Dg
 CFLAGS="-I$PREFIX/include"
 CPPFLAGS="-I$PREFIX/include"
 LDFLAGS="-L$PREFIX/lib -Wl,--undefined-version"
+DEPENDENCIES="libtool libsndfile"

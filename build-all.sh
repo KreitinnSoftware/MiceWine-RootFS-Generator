@@ -102,7 +102,7 @@ setupPackage()
 {
     local package=$1
 
-    unset PKG_VER PKG_CATEGORY PKG_PRETTY_NAME PKG_OPTIONAL PKG_DEPENDENCIES
+    unset PKG_VER PKG_CATEGORY PKG_PRETTY_NAME PKG_OPTIONAL
 	unset SRC_URL GIT_URL GIT_COMMIT
 	unset HOST_BUILD_FOLDER HOST_BUILD_MAKE HOST_BUILD_CONFIGURE_ARGS HOST_BUILD_CFLAGS HOST_BUILD_CXXFLAGS HOST_BUILD_LDFLAGS
 	unset CONFIGURE_ARGS MESON_ARGS CMAKE_ARGS
@@ -282,15 +282,60 @@ setupPackage()
 	if [ -n "$CI" ]; then
 		rm -rf "$INIT_DIR/cache/$package"
 	fi
-
-	echo $package >> index
 }
 
 setupPackages()
 {
 	cd "$INIT_DIR/workdir"
 
-	for package in $PACKAGES; do
+	# We need to build package list respecting dependencies order
+	# First add packages that don't need extra dependencies
+
+	rm -f "$INIT_DIR/workdir/index"
+
+	export FILTERED_PACKAGES=""
+	export TODO_PACKAGES=$PACKAGES
+
+	while [ -n "$TODO_PACKAGES" ]; do
+		NEW_TODO=""
+
+		for package in $TODO_PACKAGES; do
+			unset DEPENDENCIES
+
+			if [ ! -d "$INIT_DIR/packages/$package" ]; then
+				echo "E: Package '$package' don't exists."
+				exit 1
+			fi
+
+			source "$INIT_DIR/packages/$package/build.sh"
+
+			if [ -z "$DEPENDENCIES" ]; then
+				if ! echo " $FILTERED_PACKAGES " | grep -q " $package "; then
+					FILTERED_PACKAGES+="$package "
+					continue
+				fi
+			fi
+
+			for dep in $DEPENDENCIES; do
+				if ! echo " $FILTERED_PACKAGES " | grep -q " $dep "; then
+					NEW_TODO+="$package "
+					break
+				fi
+			done
+
+			if ! echo " $NEW_TODO " | grep -q " $package "; then
+				if ! echo " $FILTERED_PACKAGES " | grep -q " $package "; then
+					FILTERED_PACKAGES+="$package "
+				fi
+			fi
+		done
+
+		TODO_PACKAGES="$NEW_TODO"
+	done
+
+	echo $FILTERED_PACKAGES > "$INIT_DIR/workdir/index"
+
+	for package in $FILTERED_PACKAGES; do
 		packageFullPath=$(ls "$INIT_DIR/built-pkgs/$package-"*"$ARCH.rat" 2> /dev/zero)
 		packageCommitFullPath=$(ls "$INIT_DIR/built-pkgs/$package-"*"$ARCH.commit" 2> /dev/zero)
 
@@ -339,6 +384,10 @@ compileAll()
 	local packageCount=$(cat "$INIT_DIR/workdir/index" | wc -l)
 
 	for package in $(cat "$INIT_DIR/workdir/index"); do
+		if [ ! -d "$INIT_DIR/workdir/$package" ]; then
+			continue
+		fi
+
 		local packageBuildDir="$INIT_DIR/workdir/$package/build_dir"
 		local packageDestDirPkg="$INIT_DIR/workdir/$package/destdir-pkg"
 		mkdir -p "$packageBuildDir"
@@ -466,7 +515,7 @@ export NDK_FILENAME="${NDK_URL##*/}"
 export MINGW_URL="http://techer.pascal.free.fr/Red-Rose_MinGW-w64-Toolchain/Red-Rose-MinGW-w64-Posix-Urct-v12.0.0.r458.g03d8a40f5-Gcc-11.5.0.tar.xz"
 export MINGW_FILENAME="${MINGW_URL##*/}"
 
-export PACKAGES="$(cat packages/index)"
+export PACKAGES="$(ls packages)"
 export INIT_DIR="$PWD"
 export INIT_PATH="$PATH"
 
