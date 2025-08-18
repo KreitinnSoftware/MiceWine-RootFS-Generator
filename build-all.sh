@@ -361,10 +361,26 @@ setupPackages()
 			if [ "$packageCommit" == "$actualCommit" ]; then
 				installBuiltPackage "$packageFullPath"
 			else
-				echo "W: Package '$package' already built, But it's source is changed. Removing..."
+				echo "W: Package '$package' already built, But it's source is changed. Requires Rebuilding..."
 				rm -f "$packageFullPath"
 				rm -f "$packageCommitFullPath"
 			fi
+		fi
+
+		if [ "$packageCommit" != "$actualCommit" ]; then
+			for p in $FILTERED_PACKAGES; do
+				unset DEPENDENCIES
+				source "$INIT_DIR/packages/$p/build.sh"
+
+				if [[ " $DEPENDENCIES " == *" $package "* ]]; then
+					packageFullPath=$(ls "$INIT_DIR/built-pkgs/$p-"*"$ARCH.rat" 2> /dev/zero)
+					packageCommitFullPath=$(ls "$INIT_DIR/built-pkgs/$p-"*"$ARCH.commit" 2> /dev/zero)
+
+					echo "W: Package '$p' uses '$package' as Dependency, Requires Rebuilding..."
+					rm -f "$packageFullPath"
+					rm -f "$packageCommitFullPath"
+				fi
+			done
 		fi
 
 		setupPackage $package
