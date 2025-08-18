@@ -4,17 +4,32 @@ setupBuildEnv()
 	if [ ! -d "$INIT_DIR/cache/android-ndk" ]; then
 		echo "Downloading NDK..."
 		curl --output "cache/$NDK_FILENAME" -#L "$NDK_URL"
+		echo "Checking SHA512..."
+		SHA512=$(sha512sum "cache/$NDK_FILENAME" | cut -d ' ' -f 1)
+		if [ "$SHA512" != "$NDK_SHA512" ]; then
+			echo "Error on Checking SHA512 for NDK... Aborting"
+			rm -f "cache/$NDK_FILENAME"
+			exit 1
+		fi
 		echo "Unpacking NDK..."
-		7z x "cache/$NDK_FILENAME" -aoa -o"cache" &> /dev/null
+		unzip "cache/$NDK_FILENAME" -d "cache" &> /dev/null
 		mv "cache/$(unzip -Z1 "cache/$NDK_FILENAME" | cut -d "/" -f 1 | head -n 1)" "cache/android-ndk"
+		chmod -R +x "cache/android-ndk"
 		rm -f "cache/$NDK_FILENAME"
 		echo ""
 	fi
 
 	if [ ! -d "$INIT_DIR/cache/mingw" ]; then
-		echo "Downloading mingw..."
+		echo "Downloading MinGW..."
 		curl --output "cache/$MINGW_FILENAME" -#L "$MINGW_URL"
-		echo "Unpacking mingw..."
+		echo "Checking SHA512..."
+		SHA512=$(sha512sum "cache/$MINGW_FILENAME" | cut -d ' ' -f 1)
+		if [ "$SHA512" != "$MINGW_SHA512" ]; then
+			echo "Error on Checking SHA512 for MinGW... Aborting"
+			rm -f "cache/$MINGW_FILENAME"
+			exit 1
+		fi
+		echo "Unpacking MinGW..."
 		tar -xf "cache/$MINGW_FILENAME" -C "cache"
 		mv "cache/$(tar -tf "cache/$MINGW_FILENAME" | cut -d "/" -f 1 | head -n 1)/$(tar -tf "cache/$MINGW_FILENAME" | cut -d "/" -f 2 | head -n 1)" "cache/mingw"
 		rm -f "cache/$MINGW_FILENAME"
@@ -381,7 +396,7 @@ compileAll()
 	echo ""
 
 	local packageNum=1
-	local packageCount=$(cat "$INIT_DIR/workdir/index" | wc -l)
+	local packageCount=$(( $(ls "$INIT_DIR/workdir" | wc -l) - 1 ))
 
 	for package in $(cat "$INIT_DIR/workdir/index"); do
 		if [ ! -d "$INIT_DIR/workdir/$package" ]; then
@@ -512,8 +527,10 @@ fi
 
 export NDK_URL="https://dl.google.com/android/repository/android-ndk-r26b-linux.zip"
 export NDK_FILENAME="${NDK_URL##*/}"
+export NDK_SHA512="233e0b34c946a1ba60022809536307613ed956a4d596b3f43dc75e752b9d973f7c07f03a404a72a893629b86d8046664b9020920b3a6c64f68e223c5da109ec5"
 export MINGW_URL="http://techer.pascal.free.fr/Red-Rose_MinGW-w64-Toolchain/Red-Rose-MinGW-w64-Posix-Urct-v12.0.0.r458.g03d8a40f5-Gcc-11.5.0.tar.xz"
 export MINGW_FILENAME="${MINGW_URL##*/}"
+export MINGW_SHA512="c92e8d4c5811ad82d457a5618f902c2f7e951aa4e3e1cbd640be243ac4d1810e26ea7a933cb2b4b28cda715c04a7f6453060e1b13dd6bf953b69e6ea5ec75c93"
 
 export PACKAGES="$(ls packages)"
 export INIT_DIR="$PWD"
