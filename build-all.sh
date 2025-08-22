@@ -169,10 +169,10 @@ setupPackage()
 	cd $package
 	applyPatches
 
-	echo "export CFLAGS=\"$CFLAGS\" LIBS=\"$LIBS\" CPPFLAGS=\"$CPPFLAGS\" LDFLAGS=\"$LDFLAGS\"" > build.sh
-	echo "export DESTDIR=\"$INIT_DIR/workdir/$package/destdir-pkg\"" >> build.sh
-
 	export PREFIX_DIR=$PREFIX
+
+	echo "export CFLAGS=\"$CFLAGS\" LIBS=\"$LIBS\" CPPFLAGS=\"$CPPFLAGS\" LDFLAGS=\"-Wl,-rpath="$PREFIX_DIR/lib" $LDFLAGS\"" > build.sh
+	echo "export DESTDIR=\"$INIT_DIR/workdir/$package/destdir-pkg\"" >> build.sh
 
 	if [ -n "$OVERRIDE_PREFIX" ]; then
 		PREFIX_DIR=$OVERRIDE_PREFIX
