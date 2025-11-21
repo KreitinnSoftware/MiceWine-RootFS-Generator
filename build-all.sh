@@ -107,6 +107,7 @@ gitDownload()
 
 	cd $package
 
+	git reset --hard $GIT_COMMIT &> /dev/zero
 	git checkout $GIT_COMMIT . &> /dev/zero
 	git submodule update --init --recursive &> /dev/zero
 
