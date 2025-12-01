@@ -66,4 +66,4 @@ echo "vkDriverLib=$PACKAGE_VK_DRIVER_LIB" >> pkg-header
 
 symlinkToSh "files/"
 
-7z -tzip -mx=5 a "$OUTDIR/$PACKAGE_NAME-$PACKAGE_VERSION-$PACKAGE_ARCHITECTURE.rat" &> /dev/zero
+tar -cJf "$OUTDIR/$PACKAGE_NAME-$PACKAGE_VERSION-$PACKAGE_ARCHITECTURE.rat" pkg-header $(ls | grep -v pkg-header)

@@ -396,7 +396,7 @@ installBuiltPackage()
 		echo "-- Installing '$(basename $package .rat)'"
 		mkdir -p $APP_ROOT_DIR/packages
 
-		unzip -o "$package" -d "$APP_ROOT_DIR" &> /dev/zero
+		tar -xf "$package" -C "$APP_ROOT_DIR"
 
 		touch $APP_ROOT_DIR/makeSymlinks.sh
 		bash $APP_ROOT_DIR/makeSymlinks.sh

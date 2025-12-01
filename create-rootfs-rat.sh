@@ -69,7 +69,7 @@ for i in $ROOTFS_PKGS; do
   if [ -n "$resolvedPath" ] && [ ! -f "$INIT_DIR/built-pkgs/$(basename $i | sed "s/.rat/.isOptional/g")" ]; then
     echo "Extracting '$(basename $resolvedPath)'..."
 
-    7z -aoa e "$resolvedPath" pkg-header &> /dev/zero
+    tar -xf "$resolvedPath" pkg-header
 
     packageCategory=$(getElementFromHeader 2)
 
@@ -82,7 +82,7 @@ for i in $ROOTFS_PKGS; do
     elif [ "$packageCategory" == "AdrenoTools" ]; then
       cp -f "$resolvedPath" "adrenoTools"
     else
-      7z -aoa x "$resolvedPath" &> /dev/zero
+      tar -xf "$resolvedPath"
     fi
 
     if [ -f "makeSymlinks.sh" ]; then
@@ -93,8 +93,6 @@ for i in $ROOTFS_PKGS; do
 done
 
 mv new_makeSymlinks.sh makeSymlinks.sh
-
-echo -e "$PWD:\n$(ls --color)"
 
 $INIT_DIR/tools/create-rat-pkg.sh "MiceWine-RootFS" "MiceWine RootFS" "" "$ARCH" "($GIT_SHORT_SHA)" "rootfs" "$PWD" "$INIT_DIR"
 
