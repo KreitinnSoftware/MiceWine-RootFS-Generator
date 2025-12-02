@@ -1,6 +1,7 @@
 PKG_VER=25.1.4-[gss]
 PKG_CATEGORY="VulkanDriver"
 PKG_PRETTY_NAME="Mesa Android Wrapper"
+PKG_DOWNLOADABLE=1
 VK_DRIVER_LIB="libvulkan_wrapper.so"
 
 GIT_URL=https://github.com/KreitinnSoftware/mesa

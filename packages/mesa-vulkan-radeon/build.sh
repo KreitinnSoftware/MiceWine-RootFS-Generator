@@ -1,6 +1,7 @@
 PKG_VER=25.0.0
 PKG_CATEGORY="VulkanDriver"
 PKG_PRETTY_NAME="Mesa Radeon Driver"
+PKG_DOWNLOADABLE=1
 VK_DRIVER_LIB="libvulkan_radeon.so"
 
 BLACKLIST_ARCH=aarch64

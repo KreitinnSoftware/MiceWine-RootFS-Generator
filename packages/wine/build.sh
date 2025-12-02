@@ -1,6 +1,7 @@
 PKG_VER="10.10-esync-xinput-dinput"
 PKG_CATEGORY="Wine"
 PKG_PRETTY_NAME="Wine ($PKG_VER)"
+PKG_DOWNLOADABLE=1
 
 BLACKLIST_ARCH=aarch64
 
